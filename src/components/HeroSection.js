@@ -40,8 +40,8 @@ const HeroSection = () => {
     });
     const [fileUploadProgress, setFileUploadProgress] = useState({ license: 0, rc: 0 });
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isRegistered, setIsRegistered] = useState(false);
     const navigate = useNavigate();
-
     const { ref, inView: isInView } = useInView({ triggerOnce: true });
 
     useEffect(() => {
@@ -51,37 +51,80 @@ const HeroSection = () => {
     }, [isInView, controls]);
 
     useEffect(() => {
-        // Check if user is already authenticated
-        if (user) {
-            // Check if user has completed registration
-            checkRegistrationStatus();
-        }
-    }, [user]);
+        const checkAuthAndRegistration = async () => {
+            try {
+                const user = auth.currentUser;
+                if (user) {
+                    const token = await user.getIdToken();
+                    localStorage.setItem('token', token);
+                    
+                    const isRegistered = await checkRegistrationStatus();
+                    setIsRegistered(isRegistered);
+                    if (isRegistered) {
+                        setRegistrationStep(3);
+                    } else {
+                        setRegistrationStep(2);
+                    }
+                }
+            } catch (error) {
+                console.error('Initial check error:', error);
+            }
+        };
+
+        checkAuthAndRegistration();
+
+        const unsubscribe = auth.onAuthStateChanged(async (user) => {
+            if (user) {
+                const isRegistered = await checkRegistrationStatus();
+                setIsRegistered(isRegistered);
+                if (isRegistered) {
+                    setRegistrationStep(3);
+                } else {
+                    setRegistrationStep(2);
+                }
+            } else {
+                setIsRegistered(false);
+                setRegistrationStep(1);
+            }
+        });
+
+        return () => unsubscribe();
+    }, []);
 
     const checkRegistrationStatus = async () => {
         try {
+            const user = auth.currentUser;
+            if (!user) return false;
+
+            const storedRegistration = localStorage.getItem(`driverRegistered_${user.uid}`);
+            if (storedRegistration === 'true') return true;
+
             const token = await user.getIdToken();
-            const response = await fetch('http://localhost:5000/api/driver/status', {
+            const response = await fetch(`http://localhost:5000/api/driver/check/${user.uid}`, {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
             });
-            
-            const data = await response.json();
-            
-            if (response.ok && data.isRegistered) {
-                setRegistrationStep(3); // Show welcome state
-            } else if (user.phoneNumber || user.email) {
-                setRegistrationStep(2); // Show registration form
-                setDriverData(prev => ({
-                    ...prev,
-                    phone: user.phoneNumber || '',
-                    name: user.displayName || ''
-                }));
+
+            if (response.ok) {
+                const data = await response.json();
+                if (data.exists) {
+                    localStorage.setItem(`driverRegistered_${user.uid}`, 'true');
+                    setDriverData(prev => ({
+                        ...prev,
+                        name: data.driver?.name || user.displayName || '',
+                        phone: data.driver?.phone || user.phoneNumber || '',
+                        vehicleType: data.driver?.vehicleType || '',
+                        vehicleNumber: data.driver?.vehicleNumber || ''
+                    }));
+                    return true;
+                }
             }
+            return false;
         } catch (error) {
-            console.error('Error checking registration status:', error);
+            console.error('Error checking registration:', error);
+            return false;
         }
     };
 
@@ -250,7 +293,7 @@ const HeroSection = () => {
             formData.append('file', file);
             formData.append('userId', auth.currentUser.uid);
             formData.append('docType', type);
-            
+
             const response = await fetch('http://localhost:5000/api/upload/file', {
                 method: 'POST',
                 body: formData,
@@ -306,11 +349,8 @@ const HeroSection = () => {
             setIsSubmitting(true);
             setMessage({ text: 'Registering your account...', isError: false });
 
-            if (!driverData.licenseFile || !driverData.rcFile) {
-                throw new Error('Please upload both license and RC documents');
-            }
-
             const token = await auth.currentUser.getIdToken();
+            const userId = auth.currentUser.uid;
 
             const response = await fetch('http://localhost:5000/api/driver/register', {
                 method: 'POST',
@@ -319,7 +359,7 @@ const HeroSection = () => {
                     'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({
-                    userId: auth.currentUser.uid,
+                    userId: userId,
                     name: driverData.name,
                     phone: driverData.phone,
                     vehicleType: driverData.vehicleType,
@@ -329,16 +369,24 @@ const HeroSection = () => {
                 })
             });
 
-            const data = await response.json();
-            
-            if (response.ok) {
-                setMessage({ text: 'Registration successful!', isError: false });
-                setRegistrationStep(3); // Show welcome state
-            } else {
-                throw new Error(data.error || 'Registration failed');
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Registration failed');
             }
+
+            localStorage.setItem(`driverRegistered_${userId}`, 'true');
+            setIsRegistered(true);
+            setMessage({ text: 'Registration successful!', isError: false });
+            setRegistrationStep(3);
         } catch (error) {
-            setMessage({ text: error.message, isError: true });
+            if (error.message.includes('duplicate key')) {
+                localStorage.setItem(`driverRegistered_${auth.currentUser.uid}`, 'true');
+                setIsRegistered(true);
+                setRegistrationStep(3);
+                setMessage({ text: 'You are already registered!', isError: true });
+            } else {
+                setMessage({ text: error.message, isError: true });
+            }
         } finally {
             setIsSubmitting(false);
         }
@@ -348,8 +396,10 @@ const HeroSection = () => {
         try {
             await signOut(auth);
             localStorage.removeItem('token');
+            localStorage.removeItem(`driverRegistered_${auth.currentUser?.uid}`);
             setRegistrationStep(1);
             setRegistrationSubStep(1);
+            setIsRegistered(false);
             setDriverData({
                 name: '',
                 phone: '',
@@ -437,7 +487,7 @@ const HeroSection = () => {
                     ) : registrationStep === 2 ? (
                         <div className="driver-registration-form">
                             <h3>Complete Driver Profile ({registrationSubStep}/3)</h3>
-                            
+
                             {registrationSubStep === 1 && (
                                 <>
                                     <div className="form-group">
@@ -596,7 +646,7 @@ const HeroSection = () => {
                         <div className="welcome-container">
                             <h3>Welcome, {driverData.name}!</h3>
                             <p>You're now registered as a driver with vehicle number: {driverData.vehicleNumber}</p>
-                            <button 
+                            <button
                                 onClick={handleLogout}
                                 className="logout-btn"
                             >
