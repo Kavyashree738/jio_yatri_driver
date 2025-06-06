@@ -1,0 +1,843 @@
+*{
+    box-sizing: border-box;
+}
+
+.hero-section {
+
+  /* background-image: url('../assets/images/background-image.jpg'); */
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  padding: 30px;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+  background-color:#0044FF;
+  
+}
+
+.hero-bg-blur {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  /* background-image: url('../assets/images/background-image.jpg'); */
+  background-size: cover;
+  background-position: center;
+  filter: blur(2px);
+  z-index: 1;
+}
+
+.hero-content-wrapper {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 1000px;
+  width: 100%;
+  gap: 30px;
+  padding-top: 10vh;
+  flex-wrap: wrap;
+  padding: 30px;
+  margin-top:140px;
+}
+
+.hero-text {
+  flex: 1 1 400px;
+  text-align: left;
+  padding: 20px;
+  color: white;
+  min-width: 280px;
+}
+
+.hero-text h1 {
+  font-size: 5.5rem;
+  margin-bottom: 10px;
+  line-height: 1.1;
+  word-break: break-word;
+}
+
+.hero-text h2 {
+  font-size: 1.5rem;
+  margin-bottom: 15px;
+  color:white;
+}
+
+.hero-text p {
+  font-size: 1rem;
+  line-height: 1.5;
+}
+.text{
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+}
+
+
+.hero-form {
+  flex: 1 1 350px;
+  max-width: 400px;
+  background: #fff;
+  padding: 30px 25px;
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  min-width: 280px;
+}
+
+.hero-form h3 {
+  text-align: center;
+  margin-bottom: 20px;
+  font-size: 1.5rem;
+}
+
+.phone-input-group {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.registration-form button[type="submit"] {
+  width: 100%;
+  padding: 12px;
+  font-size: 1rem;
+  background-color: black;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-bottom: 15px;
+  transition: background-color 0.3s ease;
+}
+
+.registration-form button[type="submit"]:hover {
+  background-color: rgba(0, 0, 0, 0.842);
+}
+
+.divider {
+  text-align: center;
+  margin: 15px 0;
+  position: relative;
+  font-weight: 500;
+  color: #777;
+}
+
+.divider::before,
+.divider::after {
+  content: "";
+  height: 1px;
+  width: 40%;
+  background: #ccc;
+  position: absolute;
+  top: 50%;
+}
+
+.divider::before {
+  left: 0;
+}
+
+.divider::after {
+  right: 0;
+}
+
+.social-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.social-buttons button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: center;
+  padding: 12px;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 0.9rem;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.social-icon {
+  width: 20px;
+  height: 20px;
+  color: black;
+}
+/* Add these styles to your existing HeroSection.css */
+
+/* General container */
+.container {
+  max-width: 400px;
+  margin: 40px auto;
+  padding: 25px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.title {
+  text-align: center;
+  margin-bottom: 20px;
+  color: #222;
+}
+
+/* Phone input */
+.input {
+  width: 100%;
+  padding: 12px 10px;
+  font-size: 16px;
+  border: 2px solid #ccc;
+  border-radius: 6px;
+  outline: none;
+  transition: border-color 0.3s ease;
+}
+
+.input:focus {
+  border-color: #007bff;
+}
+
+/* Error style for inputs */
+.error {
+  border-color: #e74c3c !important;
+}
+
+/* Send Code Button */
+.button {
+  width: 100%;
+  background-color: #000;  /* black */
+  color: white;
+  font-weight: 600;
+  padding: 12px;
+  margin-top: 10px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.button:hover:not(.disabled) {
+  background-color: #1a1a1a;
+}
+
+.button.disabled {
+  background-color: #181818;
+  cursor: not-allowed;
+}
+
+/* Message styles */
+.message {
+  margin-top: 15px;
+  padding: 10px 15px;
+  border-radius: 6px;
+  font-weight: 500;
+  font-size: 14px;
+  text-align: center;
+}
+
+.success {
+  background-color: #d4edda;
+  color: #07166e;
+  border: 1px solid #c3e6cb;
+}
+
+.error {
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+/* OTP Overlay */
+.otp-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+/* OTP Modal */
+.otp-modal {
+  background: white;
+  border-radius: 10px;
+  padding: 30px 25px;
+  max-width: 360px;
+  width: 90%;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.2);
+  text-align: center;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* OTP Title */
+.otp-title {
+  margin-bottom: 20px;
+  font-size: 20px;
+  color: #004085;
+  font-weight: 600;
+}
+
+/* OTP Input Box */
+.otp-input {
+  width: 100%;
+  padding: 14px 10px;
+  font-size: 20px;
+  border: 2px solid #007bff;  /* blue border */
+  border-radius: 8px;
+  text-align: center;
+  letter-spacing: 8px;
+  outline: none;
+  transition: border-color 0.3s ease;
+  box-sizing: border-box;
+  margin-bottom: 20px;
+}
+
+.otp-input:focus {
+  border-color: #0056b3;
+  box-shadow: 0 0 5px #0056b3;
+}
+
+/* OTP Buttons */
+.otp-button {
+  width: 100%;
+  background-color: #007bff; /* bootstrap blue */
+  color: white;
+  font-weight: 600;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  margin-bottom: 10px;
+}
+
+.otp-button:hover:not(.disabled) {
+  background-color: #0056b3;
+}
+
+.otp-button.disabled {
+  background-color: #1d1d1d;
+  cursor: not-allowed;
+}
+
+/* Cancel Button */
+.cancel-button {
+  width: 100%;
+  padding: 10px;
+  font-weight: 600;
+  border-radius: 8px;
+  border: 2px solid #007bff;
+  background-color: white;
+  color: #007bff;
+  cursor: pointer;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.cancel-button:hover {
+  background-color: #007bff;
+  color: white;
+}
+
+@keyframes button-loading-spinner {
+    from {
+        transform: rotate(0turn);
+    }
+    to {
+        transform: rotate(1turn);
+    }
+}
+/* Responsive styling */
+@media (max-width: 1024px) {
+  .hero-text h1 {
+    font-size: 4rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .hero-content-wrapper {
+    flex-direction: column;
+    align-items: center;
+    padding-top: 5vh;
+  }
+
+  .hero-text {
+    flex: 1 1 100%;
+    text-align: center;
+    padding: 10px 20px;
+    min-width: auto;
+  }
+
+  .hero-text h1 {
+    font-size: 2.8rem;
+  }
+
+  .hero-text h2 {
+    font-size: 1.3rem;
+  }
+
+  .hero-text p {
+    font-size: 1rem;
+  }
+
+  .hero-form {
+    flex: 1 1 100%;
+    max-width: 90%;
+    padding: 20px;
+    min-width: auto;
+  }
+
+  .phone-input-group {
+    flex-direction: column;
+  }
+
+  .country-code,
+  .registration-form input[type="tel"] {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero-text h1 {
+    font-size: 2.2rem;
+  }
+
+  .hero-text h2 {
+    font-size: 1.1rem;
+  }
+}
+/* Logout Button Styles */
+.logout-button {
+    background-color: #ff4444;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+    margin-top: 15px;
+    transition: background-color 0.3s;
+    width: 100%;
+}
+
+.logout-button:hover {
+    background-color: #cc0000;
+}
+
+/* Welcome Message Styles */
+.welcome-message {
+    background: white;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+.welcome-message h3 {
+    color: #333;
+    margin-bottom: 10px;
+    font-size: 1.5rem;
+}
+
+.welcome-message p {
+    color: #666;
+    margin-bottom: 20px;
+}
+.driver-registration-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  background-color: white;
+  padding:1.5rem;
+  border-radius: 15px;
+}
+
+.driver-registration-form h3 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  color:blue;
+  text-align: center;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-group label {
+  font-weight: 600;
+  color: #555;
+}
+
+.form-group label::after {
+  content: "*";
+  color: #ff3860;
+  margin-left: 0.2rem;
+}
+.form-group input{
+    width:100%;
+    padding: 1rem;
+}
+.vehicle-options {
+  display: flex;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+.vehicle-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.8rem;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: white;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.vehicle-btn:hover {
+  border-color: blue;
+}
+
+.vehicle-btn.active {
+  background: blue;
+  color: white;
+  border-color: blue;
+}
+
+.vehicle-btn svg {
+  font-size: 1.2rem;
+}
+
+.hint {
+  font-size: 0.8rem;
+  color: #777;
+  margin-top: 0.3rem;
+}
+
+.file-upload {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.upload-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.8rem;
+  background: #f8f9fa;
+  border: 1px dashed #ddd;
+  border-radius: 8px;
+  color: #555;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.upload-btn:hover {
+  background: #f1f3f5;
+  border-color: blue;
+  color: blue;
+}
+
+.upload-btn svg {
+  font-size: 1rem;
+}
+
+progress {
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  margin-top: 0.5rem;
+}
+
+progress::-webkit-progress-bar {
+  background-color: #f1f3f5;
+  border-radius: 3px;
+}
+
+progress::-webkit-progress-value {
+  background: linear-gradient(to right, blue, #2575fc);
+  border-radius: 3px;
+}
+
+.form-navigation {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 1rem;
+}
+
+.prev-btn,
+.next-btn,
+.submit-btn {
+  padding: 0.8rem 1.5rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.prev-btn {
+  background: white;
+  border: 1px solid #ddd;
+  color: #555;
+}
+
+.prev-btn:hover {
+  background: #f8f9fa;
+}
+
+.next-btn {
+  background: blue;
+  color: white;
+  border: none;
+}
+
+.next-btn:hover {
+  background: blue;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(106, 17, 203, 0.3);
+}
+
+.next-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.submit-btn {
+  background: linear-gradient(to right, blue, #2575fc);
+  color: white;
+  border: none;
+}
+
+.submit-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(106, 17, 203, 0.3);
+}
+
+.submit-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Message Styles */
+.message {
+  padding: 1rem;
+  border-radius: 8px;
+  margin-top: 1rem;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.message.error {
+  background: #ffebee;
+  color: #ff3860;
+  border: 1px solid #ff3860;
+}
+
+.message.success {
+  background: #e8f5e9;
+  color: #2e7d32;
+  border: 1px solid #2e7d32;
+}
+
+/* OTP Modal Styles */
+.otp-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.otp-modal {
+  background: white;
+  padding: 2rem;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.otp-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  text-align: center;
+  color: #333;
+}
+
+.otp-input {
+  padding: 1rem;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 1.2rem;
+  text-align: center;
+  letter-spacing: 0.5rem;
+  transition: all 0.3s ease;
+}
+
+.otp-input:focus {
+  outline: none;
+  border-color: blue;
+  box-shadow: 0 0 0 2px rgba(106, 17, 203, 0.2);
+}
+
+.otp-button {
+  padding: 1rem;
+  background: #0020d4;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.otp-button:hover {
+  background: #041dff;
+}
+
+.otp-button.disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.cancel-button {
+  padding: 0.8rem;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.cancel-button:hover {
+  background: #f8f9fa;
+}
+
+/* Responsive Styles */
+@media (max-width: 768px) {
+  .hero-content-wrapper {
+    grid-template-columns: 1fr;
+    padding: 1rem;
+  }
+
+  .hero-text {
+    text-align: center;
+    align-items: center;
+  }
+
+  .hero-text p {
+    max-width: 100%;
+  }
+
+  .vehicle-options {
+    flex-direction: column;
+  }
+
+  .otp-modal {
+    width: 90%;
+    padding: 1.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero-text h1 {
+    font-size: 2.5rem;
+  }
+
+  .hero-text h2 {
+    font-size: 1.5rem;
+  margin-bottom: 1rem;
+  }
+
+  .registration-form h3,
+  .driver-registration-form h3 {
+    font-size: 1.3rem;
+  }
+
+  .form-navigation {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .prev-btn,
+  .next-btn,
+  .submit-btn {
+    width: 100%;
+  }
+}
+
+/* Add these to your existing HeroSection.css */
+.welcome-container {
+    background: white;
+    padding: 2rem;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+.welcome-container h3 {
+    color: #333;
+    margin-bottom: 1rem;
+}
+
+.welcome-container p {
+    color: #666;
+    margin-bottom: 2rem;
+}
+
+.logout-btn {
+    background-color: #ff4444;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 5px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    width: 100%;
+}
+
+.logout-btn:hover {
+    background-color: #cc0000;
+}
