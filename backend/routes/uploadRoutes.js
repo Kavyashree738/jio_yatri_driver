@@ -22,6 +22,9 @@ const upload = multer({
 router.post('/file', upload.single('file'), uploadFile);
 router.get('/:filename', getFile);
 
+// In uploadRoutes.js
+router.post('/profile-image', verifyFirebaseToken, upload.single('file'), uploadProfileImage);
+router.get('/profile-image/:userId', getProfileImage);
 
 
 

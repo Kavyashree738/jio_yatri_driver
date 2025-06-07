@@ -94,3 +94,47 @@ exports.getFile = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+// In uploadController.js
+exports.uploadProfileImage = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    const gfs = await gfsPromise;
+    const filename = `profile_${req.user.uid}_${Date.now()}_${req.file.originalname}`;
+
+    const writeStream = gfs.openUploadStream(filename, {
+      metadata: {
+        userId: req.user.uid,
+        docType: 'profile',
+        originalName: req.file.originalname,
+        mimetype: req.file.mimetype
+      }
+    });
+
+    writeStream.end(req.file.buffer);
+
+    writeStream.on('finish', async () => {
+      // Update driver profile with image reference
+      await Driver.findOneAndUpdate(
+        { userId: req.user.uid },
+        { profileImage: writeStream.id }
+      );
+      
+      res.status(201).json({
+        success: true,
+        fileId: writeStream.id,
+        filename: writeStream.filename
+      });
+    });
+
+    writeStream.on('error', (err) => {
+      res.status(500).json({ error: 'Upload failed' });
+    });
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};

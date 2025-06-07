@@ -261,7 +261,8 @@ const HeroSection = () => {
                 ...driverData,
                 name: user.displayName || '',
                 phone: user.phoneNumber || '',
-                email: user.email || ''
+                email: user.email || '',
+                photoURL: user.photoURL 
             });
             await storeToken(user);
             setMessage({ text: 'Google sign-in successful!', isError: false });

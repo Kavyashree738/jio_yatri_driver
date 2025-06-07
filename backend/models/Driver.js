@@ -4,6 +4,11 @@ const driverSchema = new mongoose.Schema({
   userId: { type: String, required: true, unique: true },
   name: { type: String, required: true },
   phone: { type: String, required: true },
+  profileImage: {
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'fs.files',
+    default: null
+  },
   vehicleType: { type: String, enum: ['bike', 'van', 'truck'], required: true },
   vehicleNumber: { 
     type: String, 
