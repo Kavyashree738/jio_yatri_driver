@@ -57,7 +57,7 @@ const HeroSection = () => {
                 if (user) {
                     const token = await user.getIdToken();
                     localStorage.setItem('token', token);
-                    
+
                     const isRegistered = await checkRegistrationStatus();
                     setIsRegistered(isRegistered);
                     if (isRegistered) {
@@ -100,7 +100,7 @@ const HeroSection = () => {
             if (storedRegistration === 'true') return true;
 
             const token = await user.getIdToken();
-            const response = await fetch(`http://localhost:5000/api/driver/check/${user.uid}`, {
+            const response = await fetch(`https://jio-yatri-driver.onrender.com/api/driver/check/${user.uid}`, {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${token}`
@@ -257,16 +257,29 @@ const HeroSection = () => {
             setIsLoading(true);
             const result = await signInWithPopup(auth, googleProvider);
             const user = result.user;
+
+            // First check if user is already registered
+            const isRegistered = localStorage.getItem(`driverRegistered_${user.uid}`) === 'true';
+
+            if (isRegistered) {
+                setMessage({ text: 'You are already registered!', isError: true });
+                setIsRegistered(true);
+                return; // Exit the function early
+            }
+
+            // If not registered, proceed with registration flow
             setDriverData({
                 ...driverData,
                 name: user.displayName || '',
                 phone: user.phoneNumber || '',
                 email: user.email || '',
-                photoURL: user.photoURL 
+                photoURL: user.photoURL
             });
+
             await storeToken(user);
             setMessage({ text: 'Google sign-in successful!', isError: false });
             setRegistrationStep(2);
+
         } catch (error) {
             console.error('Google sign-in error:', error);
             setMessage({ text: `Google sign-in failed: ${error.message}`, isError: true });
@@ -274,7 +287,6 @@ const HeroSection = () => {
             setIsLoading(false);
         }
     };
-
     const handleFileUpload = async (file, type) => {
         if (!file) return;
 
@@ -295,7 +307,7 @@ const HeroSection = () => {
             formData.append('userId', auth.currentUser.uid);
             formData.append('docType', type);
 
-            const response = await fetch('http://localhost:5000/api/upload/file', {
+            const response = await fetch('https://jio-yatri-driver.onrender.com/api/upload/file', {
                 method: 'POST',
                 body: formData,
             });
@@ -353,7 +365,7 @@ const HeroSection = () => {
             const token = await auth.currentUser.getIdToken();
             const userId = auth.currentUser.uid;
 
-            const response = await fetch('http://localhost:5000/api/driver/register', {
+            const response = await fetch('https://jio-yatri-driver.onrender.com/api/driver/register', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -645,8 +657,8 @@ const HeroSection = () => {
                         </div>
                     ) : (
                         <div className="welcome-container">
-                            <h3>Welcome, {driverData.name}!</h3>
-                            <p>You're now registered as a driver with vehicle number: {driverData.vehicleNumber}</p>
+                            <h3>Welcome</h3>
+                            <p>You're now registered as a driver</p>
                             <button
                                 onClick={handleLogout}
                                 className="logout-btn"

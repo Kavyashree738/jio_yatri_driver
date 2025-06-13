@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { FaBars, FaTimes } from 'react-icons/fa';
 import '../styles/Home.css';
@@ -43,6 +42,9 @@ const Header = () => {
 
                         {user && (
                             <Link to="/orders" onClick={handleLinkClick}>Orders</Link>
+                        )}
+                        {user && (
+                            <Link to="/my-documents" onClick={handleLinkClick}>Documents</Link>
                         )}
                     </nav>
 
