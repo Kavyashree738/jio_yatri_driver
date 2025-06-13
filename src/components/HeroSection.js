@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, useAnimation } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
 import { FcGoogle } from 'react-icons/fc';
-import { FaApple } from 'react-icons/fa';
+import { FaApple, FaUpload } from 'react-icons/fa';
 import { MdEmail, MdDirectionsCar, MdTwoWheeler, MdLocalShipping } from 'react-icons/md';
 import {
     RecaptchaVerifier,
@@ -10,9 +10,7 @@ import {
     signInWithPopup,
     signOut
 } from 'firebase/auth';
-import { auth, googleProvider, storage } from '../firebase';
-import { ref as storageRef, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
-import { FaUpload } from 'react-icons/fa';
+import { auth, googleProvider } from '../firebase';
 import 'react-phone-input-2/lib/style.css';
 import '../styles/HeroSection.css';
 import { useAuth } from '../context/AuthContext';
@@ -44,18 +42,20 @@ const HeroSection = () => {
     const navigate = useNavigate();
     const { ref, inView: isInView } = useInView({ triggerOnce: true });
 
+    // Animation control
     useEffect(() => {
         if (isInView) {
             controls.start('visible');
         }
     }, [isInView, controls]);
 
+    // Check auth state on mount
     useEffect(() => {
         const checkAuthAndRegistration = async () => {
             try {
                 const user = auth.currentUser;
                 if (user) {
-                    const token = await user.getIdToken(true);
+                    const token = await user.getIdToken();
                     localStorage.setItem('token', token);
 
                     const isRegistered = await checkRegistrationStatus();
@@ -99,7 +99,7 @@ const HeroSection = () => {
             const storedRegistration = localStorage.getItem(`driverRegistered_${user.uid}`);
             if (storedRegistration === 'true') return true;
 
-            const token = await user.getIdToken(true);
+            const token = await user.getIdToken();
             const response = await fetch(`https://jio-yatri-driver.onrender.com/api/driver/check/${user.uid}`, {
                 method: 'GET',
                 headers: {
@@ -133,6 +133,7 @@ const HeroSection = () => {
         visible: { opacity: 1, y: 0 },
     };
 
+    // reCAPTCHA initialization
     const initializeRecaptcha = () => {
         try {
             if (!window.recaptchaVerifier) {
@@ -184,7 +185,7 @@ const HeroSection = () => {
 
     const storeToken = async (user) => {
         try {
-            const token = await user.getIdToken(true);
+            const token = await user.getIdToken();
             localStorage.setItem('token', token);
             console.log('Token stored successfully');
         } catch (error) {
@@ -258,16 +259,14 @@ const HeroSection = () => {
             const result = await signInWithPopup(auth, googleProvider);
             const user = result.user;
 
-            // First check if user is already registered
             const isRegistered = localStorage.getItem(`driverRegistered_${user.uid}`) === 'true';
 
             if (isRegistered) {
                 setMessage({ text: 'You are already registered!', isError: true });
                 setIsRegistered(true);
-                return; // Exit the function early
+                return;
             }
 
-            // If not registered, proceed with registration flow
             setDriverData({
                 ...driverData,
                 name: user.displayName || '',
@@ -287,6 +286,7 @@ const HeroSection = () => {
             setIsLoading(false);
         }
     };
+
     const handleFileUpload = async (file, type) => {
         if (!file) return;
 
@@ -302,30 +302,63 @@ const HeroSection = () => {
         }
 
         try {
-            const formData = new FormData();
-            formData.append('file', file);
-            formData.append('userId', auth.currentUser.uid);
-            formData.append('docType', type);
-
-            const response = await fetch('https://jio-yatri-driver.onrender.com/api/upload/file', {
-                method: 'POST',
-                body: formData,
-            });
-
-            const result = await response.json();
-
-            if (response.ok) {
-                setDriverData(prev => ({
-                    ...prev,
-                    [`${type}File`]: file,
-                    [`${type}FileId`]: result.fileId
-                }));
-                setMessage({ text: `${type.toUpperCase()} uploaded successfully!`, isError: false });
-            } else {
-                throw new Error(result.error || 'Upload failed');
+            const user = auth.currentUser;
+            if (!user) {
+                throw new Error('User not authenticated');
             }
+
+            const token = await user.getIdToken(true);
+            
+            return new Promise((resolve, reject) => {
+                const xhr = new XMLHttpRequest();
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('userId', user.uid);
+                formData.append('docType', type);
+
+                xhr.upload.addEventListener('progress', (event) => {
+                    if (event.lengthComputable) {
+                        const progress = Math.round((event.loaded / event.total) * 100);
+                        setFileUploadProgress(prev => ({ ...prev, [type]: progress }));
+                    }
+                });
+
+                xhr.onreadystatechange = () => {
+                    if (xhr.readyState === 4) {
+                        if (xhr.status === 200) {
+                            const response = JSON.parse(xhr.responseText);
+                            setDriverData(prev => ({
+                                ...prev,
+                                [`${type}File`]: file,
+                                [`${type}FileId`]: response.fileId
+                            }));
+                            setMessage({ text: `${type.toUpperCase()} uploaded successfully!`, isError: false });
+                            resolve(response);
+                        } else {
+                            const error = new Error(xhr.statusText || 'Upload failed');
+                            error.status = xhr.status;
+                            reject(error);
+                        }
+                    }
+                };
+
+                xhr.open('POST', 'https://jio-yatri-driver.onrender.com/api/upload/file', true);
+                xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+                xhr.send(formData);
+            });
         } catch (error) {
-            setMessage({ text: error.message, isError: true });
+            console.error('Upload error:', error);
+            let errorMessage = 'File upload failed';
+            
+            if (error.status === 401) {
+                errorMessage = 'Session expired. Please sign in again.';
+                await handleLogout();
+            } else if (error.message) {
+                errorMessage = error.message;
+            }
+            
+            setMessage({ text: errorMessage, isError: true });
+            throw error;
         }
     };
 
@@ -604,7 +637,12 @@ const HeroSection = () => {
                                                 type="file"
                                                 id="license-upload"
                                                 accept="image/*,.pdf"
-                                                onChange={(e) => handleFileUpload(e.target.files[0], 'license')}
+                                                onChange={(e) => {
+                                                    if (e.target.files && e.target.files[0]) {
+                                                        handleFileUpload(e.target.files[0], 'license')
+                                                            .catch(() => {});
+                                                    }
+                                                }}
                                                 hidden
                                             />
                                             <label htmlFor="license-upload" className="upload-btn">
@@ -624,7 +662,12 @@ const HeroSection = () => {
                                                 type="file"
                                                 id="rc-upload"
                                                 accept="image/*,.pdf"
-                                                onChange={(e) => handleFileUpload(e.target.files[0], 'rc')}
+                                                onChange={(e) => {
+                                                    if (e.target.files && e.target.files[0]) {
+                                                        handleFileUpload(e.target.files[0], 'rc')
+                                                            .catch(() => {});
+                                                    }
+                                                }}
                                                 hidden
                                             />
                                             <label htmlFor="rc-upload" className="upload-btn">
@@ -646,7 +689,7 @@ const HeroSection = () => {
                                         </button>
                                         <button
                                             onClick={submitDriverRegistration}
-                                            disabled={isSubmitting || !driverData.licenseFile || !driverData.rcFile}
+                                            disabled={isSubmitting || !driverData.licenseFileId || !driverData.rcFileId}
                                             className="submit-btn"
                                         >
                                             {isSubmitting ? 'Registering...' : 'Complete Registration'}
