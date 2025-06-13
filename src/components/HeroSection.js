@@ -55,7 +55,7 @@ const HeroSection = () => {
             try {
                 const user = auth.currentUser;
                 if (user) {
-                    const token = await user.getIdToken();
+                    const token = await user.getIdToken(true);
                     localStorage.setItem('token', token);
 
                     const isRegistered = await checkRegistrationStatus();
@@ -99,7 +99,7 @@ const HeroSection = () => {
             const storedRegistration = localStorage.getItem(`driverRegistered_${user.uid}`);
             if (storedRegistration === 'true') return true;
 
-            const token = await user.getIdToken();
+            const token = await user.getIdToken(true);
             const response = await fetch(`https://jio-yatri-driver.onrender.com/api/driver/check/${user.uid}`, {
                 method: 'GET',
                 headers: {
@@ -184,7 +184,7 @@ const HeroSection = () => {
 
     const storeToken = async (user) => {
         try {
-            const token = await user.getIdToken();
+            const token = await user.getIdToken(true);
             localStorage.setItem('token', token);
             console.log('Token stored successfully');
         } catch (error) {
