@@ -126,7 +126,7 @@ const DriverDashboard = () => {
             const formData = new FormData();
             formData.append('file', file);
 
-            const token = await user.getIdToken(true);
+            const token = await user.getIdToken();
             const response = await fetch('https://jio-yatri-driver.onrender.com/api/upload/profile-image', {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}` },
