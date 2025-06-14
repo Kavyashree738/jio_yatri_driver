@@ -35,7 +35,7 @@ const DriverDashboard = () => {
 
         const fetchDriverInfo = async () => {
             try {
-                const token = await user.getIdToken(true);
+                const token = await user.getIdToken();
                 const driverResponse = await fetch(`https://jio-yatri-driver.onrender.com/api/driver/info/${user.uid}`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
