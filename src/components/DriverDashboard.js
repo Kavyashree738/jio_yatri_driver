@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { FaUser, FaCar, FaPhone, FaToggleOn, FaToggleOff, FaSignOutAlt } from 'react-icons/fa';
+import { FaUser, FaCar, FaPhone, FaToggleOn, FaToggleOff, FaFileAlt } from 'react-icons/fa';
 import { MdDirectionsCar, MdDirectionsBike, MdLocalShipping } from 'react-icons/md';
-import { auth } from '../firebase'; // Make sure you have this import
 import '../styles/DriverDashboard.css';
 import Header from './Header';
 import Footer from './Footer';
@@ -20,17 +19,6 @@ const DriverDashboard = () => {
     const [customImage, setCustomImage] = useState(null);
     const [isUploading, setIsUploading] = useState(false);
 
-    // Check authentication state
-    useEffect(() => {
-        const unsubscribe = auth.onAuthStateChanged((currentUser) => {
-            if (!currentUser) {
-                navigate('/login');
-            }
-        });
-
-        return () => unsubscribe();
-    }, [navigate]);
-
     // Get Firebase profile image
     useEffect(() => {
         if (user?.photoURL) {
@@ -39,50 +27,37 @@ const DriverDashboard = () => {
     }, [user]);
 
     // Fetch driver info and custom profile image
-    const fetchDriverInfo = async () => {
-        try {
-            let token;
-            try {
-                token = await user.getIdToken(true); // Force refresh if needed
-            } catch (tokenError) {
-                console.error('Token refresh failed:', tokenError);
-                if (tokenError.code === 'auth/user-token-expired' || 
-                    tokenError.code === 'auth/user-disabled' || 
-                    tokenError.code === 'auth/user-not-found') {
-                    await auth.signOut();
-                    navigate('/login');
-                    return;
-                }
-                throw tokenError;
-            }
-
-            const driverResponse = await fetch(`https://jio-yatri-driver.onrender.com/api/driver/info/${user.uid}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-
-            if (!driverResponse.ok) {
-                throw new Error('Failed to fetch driver information');
-            }
-
-            const driverData = await driverResponse.json();
-            setDriverInfo(driverData.data);
-            setStatus(driverData.data?.status || 'inactive');
-
-            if (driverData.data?.profileImage) {
-                setCustomImage(`https://jio-yatri-driver.onrender.com/api/upload/profile-image/${user.uid}?ts=${Date.now()}`);
-            }
-        } catch (err) {
-            setError(err.message);
-        } finally {
-            setLoading(false);
-        }
-    };
-
     useEffect(() => {
         if (!user) {
-            navigate('/login');
+            navigate('/orders');
             return;
         }
+
+        const fetchDriverInfo = async () => {
+            try {
+                const token = await user.getIdToken(true);
+                const driverResponse = await fetch(`https://jio-yatri-driver.onrender.com/api/driver/info/${user.uid}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!driverResponse.ok) {
+                    throw new Error('Failed to fetch driver information');
+                }
+
+                const driverData = await driverResponse.json();
+                setDriverInfo(driverData.data);
+                setStatus(driverData.data?.status || 'inactive');
+
+                if (driverData.data?.profileImage) {
+                    setCustomImage(`https://jio-yatri-driver.onrender.com/api/upload/profile-image/${user.uid}?ts=${Date.now()}`);
+                }
+            } catch (err) {
+                setError(err.message);
+            } finally {
+                setLoading(false);
+            }
+        };
+
         fetchDriverInfo();
     }, [user, navigate, customImage]);
 
@@ -182,15 +157,6 @@ const DriverDashboard = () => {
         }
     };
 
-    const handleLogout = async () => {
-        try {
-            await auth.signOut();
-            navigate('/login');
-        } catch (err) {
-            setError('Logout failed: ' + err.message);
-        }
-    };
-
     const getVehicleIcon = () => {
         switch (driverInfo?.vehicleType) {
             case 'bike': return <MdDirectionsBike className="vehicle-icon" />;
@@ -214,9 +180,6 @@ const DriverDashboard = () => {
             <div className="dashboard-error">
                 <p>Error: {error}</p>
                 <button onClick={() => window.location.reload()}>Try Again</button>
-                <button onClick={handleLogout} className="logout-btn">
-                    <FaSignOutAlt /> Logout
-                </button>
             </div>
         );
     }
@@ -226,9 +189,6 @@ const DriverDashboard = () => {
             <div className="dashboard-no-info">
                 <p>No driver information found.</p>
                 <button onClick={() => navigate('/driver-register')}>Complete Registration</button>
-                <button onClick={handleLogout} className="logout-btn">
-                    <FaSignOutAlt /> Logout
-                </button>
             </div>
         );
     }
@@ -239,20 +199,15 @@ const DriverDashboard = () => {
             <div className="driver-dashboard">
                 <div className="dashboard-header">
                     <h1>Driver Dashboard</h1>
-                    <div className="header-actions">
-                        <div className="status-toggle">
-                            <span>Status: {status === 'active' ? 'Active' : 'Inactive'}</span>
-                            <button
-                                onClick={toggleStatus}
-                                disabled={isUpdating}
-                                className={`toggle-btn ${status === 'active' ? 'active' : 'inactive'}`}
-                            >
-                                {status === 'active' ? <FaToggleOn /> : <FaToggleOff />}
-                                {isUpdating ? 'Updating...' : status === 'active' ? 'Go Offline' : 'Go Online'}
-                            </button>
-                        </div>
-                        <button onClick={handleLogout} className="logout-btn">
-                            <FaSignOutAlt /> Logout
+                    <div className="status-toggle">
+                        <span>Status: {status === 'active' ? 'Active' : 'Inactive'}</span>
+                        <button
+                            onClick={toggleStatus}
+                            disabled={isUpdating}
+                            className={`toggle-btn ${status === 'active' ? 'active' : 'inactive'}`}
+                        >
+                            {status === 'active' ? <FaToggleOn /> : <FaToggleOff />}
+                            {isUpdating ? 'Updating...' : status === 'active' ? 'Go Offline' : 'Go Online'}
                         </button>
                     </div>
                 </div>
@@ -357,6 +312,12 @@ const DriverDashboard = () => {
                     >
                         Delivery History
                     </button>
+                    {/* <button 
+                        className="action-btn"
+                        onClick={() => navigate('/edit-profile')}
+                    >
+                        Edit Profile
+                    </button> */}
                 </div>
             </div>
             <Footer />
