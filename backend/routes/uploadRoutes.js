@@ -1,9 +1,17 @@
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
-const { uploadFile, getFile } = require('../controllers/uploadController');
-console.log('✅ uploadRoutes.js loaded');
+const { 
+  uploadFile, 
+  getFile,
+  uploadProfileImage, 
+  getProfileImage,
+  getUserDocuments,
+  getAllDriversWithDocuments
+  
+} = require('../controllers/uploadController');
 const verifyFirebaseToken = require('../middleware/verifyFirebaseToken');
+
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
@@ -20,13 +28,42 @@ const upload = multer({
   }
 });
 
-router.post('/file', upload.single('file'), uploadFile);
-router.get('/:filename', getFile);
+// File upload and retrieval
+router.post('/file', verifyFirebaseToken, upload.single('file'), (err, req, res, next) => {
+  if (err instanceof multer.MulterError) {
+    return res.status(400).json({ error: err.message });
+  } else if (err) {
+    return res.status(400).json({ error: err.message });
+  }
+  next();
+}, uploadFile);
 
-// In uploadRoutes.js
-router.post('/profile-image', verifyFirebaseToken, upload.single('file'), uploadProfileImage);
-router.get('/profile-image/:userId', getProfileImage);
+router.get('/file/:filename', verifyFirebaseToken, getFile);
 
+// Profile image routes
+router.post('/profile-image', 
+  verifyFirebaseToken, 
+  upload.single('file'),
+  (err, req, res, next) => {
+    if (err instanceof multer.MulterError) {
+      return res.status(400).json({ error: err.message });
+    } else if (err) {
+      return res.status(400).json({ error: err.message });
+    }
+    next();
+  }, 
+  uploadProfileImage
+);
 
+router.get('/profile-image/:userId', verifyFirebaseToken, getProfileImage);
+
+// User documents
+router.get('/user-documents/:userId', verifyFirebaseToken, (req, res, next) => {
+  console.log('Route hit!', req.params.userId);
+  next();
+}, getUserDocuments);
+
+router.get('/all', verifyFirebaseToken,  getAllDriversWithDocuments);
+// Add this to your existing routes
 
 module.exports = router;
