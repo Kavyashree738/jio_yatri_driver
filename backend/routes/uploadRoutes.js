@@ -3,6 +3,7 @@ const router = express.Router();
 const multer = require('multer');
 const { uploadFile, getFile } = require('../controllers/uploadController');
 console.log('✅ uploadRoutes.js loaded');
+const verifyFirebaseToken = require('../middleware/verifyFirebaseToken');
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
