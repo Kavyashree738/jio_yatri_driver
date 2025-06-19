@@ -385,22 +385,35 @@ const LocationTracker = ({ updateInterval = 10000 }) => {
     }
   };
 
-  const startTracking = async () => {
-    try {
-      if (batteryLevel !== null && batteryLevel < 20) {
-        setError('Battery level too low for continuous tracking');
-        return;
-      }
-
-      const pos = await getCurrentLocation();
-      await updateLocationToServer(pos.coords);
-      startWatchingPosition();
-      startPolling();
-    } catch (err) {
-      setError(err.message);
-      setIsTracking(false);
+ const stopTracking = async () => {
+  try {
+    setIsLoading(true);
+    const token = await user.getIdToken();
+    const response = await fetch(`${API_BASE_URL}/api/driver/location`, {
+      method: 'PUT',
+      headers: { 
+        'Content-Type': 'application/json', 
+        'Authorization': `Bearer ${token}` 
+      },
+      body: JSON.stringify({ isLocationActive: false })
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to stop tracking');
     }
-  };
+    
+    // Only stop if API call was successful
+    stopPolling();
+    stopWatchingPosition();
+    setIsTracking(false);
+  } catch (err) {
+    setError(err.message);
+    // Don't change isTracking state on error
+  } finally {
+    setIsLoading(false);
+  }
+};
+
 
   const handleToggle = (e) => {
     e.preventDefault();
