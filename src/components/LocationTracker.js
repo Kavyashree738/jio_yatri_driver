@@ -19,7 +19,7 @@ const LocationTracker = ({ updateInterval = 10000 }) => {
   const watchIdRef = useRef(null);
   const retryCountRef = useRef(0);
 
-  const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+  const API_BASE_URL ='https://jio-yatri-driver.onrender.com';
 
   // Load Google Maps API
   useEffect(() => {
@@ -57,6 +57,27 @@ const LocationTracker = ({ updateInterval = 10000 }) => {
     const markerRef = useRef(null);
     const accuracyCircleRef = useRef(null);
     const headingLineRef = useRef(null);
+
+    const computeOffset = (lat, lng, distance, heading) => {
+      const R = 6378137; // Earth's radius in meters
+      const delta = distance / R;
+      const theta = heading * Math.PI / 180;
+      
+      const phi1 = lat * Math.PI / 180;
+      const lambda1 = lng * Math.PI / 180;
+      
+      const phi2 = Math.asin(Math.sin(phi1) * Math.cos(delta) + 
+                 Math.cos(phi1) * Math.sin(delta) * Math.cos(theta));
+      const lambda2 = lambda1 + Math.atan2(
+        Math.sin(theta) * Math.sin(delta) * Math.cos(phi1),
+        Math.cos(delta) - Math.sin(phi1) * Math.sin(phi2)
+      );
+      
+      return {
+        lat: phi2 * 180 / Math.PI,
+        lng: lambda2 * 180 / Math.PI
+      };
+    };
 
     useEffect(() => {
       if (!coordinates || !mapsLoaded || !window.google?.maps) return;
@@ -131,25 +152,6 @@ const LocationTracker = ({ updateInterval = 10000 }) => {
       }
 
       map.panTo({ lat, lng });
-
-      function computeOffset(lat, lng, distance, heading) {
-        const R = 6378137;
-        const δ = distance / R;
-        const θ = heading * Math.PI / 180;
-        
-        const φ1 = lat * Math.PI / 180;
-        const λ1 = lng * Math.PI / 180;
-        
-        const φ2 = Math.asin(Math.sin(φ1) * Math.cos(δ) + 
-                   Math.cos(φ1) * Math.sin(δ) * Math.cos(θ);
-        const λ2 = λ1 + Math.atan2(Math.sin(θ) * Math.sin(δ) * Math.cos(φ1),
-                           Math.cos(δ) - Math.sin(φ1) * Math.sin(φ2));
-        
-        return {
-          lat: φ2 * 180 / Math.PI,
-          lng: λ2 * 180 / Math.PI
-        };
-      }
 
       return () => {
         if (markerRef.current) markerRef.current.setMap(null);
