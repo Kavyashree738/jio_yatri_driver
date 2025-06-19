@@ -2,12 +2,11 @@ import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { useAuth } from '../context/AuthContext';
 import { FaLocationArrow, FaMapMarkerAlt, FaExclamationTriangle, FaBatteryThreeQuarters } from 'react-icons/fa';
 
-const LocationTracker = ({ updateInterval = 10000 }) => {
+const LocationTracker = ({ updateInterval = 5000 }) => {
   const { user } = useAuth();
   const [location, setLocation] = useState(null);
   const [isTracking, setIsTracking] = useState(false);
   const [error, setError] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
   const [accuracy, setAccuracy] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(null);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
@@ -26,8 +25,9 @@ const LocationTracker = ({ updateInterval = 10000 }) => {
   const headingLineRef = useRef(null);
   const prevCoordinatesRef = useRef(null);
   const zoomLevelRef = useRef(18);
+  const lastPollTimeRef = useRef(0);
 
-  const API_BASE_URL ='https://jio-yatri-driver.onrender.com';
+  const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://jio-yatri-driver.onrender.com';
 
   // Format last updated time
   const formattedLastUpdated = useMemo(() => {
@@ -89,17 +89,14 @@ const LocationTracker = ({ updateInterval = 10000 }) => {
         fullscreenControl: false
       });
 
-      // Store zoom level when changed
       window.google.maps.event.addListener(mapInstanceRef.current, 'zoom_changed', () => {
         zoomLevelRef.current = mapInstanceRef.current.getZoom();
       });
     } else {
-      // Only pan if coordinates changed significantly
       const currentCenter = mapInstanceRef.current.getCenter();
       const currentLat = currentCenter.lat();
       const currentLng = currentCenter.lng();
       
-      // Only pan if change is more than 0.0001 degrees (~11 meters)
       if (Math.abs(currentLat - lat) > 0.0001 || Math.abs(currentLng - lng) > 0.0001) {
         mapInstanceRef.current.panTo({ lat, lng });
       }
@@ -229,9 +226,6 @@ const LocationTracker = ({ updateInterval = 10000 }) => {
 
   const updateLocationToServer = async (coords) => {
     try {
-      setIsLoading(true);
-      setError(null);
-      
       const token = await user.getIdToken();
       const response = await fetch(`${API_BASE_URL}/api/driver/location`, {
         method: 'PUT',
@@ -252,42 +246,34 @@ const LocationTracker = ({ updateInterval = 10000 }) => {
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `HTTP ${response.status}: Update failed`);
+        throw new Error(`HTTP ${response.status}: Update failed`);
       }
 
-      const data = await response.json();
       setLocation([coords.longitude, coords.latitude]);
       setAccuracy(coords.accuracy);
       setHeading(coords.heading || null);
       setSpeed(coords.speed || null);
       setLastUpdated(new Date());
-      
-      if (!isTracking) setIsTracking(true);
-      
     } catch (err) {
       setError(err.message);
-      console.error('Location update failed:', err);
-      setIsTracking(false);
-    } finally {
-      setIsLoading(false);
     }
   };
 
   const startPolling = useCallback(() => {
     stopPolling();
     
-    const abortController = new AbortController();
-
     const fetchLocation = async () => {
+      const now = Date.now();
+      if (now - lastPollTimeRef.current < updateInterval) return;
+      lastPollTimeRef.current = now;
+
       try {
         const token = await user.getIdToken();
         const response = await fetch(`${API_BASE_URL}/api/driver/location`, {
           headers: { 
             'Authorization': `Bearer ${token}`,
             'Accept': 'application/json'
-          },
-          signal: abortController.signal
+          }
         });
 
         if (!response.ok) throw new Error(`Server error: ${response.status}`);
@@ -296,7 +282,6 @@ const LocationTracker = ({ updateInterval = 10000 }) => {
         if (data.success && data.data?.location?.coordinates) {
           const newCoords = data.data.location.coordinates;
           
-          // Only update state if coordinates actually changed
           setLocation(prev => {
             if (!prev || prev[0] !== newCoords[0] || prev[1] !== newCoords[1]) {
               return newCoords;
@@ -304,29 +289,23 @@ const LocationTracker = ({ updateInterval = 10000 }) => {
             return prev;
           });
           
-          setIsTracking(data.data.isLocationActive);
           setLastUpdated(new Date());
         }
       } catch (err) {
-        if (err.name !== 'AbortError') {
-          console.error('Polling error:', err);
-          if (err.message.includes('404')) {
-            setError('Endpoint not found');
-            stopPolling();
-          }
-        }
+        console.error('Polling error:', err);
       }
     };
 
     // Initial fetch
     fetchLocation();
     
-    // Set up interval
-    pollingRef.current = setInterval(fetchLocation, updateInterval);
-
-    return () => {
-      abortController.abort();
-    };
+    // Set up interval with strict timing
+    pollingRef.current = setInterval(() => {
+      const now = Date.now();
+      if (now - lastPollTimeRef.current >= updateInterval) {
+        fetchLocation();
+      }
+    }, 1000); // Check every second but only execute if interval passed
   }, [user, updateInterval, API_BASE_URL]);
 
   const stopPolling = () => {
@@ -385,35 +364,22 @@ const LocationTracker = ({ updateInterval = 10000 }) => {
     }
   };
 
- const stopTracking = async () => {
-  try {
-    setIsLoading(true);
-    const token = await user.getIdToken();
-    const response = await fetch(`${API_BASE_URL}/api/driver/location`, {
-      method: 'PUT',
-      headers: { 
-        'Content-Type': 'application/json', 
-        'Authorization': `Bearer ${token}` 
-      },
-      body: JSON.stringify({ isLocationActive: false })
-    });
-    
-    if (!response.ok) {
-      throw new Error('Failed to stop tracking');
-    }
-    
-    // Only stop if API call was successful
-    stopPolling();
-    stopWatchingPosition();
-    setIsTracking(false);
-  } catch (err) {
-    setError(err.message);
-    // Don't change isTracking state on error
-  } finally {
-    setIsLoading(false);
-  }
-};
+  const startTracking = async () => {
+    try {
+      if (batteryLevel !== null && batteryLevel < 20) {
+        setError('Battery level too low for continuous tracking');
+        return;
+      }
 
+      const pos = await getCurrentLocation();
+      await updateLocationToServer(pos.coords);
+      startWatchingPosition();
+      startPolling();
+      setIsTracking(true);
+    } catch (err) {
+      setError(err.message);
+    }
+  };
 
   const handleToggle = (e) => {
     e.preventDefault();
@@ -502,7 +468,7 @@ const LocationTracker = ({ updateInterval = 10000 }) => {
         
         <button
           onClick={handleToggle}
-          disabled={isLoading || !isOnline}
+          disabled={!isOnline}
           style={{
             backgroundColor: isTracking ? '#ff4444' : '#4285F4',
             color: 'white',
@@ -513,11 +479,12 @@ const LocationTracker = ({ updateInterval = 10000 }) => {
             display: 'flex',
             alignItems: 'center',
             gap: '8px',
-            opacity: !isOnline ? 0.6 : 1
+            opacity: !isOnline ? 0.6 : 1,
+            minWidth: '140px'
           }}
         >
           <FaLocationArrow />
-          {isLoading ? 'Processing...' : isTracking ? 'Stop Sharing' : 'Share Location'}
+          {isTracking ? 'Stop Sharing' : 'Share Location'}
         </button>
       </div>
 
