@@ -2,9 +2,9 @@ import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { useAuth } from '../context/AuthContext';
 import { FaLocationArrow, FaMapMarkerAlt, FaExclamationTriangle, FaBatteryThreeQuarters } from 'react-icons/fa';
 
-const LocationTracker = ({ shipment }) => {
+const LocationTracker = ({ updateInterval = 5000 }) => {
   const { user } = useAuth();
-  const [currentLocation, setCurrentLocation] = useState(null);
+  const [location, setLocation] = useState(null);
   const [isTracking, setIsTracking] = useState(false);
   const [error, setError] = useState(null);
   const [accuracy, setAccuracy] = useState(null);
@@ -13,23 +13,21 @@ const LocationTracker = ({ shipment }) => {
   const [batteryLevel, setBatteryLevel] = useState(null);
   const [heading, setHeading] = useState(null);
   const [speed, setSpeed] = useState(null);
-  const [route, setRoute] = useState(null);
-  const [currentDestination, setCurrentDestination] = useState('sender');
   
   const pollingRef = useRef(null);
   const watchIdRef = useRef(null);
+  const retryCountRef = useRef(0);
   const googleMapsScriptRef = useRef(null);
   const mapsLoadedRef = useRef(false);
   const mapInstanceRef = useRef(null);
   const markerRef = useRef(null);
   const accuracyCircleRef = useRef(null);
   const headingLineRef = useRef(null);
-  const directionsRendererRef = useRef(null);
   const prevCoordinatesRef = useRef(null);
-  const zoomLevelRef = useRef(14);
+  const zoomLevelRef = useRef(18);
   const lastPollTimeRef = useRef(0);
 
-  const API_BASE_URL = 'https://jio-yatri-driver.onrender.com';
+  const API_BASE_URL ='https://jio-yatri-driver.onrender.com';
 
   // Format last updated time
   const formattedLastUpdated = useMemo(() => {
@@ -41,19 +39,17 @@ const LocationTracker = ({ shipment }) => {
   useEffect(() => {
     if (window.google && window.google.maps) {
       mapsLoadedRef.current = true;
-      initializeRoute();
       return;
     }
 
     if (googleMapsScriptRef.current) return;
 
     const script = document.createElement('script');
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.REACT_APP_GOOGLE_API_KEY}&libraries=places,directions`;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.REACT_APP_GOOGLE_API_KEY}&libraries=places`;
     script.async = true;
     script.defer = true;
     script.onload = () => {
       mapsLoadedRef.current = true;
-      initializeRoute();
     };
 
     googleMapsScriptRef.current = script;
@@ -67,74 +63,7 @@ const LocationTracker = ({ shipment }) => {
     };
   }, []);
 
-  // Initialize route when shipment changes
-  const initializeRoute = useCallback(() => {
-    if (!shipment || !mapsLoadedRef.current) return;
-    
-    const senderCoords = {
-      lat: shipment.sender.address.coordinates.lat,
-      lng: shipment.sender.address.coordinates.lng
-    };
-    
-    const receiverCoords = {
-      lat: shipment.receiver.address.coordinates.lat,
-      lng: shipment.receiver.address.coordinates.lng
-    };
-    
-    setRoute({
-      sender: senderCoords,
-      receiver: receiverCoords,
-      currentDestination: 'sender'
-    });
-    
-    if (currentLocation) {
-      updateRoute(currentLocation, senderCoords);
-    }
-  }, [shipment, currentLocation]);
-
-  // Update route on map
-  const updateRoute = (origin, destination) => {
-    if (!mapsLoadedRef.current || !window.google || !mapInstanceRef.current) return;
-    
-    const directionsService = new window.google.maps.DirectionsService();
-    
-    if (directionsRendererRef.current) {
-      directionsRendererRef.current.setMap(null);
-    }
-    
-    directionsRendererRef.current = new window.google.maps.DirectionsRenderer({
-      map: mapInstanceRef.current,
-      suppressMarkers: true,
-      polylineOptions: {
-        strokeColor: '#4285F4',
-        strokeOpacity: 0.8,
-        strokeWeight: 6
-      }
-    });
-    
-    directionsService.route(
-      {
-        origin: new window.google.maps.LatLng(origin[1], origin[0]),
-        destination: new window.google.maps.LatLng(destination.lat, destination.lng),
-        travelMode: window.google.maps.TravelMode.DRIVING
-      },
-      (response, status) => {
-        if (status === 'OK') {
-          directionsRendererRef.current.setDirections(response);
-          
-          // Adjust viewport to show the entire route
-          const bounds = new window.google.maps.LatLngBounds();
-          bounds.extend(new window.google.maps.LatLng(origin[1], origin[0]));
-          bounds.extend(new window.google.maps.LatLng(destination.lat, destination.lng));
-          mapInstanceRef.current.fitBounds(bounds);
-        } else {
-          console.error('Directions request failed:', status);
-        }
-      }
-    );
-  };
-
-  // Update map with current location
+  // Initialize and update map
   const updateMap = useCallback((coordinates, accuracy, heading) => {
     if (!mapsLoadedRef.current || !coordinates || !window.google) return;
 
@@ -154,7 +83,7 @@ const LocationTracker = ({ shipment }) => {
       mapInstanceRef.current = new window.google.maps.Map(document.getElementById('map-container'), {
         center: { lat, lng },
         zoom: zoomLevelRef.current,
-        mapTypeId: 'roadmap',
+        mapTypeId: 'hybrid',
         streetViewControl: false,
         mapTypeControl: true,
         fullscreenControl: false
@@ -163,6 +92,14 @@ const LocationTracker = ({ shipment }) => {
       window.google.maps.event.addListener(mapInstanceRef.current, 'zoom_changed', () => {
         zoomLevelRef.current = mapInstanceRef.current.getZoom();
       });
+    } else {
+      const currentCenter = mapInstanceRef.current.getCenter();
+      const currentLat = currentCenter.lat();
+      const currentLng = currentCenter.lng();
+      
+      if (Math.abs(currentLat - lat) > 0.0001 || Math.abs(currentLng - lng) > 0.0001) {
+        mapInstanceRef.current.panTo({ lat, lng });
+      }
     }
 
     // Update marker
@@ -225,15 +162,8 @@ const LocationTracker = ({ shipment }) => {
       });
       headingLineRef.current = headingLine;
     }
+  }, []);
 
-    // Update route if we have a destination
-    if (route && currentDestination) {
-      const destination = currentDestination === 'sender' ? route.sender : route.receiver;
-      updateRoute(coordinates, destination);
-    }
-  }, [route, currentDestination]);
-
-  // Helper function to compute offset for heading line
   function computeOffset(lat, lng, distance, heading) {
     const R = 6378137;
     const δ = distance / R;
@@ -253,7 +183,6 @@ const LocationTracker = ({ shipment }) => {
     };
   }
 
-  // Get current location
   const getCurrentLocation = () => {
     return new Promise((resolve, reject) => {
       if (!navigator.geolocation) {
@@ -267,11 +196,34 @@ const LocationTracker = ({ shipment }) => {
         maximumAge: 0
       };
 
-      navigator.geolocation.getCurrentPosition(resolve, reject, options);
+      const errorHandler = (error) => {
+        let message;
+        switch(error.code) {
+          case error.PERMISSION_DENIED:
+            message = "Location permission denied. Please enable permissions in your browser settings.";
+            break;
+          case error.POSITION_UNAVAILABLE:
+            message = "Location information unavailable. Try moving to an open area.";
+            break;
+          case error.TIMEOUT:
+            if (retryCountRef.current < 2) {
+              retryCountRef.current++;
+              navigator.geolocation.getCurrentPosition(resolve, errorHandler, options);
+              return;
+            }
+            message = "Location request timed out. Please try again.";
+            break;
+          default:
+            message = "Unknown error occurred while getting location.";
+        }
+        reject(new Error(message));
+      };
+
+      retryCountRef.current = 0;
+      navigator.geolocation.getCurrentPosition(resolve, errorHandler, options);
     });
   };
 
-  // Update location to server
   const updateLocationToServer = async (coords) => {
     try {
       const token = await user.getIdToken();
@@ -297,67 +249,81 @@ const LocationTracker = ({ shipment }) => {
         throw new Error(`HTTP ${response.status}: Update failed`);
       }
 
-      const newLocation = [coords.longitude, coords.latitude];
-      setCurrentLocation(newLocation);
+      setLocation([coords.longitude, coords.latitude]);
       setAccuracy(coords.accuracy);
       setHeading(coords.heading || null);
       setSpeed(coords.speed || null);
       setLastUpdated(new Date());
-
-      // Check if we've reached the current destination
-      checkDestinationProximity(newLocation);
     } catch (err) {
       setError(err.message);
     }
   };
 
-  // Check if we're close to the current destination
-  const checkDestinationProximity = (currentCoords) => {
-    if (!route || !currentDestination) return;
+  const startPolling = useCallback(() => {
+    stopPolling();
     
-    const destination = currentDestination === 'sender' ? route.sender : route.receiver;
-    const distance = calculateDistance(
-      currentCoords[1], 
-      currentCoords[0], 
-      destination.lat, 
-      destination.lng
-    );
-    
-    // If within 100 meters of destination
-    if (distance < 100) {
-      if (currentDestination === 'sender') {
-        setCurrentDestination('receiver');
-      } else {
-        // Reached final destination
-        setCurrentDestination(null);
+    const fetchLocation = async () => {
+      const now = Date.now();
+      if (now - lastPollTimeRef.current < updateInterval) return;
+      lastPollTimeRef.current = now;
+
+      try {
+        const token = await user.getIdToken();
+        const response = await fetch(`${API_BASE_URL}/api/driver/location`, {
+          headers: { 
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json'
+          }
+        });
+
+        if (!response.ok) throw new Error(`Server error: ${response.status}`);
+        
+        const data = await response.json();
+        if (data.success && data.data?.location?.coordinates) {
+          const newCoords = data.data.location.coordinates;
+          
+          setLocation(prev => {
+            if (!prev || prev[0] !== newCoords[0] || prev[1] !== newCoords[1]) {
+              return newCoords;
+            }
+            return prev;
+          });
+          
+          setLastUpdated(new Date());
+        }
+      } catch (err) {
+        console.error('Polling error:', err);
       }
+    };
+
+    // Initial fetch
+    fetchLocation();
+    
+    // Set up interval with strict timing
+    pollingRef.current = setInterval(() => {
+      const now = Date.now();
+      if (now - lastPollTimeRef.current >= updateInterval) {
+        fetchLocation();
+      }
+    }, 1000); // Check every second but only execute if interval passed
+  }, [user, updateInterval, API_BASE_URL]);
+
+  const stopPolling = () => {
+    if (pollingRef.current) {
+      clearInterval(pollingRef.current);
+      pollingRef.current = null;
     }
   };
 
-  // Calculate distance between two coordinates in meters
-  const calculateDistance = (lat1, lon1, lat2, lon2) => {
-    const R = 6371e3; // Earth radius in meters
-    const φ1 = lat1 * Math.PI / 180;
-    const φ2 = lat2 * Math.PI / 180;
-    const Δφ = (lat2 - lat1) * Math.PI / 180;
-    const Δλ = (lon2 - lon1) * Math.PI / 180;
-
-    const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
-              Math.cos(φ1) * Math.cos(φ2) *
-              Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-    return R * c;
-  };
-
-  // Start watching position
   const startWatchingPosition = () => {
     stopWatchingPosition();
     
     watchIdRef.current = navigator.geolocation.watchPosition(
       (position) => {
         const { coords } = position;
-        updateLocationToServer(coords);
+        if (!accuracy || coords.accuracy < accuracy * 1.2 || Date.now() - lastUpdated?.getTime() > 30000) {
+          updateLocationToServer(coords);
+        }
       },
       (error) => {
         console.error('Watch position error:', error);
@@ -371,7 +337,6 @@ const LocationTracker = ({ shipment }) => {
     );
   };
 
-  // Stop watching position
   const stopWatchingPosition = () => {
     if (watchIdRef.current) {
       navigator.geolocation.clearWatch(watchIdRef.current);
@@ -379,24 +344,6 @@ const LocationTracker = ({ shipment }) => {
     }
   };
 
-  // Start tracking
-  const startTracking = async () => {
-    try {
-      if (batteryLevel !== null && batteryLevel < 20) {
-        setError('Battery level too low for continuous tracking');
-        return;
-      }
-
-      const pos = await getCurrentLocation();
-      await updateLocationToServer(pos.coords);
-      startWatchingPosition();
-      setIsTracking(true);
-    } catch (err) {
-      setError(err.message);
-    }
-  };
-
-  // Stop tracking
   const stopTracking = async () => {
     try {
       const token = await user.getIdToken();
@@ -409,6 +356,7 @@ const LocationTracker = ({ shipment }) => {
         body: JSON.stringify({ isLocationActive: false })
       });
       
+      stopPolling();
       stopWatchingPosition();
       setIsTracking(false);
     } catch (err) {
@@ -416,13 +364,28 @@ const LocationTracker = ({ shipment }) => {
     }
   };
 
-  // Toggle tracking
+  const startTracking = async () => {
+    try {
+      if (batteryLevel !== null && batteryLevel < 20) {
+        setError('Battery level too low for continuous tracking');
+        return;
+      }
+
+      const pos = await getCurrentLocation();
+      await updateLocationToServer(pos.coords);
+      startWatchingPosition();
+      startPolling();
+      setIsTracking(true);
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
   const handleToggle = (e) => {
     e.preventDefault();
     isTracking ? stopTracking() : startTracking();
   };
 
-  // Initialize battery status and online status
   useEffect(() => {
     const getBatteryStatus = async () => {
       if ('getBattery' in navigator) {
@@ -453,23 +416,26 @@ const LocationTracker = ({ shipment }) => {
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
+      stopPolling();
       stopWatchingPosition();
     };
   }, []);
 
-  // Initialize route when shipment changes
   useEffect(() => {
-    if (shipment && mapsLoadedRef.current) {
-      initializeRoute();
+    if (isTracking) {
+      startPolling();
     }
-  }, [shipment, initializeRoute]);
+    return () => {
+      stopPolling();
+    };
+  }, [isTracking, startPolling]);
 
-  // Update map when location or route changes
+  // Update map when location changes
   useEffect(() => {
-    if (currentLocation && accuracy && heading) {
-      updateMap(currentLocation, accuracy, heading);
+    if (location && accuracy && heading) {
+      updateMap(location, accuracy, heading);
     }
-  }, [currentLocation, accuracy, heading, updateMap]);
+  }, [location, accuracy, heading, updateMap]);
 
   return (
     <div className="location-tracker" style={{ maxWidth: '800px', margin: '0 auto', padding: '20px' }}>
@@ -556,7 +522,7 @@ const LocationTracker = ({ shipment }) => {
           }} 
         />
         
-        {currentLocation && (
+        {location && (
           <div style={{ 
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
@@ -565,12 +531,12 @@ const LocationTracker = ({ shipment }) => {
           }}>
             <div className="data-card">
               <div className="data-label">Latitude</div>
-              <div className="data-value">{currentLocation[1]?.toFixed(6)}</div>
+              <div className="data-value">{location[1]?.toFixed(6)}</div>
             </div>
             
             <div className="data-card">
               <div className="data-label">Longitude</div>
-              <div className="data-value">{currentLocation[0]?.toFixed(6)}</div>
+              <div className="data-value">{location[0]?.toFixed(6)}</div>
             </div>
             
             <div className="data-card">
@@ -594,15 +560,6 @@ const LocationTracker = ({ shipment }) => {
               <div className="data-card">
                 <div className="data-label">Speed</div>
                 <div className="data-value">{Math.round(speed * 3.6)} km/h</div>
-              </div>
-            )}
-            
-            {currentDestination && (
-              <div className="data-card">
-                <div className="data-label">Destination</div>
-                <div className="data-value">
-                  {currentDestination === 'sender' ? 'Pickup Location' : 'Delivery Location'}
-                </div>
               </div>
             )}
           </div>
