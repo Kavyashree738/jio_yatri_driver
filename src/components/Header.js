@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { FaBars, FaTimes } from 'react-icons/fa';
+import { FaBars, FaTimes, FaUserCircle } from 'react-icons/fa';
 import '../styles/Home.css';
 import logo from '../assets/images/logo.jpg';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { signOut } from 'firebase/auth';
 import { auth } from '../firebase';
@@ -10,7 +10,7 @@ import { auth } from '../firebase';
 const Header = () => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const { user, setMessage } = useAuth();
-
+    const navigate = useNavigate();
     const handleLinkClick = () => setIsMenuOpen(false);
 
     const handleLogout = async () => {
@@ -21,6 +21,10 @@ const Header = () => {
             setMessage({ text: 'Logout failed: ' + error.message, isError: true });
         }
     };
+      const handleProfileClick = () => {
+    navigate('/profile');
+    setIsMenuOpen(false);
+  };
 
     return (
         <>
@@ -45,6 +49,20 @@ const Header = () => {
                         )}
                         {user && (
                             <Link to="/my-documents" onClick={handleLinkClick}>Documents</Link>
+                        )}
+                        {user && (
+                            <div className="user-controls">
+                                <button
+                                    className="profile-icon"
+                                    onClick={handleProfileClick}
+                                    aria-label="User profile"
+                                >
+                                    <FaUserCircle size={24} />
+                                </button>
+                                {/* <button onClick={handleLogout} className="logout-button">
+                  Logout
+                </button> */}
+                            </div>
                         )}
                     </nav>
 
