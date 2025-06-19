@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { FaLocationArrow, FaMapMarkerAlt, FaExclamationTriangle, FaSync, FaInfoCircle, FaBatteryThreeQuarters } from 'react-icons/fa';
+import '../styles/LocationTracker.css';
 
-const LocationTracker = ({ updateInterval = 10000 }) => {
+const LocationTracker = ({ updateInterval = 5000 }) => {
   const { user } = useAuth();
   const [location, setLocation] = useState(null);
   const [isTracking, setIsTracking] = useState(false);
@@ -18,8 +19,9 @@ const LocationTracker = ({ updateInterval = 10000 }) => {
   const pollingRef = useRef(null);
   const watchIdRef = useRef(null);
   const retryCountRef = useRef(0);
+  const prevLocationRef = useRef(null);
 
-  const API_BASE_URL ='https://jio-yatri-driver.onrender.com';
+  const API_BASE_URL = 'https://jio-yatri-driver.onrender.com';
 
   // Load Google Maps API
   useEffect(() => {
@@ -50,6 +52,22 @@ const LocationTracker = ({ updateInterval = 10000 }) => {
     if (!lastUpdated) return 'Never';
     return lastUpdated.toLocaleTimeString();
   }, [lastUpdated]);
+
+  // Calculate distance between coordinates
+  const getDistance = (lat1, lon1, lat2, lon2) => {
+    const R = 6371e3; // meters
+    const φ1 = lat1 * Math.PI/180;
+    const φ2 = lat2 * Math.PI/180;
+    const Δφ = (lat2-lat1) * Math.PI/180;
+    const Δλ = (lon2-lon1) * Math.PI/180;
+
+    const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+              Math.cos(φ1) * Math.cos(φ2) *
+              Math.sin(Δλ/2) * Math.sin(Δλ/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+    return R * c;
+  };
 
   // LiveMap component
   const LiveMap = ({ coordinates }) => {
@@ -84,19 +102,21 @@ const LocationTracker = ({ updateInterval = 10000 }) => {
 
       const [lng, lat] = coordinates;
       
-      const map = new window.google.maps.Map(mapRef.current, {
-        center: { lat, lng },
-        zoom: 18,
-        mapTypeId: 'hybrid',
-        streetViewControl: false,
-        mapTypeControl: true,
-        fullscreenControl: false
-      });
+      if (!mapRef.current) {
+        mapRef.current = new window.google.maps.Map(document.getElementById('map'), {
+          center: { lat, lng },
+          zoom: 18,
+          mapTypeId: 'hybrid',
+          streetViewControl: false,
+          mapTypeControl: true,
+          fullscreenControl: false
+        });
+      }
 
       if (!markerRef.current) {
         markerRef.current = new window.google.maps.Marker({
           position: { lat, lng },
-          map,
+          map: mapRef.current,
           icon: {
             path: window.google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
             scale: 6,
@@ -126,7 +146,7 @@ const LocationTracker = ({ updateInterval = 10000 }) => {
           strokeWeight: 2,
           fillColor: '#4285F4',
           fillOpacity: 0.2,
-          map,
+          map: mapRef.current,
           center: { lat, lng },
           radius: accuracy
         });
@@ -146,40 +166,23 @@ const LocationTracker = ({ updateInterval = 10000 }) => {
           strokeColor: '#EA4335',
           strokeOpacity: 1.0,
           strokeWeight: 2,
-          map
+          map: mapRef.current
         });
         headingLineRef.current = headingLine;
       }
 
-      map.panTo({ lat, lng });
+      mapRef.current.panTo({ lat, lng });
 
       return () => {
-        if (markerRef.current) markerRef.current.setMap(null);
         if (accuracyCircleRef.current) accuracyCircleRef.current.setMap(null);
         if (headingLineRef.current) headingLineRef.current.setMap(null);
       };
     }, [coordinates, accuracy, heading, mapsLoaded]);
 
     return (
-      <div 
-        ref={mapRef} 
-        style={{ 
-          width: '100%', 
-          height: '350px',
-          borderRadius: '8px',
-          marginTop: '10px',
-          border: '1px solid #ddd'
-        }}
-      >
+      <div id="map" className="map-container">
         {!mapsLoaded && (
-          <div style={{
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            height: '100%',
-            backgroundColor: '#f5f5f5',
-            color: '#666'
-          }}>
+          <div className="map-placeholder">
             Loading map...
           </div>
         )}
@@ -267,11 +270,14 @@ const LocationTracker = ({ updateInterval = 10000 }) => {
       if (!isTracking) setIsTracking(true);
       
     } catch (err) {
-      setError(err.message);
+      const userMessage = err.message.includes('Failed to fetch') 
+        ? 'Network error - Please check your internet connection'
+        : err.message;
+      setError(userMessage);
       console.error('Location update failed:', err);
       setIsTracking(false);
     } finally {
-      setIsLoading(false);
+      setTimeout(() => setIsLoading(false), 500);
     }
   };
 
@@ -331,8 +337,13 @@ const LocationTracker = ({ updateInterval = 10000 }) => {
     watchIdRef.current = navigator.geolocation.watchPosition(
       (position) => {
         const { coords } = position;
-        if (!accuracy || coords.accuracy < accuracy * 1.2 || Date.now() - lastUpdated?.getTime() > 30000) {
+        const newLocation = [coords.longitude, coords.latitude];
+        
+        if (!prevLocationRef.current || 
+            getDistance(prevLocationRef.current[1], prevLocationRef.current[0], coords.latitude, coords.longitude) > 10 ||
+            coords.accuracy < (accuracy || Infinity)) {
           updateLocationToServer(coords);
+          prevLocationRef.current = newLocation;
         }
       },
       (error) => {
@@ -341,8 +352,8 @@ const LocationTracker = ({ updateInterval = 10000 }) => {
       },
       {
         enableHighAccuracy: true,
-        maximumAge: 0,
-        timeout: 30000
+        maximumAge: 3000,
+        timeout: 10000
       }
     );
   };
@@ -369,6 +380,7 @@ const LocationTracker = ({ updateInterval = 10000 }) => {
       stopPolling();
       stopWatchingPosition();
       setIsTracking(false);
+      prevLocationRef.current = null;
     } catch (err) {
       setError(err.message);
     }
@@ -391,18 +403,33 @@ const LocationTracker = ({ updateInterval = 10000 }) => {
     }
   };
 
-  const handleToggle = (e) => {
+  const handleToggle = async (e) => {
     e.preventDefault();
-    isTracking ? stopTracking() : startTracking();
+    setIsLoading(true);
+    
+    try {
+      if (isTracking) {
+        await stopTracking();
+      } else {
+        await startTracking();
+      }
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setTimeout(() => setIsLoading(false), 500);
+    }
   };
 
   const handleManualRefresh = async () => {
     if (isTracking) {
       try {
+        setIsLoading(true);
         const pos = await getCurrentLocation();
         await updateLocationToServer(pos.coords);
       } catch (err) {
         setError(err.message);
+      } finally {
+        setTimeout(() => setIsLoading(false), 500);
       }
     }
   };
@@ -419,7 +446,10 @@ const LocationTracker = ({ updateInterval = 10000 }) => {
           });
         } catch (err) {
           console.error('Battery API error:', err);
+          setBatteryLevel(null);
         }
+      } else {
+        setBatteryLevel(null);
       }
     };
     
@@ -434,125 +464,100 @@ const LocationTracker = ({ updateInterval = 10000 }) => {
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
     
+    const initializeTracking = async () => {
+      try {
+        const token = await user.getIdToken();
+        const response = await fetch(`${API_BASE_URL}/api/driver/location`, {
+          headers: { 
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json'
+          }
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.data) {
+            setIsTracking(data.data.isLocationActive);
+            if (data.data.location?.coordinates) {
+              setLocation(data.data.location.coordinates);
+              setAccuracy(data.data.location.accuracy || null);
+              setLastUpdated(new Date(data.data.location.timestamp));
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Initialization error:', err);
+      }
+    };
+
+    initializeTracking();
+
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
       stopPolling();
       stopWatchingPosition();
     };
-  }, []);
+  }, [user]);
 
   return (
-    <div className="location-tracker" style={{ maxWidth: '800px', margin: '0 auto', padding: '20px' }}>
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center',
-        marginBottom: '15px',
-        padding: '15px',
-        backgroundColor: '#f8f9fa',
-        borderRadius: '8px'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center' }}>
-          <FaMapMarkerAlt 
-            style={{ 
-              color: isTracking ? '#00C853' : '#757575', 
-              marginRight: '12px',
-              fontSize: '24px'
-            }} 
-          />
-          <div>
-            <h3 style={{ margin: 0 }}>{isTracking ? 'Live Tracking Active' : 'Location Offline'}</h3>
-            <div style={{ fontSize: '0.9rem', color: '#666' }}>
-              Last updated: {formattedLastUpdated} | 
-              Accuracy: {accuracy ? `${Math.round(accuracy)}m` : 'Unknown'} | 
-              {batteryLevel && ` Battery: ${batteryLevel}%`}
+    <div className="location-tracker">
+      <div className="tracker-header">
+        <div className="header-content">
+          <div className="location-status">
+            <FaMapMarkerAlt className={`status-icon ${isTracking ? 'active' : ''}`} />
+            <div>
+              <h3 className="status-text">{isTracking ? 'Live Tracking Active' : 'Location Offline'}</h3>
+              <div className="status-meta">
+                <span>Last updated: {formattedLastUpdated}</span>
+                <span>Accuracy: {accuracy ? `${Math.round(accuracy)}m` : 'Unknown'}</span>
+                {batteryLevel !== null && <span>Battery: {batteryLevel}%</span>}
+              </div>
             </div>
           </div>
-        </div>
-        
-        <div style={{ display: 'flex', gap: '10px' }}>
-          {isTracking && (
-            <button 
-              onClick={handleManualRefresh}
-              style={{
-                backgroundColor: '#34A853',
-                color: 'white',
-                border: 'none',
-                padding: '10px 15px',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px'
-              }}
-              disabled={isLoading || !isOnline}
-            >
-              <FaSync /> Refresh
-            </button>
-          )}
           
-          <button
-            onClick={handleToggle}
-            disabled={isLoading || !isOnline}
-            style={{
-              backgroundColor: isTracking ? '#ff4444' : '#4285F4',
-              color: 'white',
-              border: 'none',
-              padding: '10px 20px',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              opacity: !isOnline ? 0.6 : 1
-            }}
-          >
-            <FaLocationArrow />
-            {isLoading ? 'Processing...' : isTracking ? 'Stop Sharing' : 'Share Location'}
-          </button>
+          <div className="button-group">
+            {isTracking && (
+              <button 
+                onClick={handleManualRefresh}
+                className={`btn btn-success ${isLoading || !isOnline ? 'disabled' : ''}`}
+                disabled={isLoading || !isOnline}
+                aria-label="Refresh location"
+                aria-busy={isLoading}
+              >
+                {isLoading ? <FaSync className="loading-spinner" /> : <FaSync />} Refresh
+              </button>
+            )}
+            
+            <button
+              onClick={handleToggle}
+              disabled={isLoading || !isOnline}
+              className={`btn ${isTracking ? 'btn-danger' : 'btn-primary'} ${!isOnline ? 'disabled' : ''}`}
+              aria-label={isTracking ? 'Stop sharing location' : 'Start sharing location'}
+              aria-busy={isLoading}
+            >
+              <FaLocationArrow />
+              {isLoading ? 'Processing...' : isTracking ? 'Stop Sharing' : 'Share Location'}
+            </button>
+          </div>
         </div>
       </div>
 
       {!isOnline && (
-        <div style={{ 
-          display: 'flex',
-          alignItems: 'center',
-          padding: '10px 15px',
-          backgroundColor: '#ffebee',
-          color: '#c62828',
-          borderRadius: '4px',
-          marginBottom: '15px'
-        }}>
-          <FaExclamationTriangle style={{ marginRight: '10px' }} />
+        <div className="alert alert-error">
+          <FaExclamationTriangle className="alert-icon" />
           <span>Offline - Updates will resume when connection is restored</span>
         </div>
       )}
 
       {error && (
-        <div style={{ 
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '10px 15px',
-          backgroundColor: '#ffebee',
-          color: '#c62828',
-          borderRadius: '4px',
-          marginBottom: '15px'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <FaExclamationTriangle style={{ marginRight: '10px' }} />
-            <span>{error}</span>
-          </div>
+        <div className="alert alert-error">
+          <FaExclamationTriangle className="alert-icon" />
+          <span>{error}</span>
           <button 
             onClick={() => setError(null)}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: '#c62828',
-              cursor: 'pointer',
-              fontWeight: 'bold'
-            }}
+            className="alert-dismiss"
+            aria-label="Dismiss error"
           >
             Dismiss
           </button>
@@ -560,134 +565,52 @@ const LocationTracker = ({ updateInterval = 10000 }) => {
       )}
 
       {batteryLevel !== null && batteryLevel < 30 && (
-        <div style={{ 
-          display: 'flex',
-          alignItems: 'center',
-          padding: '10px 15px',
-          backgroundColor: '#fff8e1',
-          color: '#e65100',
-          borderRadius: '4px',
-          marginBottom: '15px'
-        }}>
-          <FaBatteryThreeQuarters style={{ marginRight: '10px' }} />
+        <div className="alert alert-warning">
+          <FaBatteryThreeQuarters className="alert-icon" />
           <span>Low battery - Location updates may be less frequent</span>
         </div>
       )}
 
-      <div style={{ marginTop: '20px' }}>
+      <div>
         {location ? (
           <div>
             <LiveMap coordinates={location} />
             
-            <div style={{ 
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-              gap: '15px',
-              marginTop: '15px'
-            }}>
-              <div style={{
-                backgroundColor: 'white',
-                padding: '15px',
-                borderRadius: '8px',
-                boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-              }}>
-                <div style={{ 
-                  fontSize: '0.8rem',
-                  color: '#666',
-                  marginBottom: '5px'
-                }}>Latitude</div>
-                <div style={{ 
-                  fontSize: '1.2rem',
-                  fontWeight: '500'
-                }}>{location[1]?.toFixed(6)}</div>
+            <div className="location-info-grid">
+              <div className="info-card">
+                <div className="info-label">Latitude</div>
+                <div className="info-value accent">{location[1]?.toFixed(6)}</div>
               </div>
               
-              <div style={{
-                backgroundColor: 'white',
-                padding: '15px',
-                borderRadius: '8px',
-                boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-              }}>
-                <div style={{ 
-                  fontSize: '0.8rem',
-                  color: '#666',
-                  marginBottom: '5px'
-                }}>Longitude</div>
-                <div style={{ 
-                  fontSize: '1.2rem',
-                  fontWeight: '500'
-                }}>{location[0]?.toFixed(6)}</div>
+              <div className="info-card">
+                <div className="info-label">Longitude</div>
+                <div className="info-value accent">{location[0]?.toFixed(6)}</div>
               </div>
               
-              <div style={{
-                backgroundColor: 'white',
-                padding: '15px',
-                borderRadius: '8px',
-                boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-              }}>
-                <div style={{ 
-                  fontSize: '0.8rem',
-                  color: '#666',
-                  marginBottom: '5px'
-                }}>Accuracy</div>
-                <div style={{ 
-                  fontSize: '1.2rem',
-                  fontWeight: '500',
-                  color: accuracy > 50 ? 'orange' : 'green'
-                }}>
+              <div className="info-card">
+                <div className="info-label">Accuracy</div>
+                <div className={`info-value ${accuracy > 50 ? 'warning' : 'success'}`}>
                   ~{Math.round(accuracy)} meters
                 </div>
               </div>
               
               {heading && (
-                <div style={{
-                  backgroundColor: 'white',
-                  padding: '15px',
-                  borderRadius: '8px',
-                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-                }}>
-                  <div style={{ 
-                    fontSize: '0.8rem',
-                    color: '#666',
-                    marginBottom: '5px'
-                  }}>Heading</div>
-                  <div style={{ 
-                    fontSize: '1.2rem',
-                    fontWeight: '500'
-                  }}>{Math.round(heading)}°</div>
+                <div className="info-card">
+                  <div className="info-label">Heading</div>
+                  <div className="info-value">{Math.round(heading)}°</div>
                 </div>
               )}
               
               {speed && (
-                <div style={{
-                  backgroundColor: 'white',
-                  padding: '15px',
-                  borderRadius: '8px',
-                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-                }}>
-                  <div style={{ 
-                    fontSize: '0.8rem',
-                    color: '#666',
-                    marginBottom: '5px'
-                  }}>Speed</div>
-                  <div style={{ 
-                    fontSize: '1.2rem',
-                    fontWeight: '500'
-                  }}>{Math.round(speed * 3.6)} km/h</div>
+                <div className="info-card">
+                  <div className="info-label">Speed</div>
+                  <div className="info-value">{Math.round(speed * 3.6)} km/h</div>
                 </div>
               )}
             </div>
           </div>
         ) : (
-          <div style={{
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            height: '200px',
-            backgroundColor: '#f5f5f5',
-            borderRadius: '8px',
-            color: '#666'
-          }}>
+          <div className="map-placeholder">
             {isTracking ? 'Acquiring precise location...' : 'Enable tracking to view location'}
           </div>
         )}
