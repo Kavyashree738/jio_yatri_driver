@@ -7,27 +7,31 @@ import { MdEmail, MdDirectionsCar, MdTwoWheeler, MdLocalShipping } from 'react-i
 import {
     RecaptchaVerifier,
     signInWithPhoneNumber,
+    signInWithCustomToken,
     signInWithPopup,
     signOut
 } from 'firebase/auth';
 import { auth, googleProvider, storage } from '../firebase';
+import PhoneInput from 'react-phone-input-2';
 import { ref as storageRef, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { FaUpload } from 'react-icons/fa';
 import 'react-phone-input-2/lib/style.css';
 import '../styles/HeroSection.css';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-
+import delivery from '../assets/images/delivery-service.png'
 const HeroSection = () => {
     const controls = useAnimation();
     const [phoneNumber, setPhoneNumber] = useState('');
     const [confirmationResult, setConfirmationResult] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
+    const [otpResendTime, setOtpResendTime] = useState(0);
     const [showOtpComponent, setShowOtpComponent] = useState(false);
     const [otp, setOtp] = useState('');
     const { user, message, setMessage } = useAuth();
     const [registrationStep, setRegistrationStep] = useState(1);
     const [registrationSubStep, setRegistrationSubStep] = useState(1);
+    const [isValidPhone, setIsValidPhone] = useState(false);
     const [driverData, setDriverData] = useState({
         name: '',
         phone: '',
@@ -43,12 +47,63 @@ const HeroSection = () => {
     const [isRegistered, setIsRegistered] = useState(false);
     const navigate = useNavigate();
     const { ref, inView: isInView } = useInView({ triggerOnce: true });
+    const [showWelcomeMessage, setShowWelcomeMessage] = useState(
+        localStorage.getItem('welcomeMessageShown') !== 'true'
+    );
 
     useEffect(() => {
         if (isInView) {
             controls.start('visible');
         }
     }, [isInView, controls]);
+    useEffect(() => {
+        let timer;
+
+        if (user) {
+            // Only show welcome message if it hasn't been shown before
+            const shouldShowWelcome = localStorage.getItem('welcomeMessageShown') !== 'true';
+            setShowWelcomeMessage(shouldShowWelcome);
+
+            if (shouldShowWelcome) {
+                // Set timeout to hide welcome message after 1 minute (60000ms)
+                timer = setTimeout(() => {
+                    setShowWelcomeMessage(false);
+                    localStorage.setItem('welcomeMessageShown', 'true');
+                }, 1000);
+            }
+        }
+
+        // Cleanup the timer when component unmounts or user changes
+        return () => {
+            if (timer) clearTimeout(timer);
+        };
+    }, [user]);
+    const validatePhoneNumber = (value) => {
+        // Strict validation for E.164 format
+        const isValid = /^\+[1-9]\d{1,14}$/.test(value);
+        setIsValidPhone(isValid);
+        return isValid;
+    };
+
+    const handlePhoneChange = (value, country) => {
+        // Force international format
+        const formattedValue = value.startsWith('+') ? value : `+${value}`;
+        setPhoneNumber(formattedValue);
+        validatePhoneNumber(formattedValue);
+    };
+
+    const startResendTimer = () => {
+        setOtpResendTime(30);
+        const timer = setInterval(() => {
+            setOtpResendTime((prev) => {
+                if (prev <= 1) {
+                    clearInterval(timer);
+                    return 0;
+                }
+                return prev - 1;
+            });
+        }, 1000);
+    };
 
     useEffect(() => {
         const checkAuthAndRegistration = async () => {
@@ -192,154 +247,159 @@ const HeroSection = () => {
         }
     };
 
-    const verifyOtp = async () => {
-        if (otp.length !== 6) {
-            setMessage({ text: 'Please enter a 6-digit code.', isError: true });
+    const handleApiRequest = async (url, options) => {
+        const response = await fetch(url, options);
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || 'Request failed');
+        }
+        return response.json();
+    };
+
+    const sendCode = async () => {
+        if (!validatePhoneNumber(phoneNumber)) {
+            setMessage({
+                text: 'Please enter a valid international phone number (e.g., +91XXXXXXXXXX)',
+                isError: true
+            });
             return;
         }
 
         try {
             setIsLoading(true);
-            setMessage({ text: 'Verifying code...', isError: false });
+            setMessage({ text: '', isError: false });
 
-            const result = await confirmationResult.confirm(otp);
-            await storeToken(result.user);
+            const data = await handleApiRequest(`https://jio-yatri-driver.onrender.com/api/auth/send-otp`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phoneNumber })
+            });
 
-            setMessage({ text: 'Verification successful!', isError: false });
-            setShowOtpComponent(false);
-            setPhoneNumber('');
-            setOtp('');
-            setRegistrationStep(2);
-            setDriverData(prev => ({
-                ...prev,
-                phone: result.user.phoneNumber || ''
-            }));
+            console.log(data)
+            console.log(phoneNumber)
+            setMessage({
+                text: `OTP sent to ${phoneNumber}`,
+                isError: false
+            });
+            setShowOtpComponent(true);
+            startResendTimer();
+
+            if (process.env.NODE_ENV === 'development' && data.otp) {
+                console.log(`[DEV] OTP: ${data.otp}`);
+            }
         } catch (error) {
-            setMessage({ text: 'Verification failed: ' + error.message, isError: true });
+            setMessage({
+                text: error.message || 'Failed to send OTP',
+                isError: true
+            });
         } finally {
             setIsLoading(false);
         }
     };
 
-    const sendCode = async () => {
+    const verifyOtp = async () => {
+        if (!otp || otp.length !== 6) {
+            setMessage({ text: 'Please enter a 6-digit code', isError: true });
+            return;
+        }
+
         try {
             setIsLoading(true);
-            setMessage({ text: 'Sending verification code...', isError: false });
+            const data = await handleApiRequest(`https://jio-yatri-driver.onrender.com/api/auth/verify-otp`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    phoneNumber,
+                    otp
+                })
+            });
 
-            const formattedPhoneNumber = phoneNumber.startsWith('+')
-                ? phoneNumber
-                : `+91${phoneNumber.replace(/\D/g, '')}`;
-
-            if (formattedPhoneNumber.length < 12) {
-                throw new Error('Please enter a valid phone number');
-            }
-
-            if (!window.recaptchaVerifier) {
-                initializeRecaptcha();
-            }
-
-            const confirmation = await signInWithPhoneNumber(auth, formattedPhoneNumber, window.recaptchaVerifier);
-            setConfirmationResult(confirmation);
-
-            setMessage({ text: `Verification code sent to ${formattedPhoneNumber}`, isError: false });
-            setShowOtpComponent(true);
+            const userCredential = await signInWithCustomToken(auth, data.token);
+            setMessage({ text: 'Verification successful!', isError: false });
+            setShowOtpComponent(false);
         } catch (error) {
-            console.error('Error sending code:', error);
-            setMessage({ text: `Failed to send code: ${error.message}`, isError: true });
-            resetRecaptcha();
+            setMessage({
+                text: error.message || 'OTP verification failed',
+                isError: true
+            });
         } finally {
             setIsLoading(false);
         }
+    };
+
+    const resendOtp = async () => {
+        if (otpResendTime > 0) return;
+        await sendCode();
     };
 
     const signInWithGoogle = async () => {
         try {
             setIsLoading(true);
             const result = await signInWithPopup(auth, googleProvider);
-            const user = result.user;
-
-            // First check if user is already registered
-            const isRegistered = localStorage.getItem(`driverRegistered_${user.uid}`) === 'true';
-
-            if (isRegistered) {
-                setMessage({ text: 'You are already registered!', isError: true });
-                setIsRegistered(true);
-                return; // Exit the function early
-            }
-
-            // If not registered, proceed with registration flow
-            setDriverData({
-                ...driverData,
-                name: user.displayName || '',
-                phone: user.phoneNumber || '',
-                email: user.email || '',
-                photoURL: user.photoURL
-            });
-
-            await storeToken(user);
             setMessage({ text: 'Google sign-in successful!', isError: false });
-            setRegistrationStep(2);
-
         } catch (error) {
-            console.error('Google sign-in error:', error);
-            setMessage({ text: `Google sign-in failed: ${error.message}`, isError: true });
+            setMessage({
+                text: `Google sign-in failed: ${error.message}`,
+                isError: true
+            });
         } finally {
             setIsLoading(false);
         }
     };
+
     const handleFileUpload = async (file, type) => {
-    if (!file) return;
+        if (!file) return;
 
-    const validTypes = ['image/jpeg', 'image/png', 'application/pdf'];
-    if (!validTypes.includes(file.type)) {
-        setMessage({ text: 'Only JPEG, PNG, or PDF files allowed', isError: true });
-        return;
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-        setMessage({ text: 'File size must be less than 5MB', isError: true });
-        return;
-    }
-
-    try {
-        const user = auth.currentUser;
-        if (!user) {
-            throw new Error('User not authenticated');
+        const validTypes = ['image/jpeg', 'image/png', 'application/pdf'];
+        if (!validTypes.includes(file.type)) {
+            setMessage({ text: 'Only JPEG, PNG, or PDF files allowed', isError: true });
+            return;
         }
 
-        const token = await user.getIdToken(true);
-        
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('userId', user.uid);
-        formData.append('docType', type);
-
-        const response = await fetch('https://jio-yatri-driver.onrender.com/api/upload/file', {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`
-            },
-            body: formData,
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || 'Upload failed');
+        if (file.size > 5 * 1024 * 1024) {
+            setMessage({ text: 'File size must be less than 5MB', isError: true });
+            return;
         }
 
-        const result = await response.json();
+        try {
+            const user = auth.currentUser;
+            if (!user) {
+                throw new Error('User not authenticated');
+            }
 
-        setDriverData(prev => ({
-            ...prev,
-            [`${type}File`]: file,
-            [`${type}FileId`]: result.fileId
-        }));
-        setMessage({ text: `${type.toUpperCase()} uploaded successfully!`, isError: false });
-    } catch (error) {
-        console.error('Upload error:', error);
-        setMessage({ text: error.message || 'File upload failed', isError: true });
-    }
-};
+            const token = await user.getIdToken(true);
+
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('userId', user.uid);
+            formData.append('docType', type);
+
+            const response = await fetch('https://jio-yatri-driver.onrender.com/api/upload/file', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                },
+                body: formData,
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Upload failed');
+            }
+
+            const result = await response.json();
+
+            setDriverData(prev => ({
+                ...prev,
+                [`${type}File`]: file,
+                [`${type}FileId`]: result.fileId
+            }));
+            setMessage({ text: `${type.toUpperCase()} uploaded successfully!`, isError: false });
+        } catch (error) {
+            console.error('Upload error:', error);
+            setMessage({ text: error.message || 'File upload failed', isError: true });
+        }
+    };
 
     const validateVehicleNumber = (number) => {
         const regex = /^[A-Z]{2}[0-9]{1,2}[A-Z]{1,2}[0-9]{4}$/;
@@ -474,13 +534,19 @@ const HeroSection = () => {
                             <h3>Register Now</h3>
 
                             <div className="phone-input-group">
-                                <input
-                                    type="tel"
-                                    placeholder="Enter phone number"
+                                <PhoneInput
+                                    country={'in'}
                                     value={phoneNumber}
-                                    onChange={(e) => setPhoneNumber(e.target.value)}
-                                    className={`input ${message.isError ? 'error' : ''}`}
+                                    onChange={handlePhoneChange}
+                                    placeholder="+91 9876543210"
+                                    inputClass={`phone-input ${!isValidPhone && phoneNumber ? 'error' : ''}`}
+                                    containerClass="phone-input-container"
                                 />
+                                {!isValidPhone && phoneNumber && (
+                                    <p className="phone-error-message">
+                                        Please enter in international format (e.g., +91XXXXXXXXXX)
+                                    </p>
+                                )}
                             </div>
 
                             <button
@@ -556,17 +622,17 @@ const HeroSection = () => {
                                         <div className="vehicle-options">
                                             <button
                                                 type="button"
-                                                className={`vehicle-btn ${driverData.vehicleType === 'bike' ? 'active' : ''}`}
-                                                onClick={() => setDriverData({ ...driverData, vehicleType: 'bike' })}
+                                                className={`vehicle-btn ${driverData.vehicleType === 'TwoWheeler' ? 'active' : ''}`}
+                                                onClick={() => setDriverData({ ...driverData, vehicleType: 'TwoWheeler' })}
                                             >
-                                                <MdTwoWheeler /> Bike
+                                                <MdTwoWheeler /> TwoWheeler
                                             </button>
                                             <button
                                                 type="button"
-                                                className={`vehicle-btn ${driverData.vehicleType === 'van' ? 'active' : ''}`}
-                                                onClick={() => setDriverData({ ...driverData, vehicleType: 'van' })}
+                                                className={`vehicle-btn ${driverData.vehicleType === 'ThreeWheeler' ? 'active' : ''}`}
+                                                onClick={() => setDriverData({ ...driverData, vehicleType: 'ThreeWheeler' })}
                                             >
-                                                <MdDirectionsCar /> Van
+                                                <MdDirectionsCar /> ThreeWheeler
                                             </button>
                                             <button
                                                 type="button"
@@ -667,16 +733,18 @@ const HeroSection = () => {
                                 </>
                             )}
                         </div>
+                    ) : showWelcomeMessage ? (
+                        <div className="welcome-message">
+                            <h3>Login Successful!</h3>
+                            <p>You can now access all features.</p>
+                        </div>
                     ) : (
-                        <div className="welcome-container">
-                            <h3>Welcome</h3>
-                            <p>You're now registered as a driver</p>
-                            <button
-                                onClick={handleLogout}
-                                className="logout-btn"
-                            >
-                                Logout
-                            </button>
+                        <div className="post-login-image">
+                            <img
+                                src={delivery}
+                                alt="Welcome to our service"
+                                className="login-success-img"
+                            />
                         </div>
                     )}
 
@@ -693,23 +761,73 @@ const HeroSection = () => {
                     <div className="otp-overlay">
                         <div className="otp-modal">
                             <h3 className="otp-title">Enter Verification Code</h3>
-                            <input
-                                type="text"
-                                placeholder="6-digit code"
-                                value={otp}
-                                onChange={(e) => setOtp(e.target.value)}
-                                className="otp-input"
-                                maxLength={6}
-                            />
+                            <p className="otp-subtitle">Sent to {phoneNumber}</p>
+
+                            {/* 6-digit OTP input boxes */}
+                            <div className="otp-container">
+                                {[...Array(6)].map((_, index) => (
+                                    <input
+                                        key={index}
+                                        type="text"
+                                        maxLength="1"
+                                        value={otp[index] || ''}
+                                        onChange={(e) => {
+                                            const newOtp = otp.split('');
+                                            newOtp[index] = e.target.value.replace(/\D/g, '');
+                                            setOtp(newOtp.join('').slice(0, 6));
+
+                                            // Auto focus next input
+                                            if (e.target.value && index < 5) {
+                                                document.getElementById(`otp-input-${index + 1}`).focus();
+                                            }
+                                        }}
+                                        onKeyDown={(e) => {
+                                            // Handle backspace to move to previous input
+                                            if (e.key === 'Backspace' && !otp[index] && index > 0) {
+                                                document.getElementById(`otp-input-${index - 1}`).focus();
+                                            }
+                                        }}
+                                        className={`otp-input ${otp[index] ? 'filled' : ''}`}
+                                        id={`otp-input-${index}`}
+                                        inputMode="numeric"
+                                    />
+                                ))}
+                            </div>
+
+                            {message.isError && (
+                                <div className="otp-error">
+                                    {message.text}
+                                </div>
+                            )}
+
                             <button
                                 onClick={verifyOtp}
-                                disabled={isLoading}
-                                className={`otp-button ${isLoading ? 'disabled' : ''}`}
+                                disabled={isLoading || otp.length !== 6}
+                                className={`otp-button ${isLoading || otp.length !== 6 ? 'disabled' : ''}`}
                             >
-                                {isLoading ? 'Verifying...' : 'Verify Code'}
+                                {isLoading ? (
+                                    <>
+                                        <span className="spinner"></span> Verifying...
+                                    </>
+                                ) : (
+                                    'Verify Code'
+                                )}
                             </button>
+
                             <button
-                                onClick={() => setShowOtpComponent(false)}
+                                onClick={resendOtp}
+                                disabled={otpResendTime > 0}
+                                className="resend-button"
+                            >
+                                {otpResendTime > 0 ? `Resend in ${otpResendTime}s` : 'Resend Code'}
+                            </button>
+
+                            <button
+                                onClick={() => {
+                                    setShowOtpComponent(false);
+                                    setOtp('');
+                                    setMessage({ text: '', isError: false });
+                                }}
                                 className="cancel-button"
                             >
                                 Cancel
