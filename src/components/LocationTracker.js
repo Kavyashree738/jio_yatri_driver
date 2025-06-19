@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { FaLocationArrow, FaMapMarkerAlt, FaExclamationTriangle, FaSync, FaInfoCircle, FaBatteryThreeQuarters } from 'react-icons/fa';
 
-const LocationTracker = ({ updateInterval = 10000 }) => {
+const LocationTracker = ({ updateInterval = 5000 }) => {
   const { user } = useAuth();
   const [location, setLocation] = useState(null);
   const [isTracking, setIsTracking] = useState(false);
@@ -26,31 +26,48 @@ const LocationTracker = ({ updateInterval = 10000 }) => {
     return lastUpdated.toLocaleTimeString();
   }, [lastUpdated]);
 
-  // LiveMap component
-  const LiveMap = ({ coordinates }) => {
+  // Memoized LiveMap component to prevent unnecessary re-renders
+  const LiveMap = React.memo(({ coordinates, accuracy, heading }) => {
     const mapRef = useRef(null);
     const markerRef = useRef(null);
     const accuracyCircleRef = useRef(null);
     const headingLineRef = useRef(null);
+    const prevCoordinates = useRef();
 
     useEffect(() => {
       if (!coordinates || !window.google) return;
 
       const [lng, lat] = coordinates;
       
-      const map = new window.google.maps.Map(mapRef.current, {
-        center: { lat, lng },
-        zoom: 18,
-        mapTypeId: 'hybrid',
-        streetViewControl: false,
-        mapTypeControl: true,
-        fullscreenControl: false
-      });
+      // Skip update if coordinates haven't changed
+      if (prevCoordinates.current && 
+          prevCoordinates.current[0] === lng && 
+          prevCoordinates.current[1] === lat) {
+        return;
+      }
 
+      prevCoordinates.current = coordinates;
+
+      if (!mapRef.current.map) {
+        // Initialize map only once
+        mapRef.current.map = new window.google.maps.Map(mapRef.current, {
+          center: { lat, lng },
+          zoom: 18,
+          mapTypeId: 'hybrid',
+          streetViewControl: false,
+          mapTypeControl: true,
+          fullscreenControl: false
+        });
+      } else {
+        // Just pan to new location if map exists
+        mapRef.current.map.panTo({ lat, lng });
+      }
+
+      // Update marker
       if (!markerRef.current) {
         markerRef.current = new window.google.maps.Marker({
           position: { lat, lng },
-          map,
+          map: mapRef.current.map,
           icon: {
             path: window.google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
             scale: 6,
@@ -69,6 +86,7 @@ const LocationTracker = ({ updateInterval = 10000 }) => {
         });
       }
 
+      // Update accuracy circle
       if (accuracy) {
         if (accuracyCircleRef.current) {
           accuracyCircleRef.current.setMap(null);
@@ -80,12 +98,13 @@ const LocationTracker = ({ updateInterval = 10000 }) => {
           strokeWeight: 2,
           fillColor: '#4285F4',
           fillOpacity: 0.2,
-          map,
+          map: mapRef.current.map,
           center: { lat, lng },
           radius: accuracy
         });
       }
 
+      // Update heading line
       if (heading) {
         if (headingLineRef.current) {
           headingLineRef.current.setMap(null);
@@ -100,12 +119,10 @@ const LocationTracker = ({ updateInterval = 10000 }) => {
           strokeColor: '#EA4335',
           strokeOpacity: 1.0,
           strokeWeight: 2,
-          map
+          map: mapRef.current.map
         });
         headingLineRef.current = headingLine;
       }
-
-      map.panTo({ lat, lng });
 
       function computeOffset(lat, lng, distance, heading) {
         const R = 6378137;
@@ -116,7 +133,7 @@ const LocationTracker = ({ updateInterval = 10000 }) => {
         const λ1 = lng * Math.PI / 180;
         
         const φ2 = Math.asin(Math.sin(φ1) * Math.cos(δ) + 
-                   Math.cos(φ1) * Math.sin(δ) * Math.cos(θ));
+                 Math.cos(φ1) * Math.sin(δ) * Math.cos(θ));
         const λ2 = λ1 + Math.atan2(Math.sin(θ) * Math.sin(δ) * Math.cos(φ1),
                            Math.cos(δ) - Math.sin(φ1) * Math.sin(φ2));
         
@@ -126,6 +143,15 @@ const LocationTracker = ({ updateInterval = 10000 }) => {
         };
       }
 
+      return () => {
+        // Cleanup function
+        if (headingLineRef.current) {
+          headingLineRef.current.setMap(null);
+        }
+        if (accuracyCircleRef.current) {
+          accuracyCircleRef.current.setMap(null);
+        }
+      };
     }, [coordinates, accuracy, heading]);
 
     return (
@@ -140,7 +166,7 @@ const LocationTracker = ({ updateInterval = 10000 }) => {
         }} 
       />
     );
-  };
+  });
 
   const getCurrentLocation = () => {
     return new Promise((resolve, reject) => {
@@ -230,7 +256,7 @@ const LocationTracker = ({ updateInterval = 10000 }) => {
     }
   };
 
-  const startPolling = () => {
+  const startPolling = useCallback(() => {
     stopPolling();
     
     const abortController = new AbortController();
@@ -250,7 +276,14 @@ const LocationTracker = ({ updateInterval = 10000 }) => {
         
         const data = await response.json();
         if (data.success && data.data?.location?.coordinates) {
-          setLocation(data.data.location.coordinates);
+          // Only update state if coordinates actually changed
+          setLocation(prev => {
+            const newCoords = data.data.location.coordinates;
+            if (!prev || prev[0] !== newCoords[0] || prev[1] !== newCoords[1]) {
+              return newCoords;
+            }
+            return prev;
+          });
           setIsTracking(data.data.isLocationActive);
           setLastUpdated(new Date());
         }
@@ -265,13 +298,16 @@ const LocationTracker = ({ updateInterval = 10000 }) => {
       }
     };
 
+    // Initial fetch
     fetchLocation();
+    
+    // Set up interval
     pollingRef.current = setInterval(fetchLocation, updateInterval);
 
     return () => {
       abortController.abort();
     };
-  };
+  }, [user, updateInterval, API_BASE_URL]);
 
   const stopPolling = () => {
     if (pollingRef.current) {
@@ -397,6 +433,15 @@ const LocationTracker = ({ updateInterval = 10000 }) => {
     };
   }, []);
 
+  useEffect(() => {
+    if (isTracking) {
+      startPolling();
+    }
+    return () => {
+      stopPolling();
+    };
+  }, [isTracking, startPolling]);
+
   return (
     <div className="location-tracker" style={{ maxWidth: '800px', margin: '0 auto', padding: '20px' }}>
       <div style={{ 
@@ -494,7 +539,7 @@ const LocationTracker = ({ updateInterval = 10000 }) => {
       <div style={{ marginTop: '20px' }}>
         {location ? (
           <div>
-            <LiveMap coordinates={location} />
+            <LiveMap coordinates={location} accuracy={accuracy} heading={heading} />
             
             <div style={{ 
               display: 'grid',
@@ -547,4 +592,4 @@ const LocationTracker = ({ updateInterval = 10000 }) => {
   );
 };
 
-export default LocationTracker
+export default LocationTracker;
