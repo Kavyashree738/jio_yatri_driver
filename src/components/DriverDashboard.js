@@ -1,11 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { FaUser, FaCar, FaPhone, FaToggleOn, FaToggleOff, FaFileAlt } from 'react-icons/fa';
+import { FaUser, FaPhone, FaToggleOn, FaToggleOff, FaCar } from 'react-icons/fa';
 import { MdDirectionsCar, MdDirectionsBike, MdLocalShipping } from 'react-icons/md';
-import '../styles/DriverDashboard.css';
 import Header from './Header';
 import Footer from './Footer';
+import LocationTracker from './LocationTracker';
+import AvailableShipments from './AvailableShipments';
+import '../styles/DriverDashboard.css';
 
 const DriverDashboard = () => {
     const { user } = useAuth();
@@ -16,58 +18,52 @@ const DriverDashboard = () => {
     const [status, setStatus] = useState('inactive');
     const [isUpdating, setIsUpdating] = useState(false);
     const [profileImage, setProfileImage] = useState(null);
-    const [customImage, setCustomImage] = useState(null);
     const [isUploading, setIsUploading] = useState(false);
+    const fileInputRef = useRef(null);
 
-    // Get Firebase profile image
-    useEffect(() => {
-        if (user?.photoURL) {
-            setProfileImage(user.photoURL);
+    // Fetch driver info
+    const fetchDriverInfo = useCallback(async () => {
+        try {
+            const token = await user.getIdToken();
+            const [driverResponse, imageResponse] = await Promise.all([
+                fetch(`https://jio-yatri-driver.onrender.com/api/driver/info/${user.uid}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                }),
+                fetch(`https://jio-yatri-driver.onrender.com/api/upload/profile-image/${user.uid}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                })
+            ]);
+
+            if (!driverResponse.ok) throw new Error('Failed to fetch driver info');
+            
+            const driverData = await driverResponse.json();
+            setDriverInfo(driverData.data);
+            setStatus(driverData.data?.status || 'inactive');
+            
+            if (imageResponse.ok) {
+                const blob = await imageResponse.blob();
+                const imageUrl = URL.createObjectURL(blob);
+                setProfileImage(imageUrl);
+            } else if (user.photoURL) {
+                setProfileImage(user.photoURL);
+            }
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
         }
     }, [user]);
 
-    // Fetch driver info and custom profile image
     useEffect(() => {
         if (!user) {
             navigate('/orders');
             return;
         }
-
-        const fetchDriverInfo = async () => {
-            try {
-                const token = await user.getIdToken();
-                const driverResponse = await fetch(`https://jio-yatri-driver.onrender.com/api/driver/info/${user.uid}`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-
-                if (!driverResponse.ok) {
-                    throw new Error('Failed to fetch driver information');
-                }
-
-                const driverData = await driverResponse.json();
-                setDriverInfo(driverData.data);
-                setStatus(driverData.data?.status || 'inactive');
-
-                if (driverData.data?.profileImage) {
-                    setCustomImage(`https://jio-yatri-driver.onrender.com/api/upload/profile-image/${user.uid}?ts=${Date.now()}`);
-                }
-            } catch (err) {
-                setError(err.message);
-            } finally {
-                setLoading(false);
-            }
-        };
-
         fetchDriverInfo();
-    }, [user, navigate, customImage]);
+    }, [user, navigate, fetchDriverInfo]);
 
     const toggleStatus = async () => {
         const newStatus = status === 'active' ? 'inactive' : 'active';
-
-        if (newStatus === 'active' && !window.confirm('Are you sure you want to go online and accept deliveries?')) {
-            return;
-        }
-
         setIsUpdating(true);
 
         try {
@@ -81,17 +77,13 @@ const DriverDashboard = () => {
                 body: JSON.stringify({ status: newStatus })
             });
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Failed to update status');
-            }
-
-            const result = await response.json();
+            if (!response.ok) throw new Error('Failed to update status');
+            
             setStatus(newStatus);
             setDriverInfo(prev => ({
                 ...prev,
                 status: newStatus,
-                lastUpdated: result.data.lastUpdated
+                lastUpdated: new Date().toISOString()
             }));
         } catch (err) {
             setError(err.message);
@@ -105,6 +97,7 @@ const DriverDashboard = () => {
         if (!file) return;
         e.target.value = '';
 
+        // Validate file
         if (!file.type.match('image.*')) {
             setError('Please select an image file (JPEG, PNG, etc.)');
             return;
@@ -119,14 +112,14 @@ const DriverDashboard = () => {
         setError(null);
 
         try {
-            // Create preview URL for immediate display
+            // Create preview URL
             const previewUrl = URL.createObjectURL(file);
-            setCustomImage(previewUrl);
+            setProfileImage(previewUrl);
 
             const formData = new FormData();
             formData.append('file', file);
 
-            const token = await user.getIdToken();
+            const token = await user.getIdToken(true);
             const response = await fetch('https://jio-yatri-driver.onrender.com/api/upload/profile-image', {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}` },
@@ -134,33 +127,59 @@ const DriverDashboard = () => {
             });
 
             if (!response.ok) {
-                throw new Error('Upload failed');
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Upload failed');
             }
 
             const data = await response.json();
-            setDriverInfo(prev => ({
-                ...prev,
-                profileImage: data.fileId
-            }));
+            
+            // Update the image with the new URL from server
+            const newImageResponse = await fetch(data.imageUrl, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            
+            if (newImageResponse.ok) {
+                const newImageBlob = await newImageResponse.blob();
+                const newImageUrl = URL.createObjectURL(newImageBlob);
+                setProfileImage(newImageUrl);
+            }
 
-            // Force refresh from server after 1 second
-            setTimeout(() => {
-                setCustomImage(`https://jio-yatri-driver.onrender.com/api/upload/profile-image/${user.uid}?ts=${Date.now()}`);
-                URL.revokeObjectURL(previewUrl); // Clean up memory
-            }, 1000);
-
+            // Update driver info
+            await fetchDriverInfo();
         } catch (err) {
-            setCustomImage(null);
-            setError(err.message);
+            console.error('Upload error:', err);
+            setProfileImage(prev => prev || user.photoURL || null);
+            setError(err.message || 'Failed to upload image');
         } finally {
             setIsUploading(false);
         }
     };
 
+    const handleDeleteImage = async () => {
+        if (!window.confirm('Are you sure you want to delete your profile image?')) return;
+
+        try {
+            const token = await user.getIdToken(true);
+            const response = await fetch('https://jio-yatri-driver.onrender.com/api/upload/profile-image', {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (!response.ok) throw new Error('Failed to delete image');
+
+            setProfileImage(user.photoURL || null);
+            await fetchDriverInfo();
+        } catch (err) {
+            setError(err.message || 'Failed to delete image');
+        }
+    };
+
     const getVehicleIcon = () => {
-        switch (driverInfo?.vehicleType) {
-            case 'bike': return <MdDirectionsBike className="vehicle-icon" />;
-            case 'van': return <MdDirectionsCar className="vehicle-icon" />;
+        if (!driverInfo?.vehicleType) return <FaCar className="vehicle-icon" />;
+        
+        switch (driverInfo.vehicleType.toLowerCase()) {
+            case 'twowheeler': return <MdDirectionsBike className="vehicle-icon" />;
+            case 'threewheeler': return <MdDirectionsCar className="vehicle-icon" />;
             case 'truck': return <MdLocalShipping className="vehicle-icon" />;
             default: return <MdDirectionsCar className="vehicle-icon" />;
         }
@@ -216,46 +235,34 @@ const DriverDashboard = () => {
                     <div className="profile-card">
                         <div className="profile-header">
                             <div className="avatar">
-                                {(customImage || profileImage) ? (
-                                    <>
-                                        <img 
-                                            src={customImage || profileImage} 
-                                            alt="Profile" 
-                                            className="profile-image"
-                                            onError={() => setCustomImage(null)}
-                                        />
-                                        <div className="upload-overlay">
-                                            <label htmlFor="profile-upload">
-                                                {isUploading ? 'Uploading...' : 'Change Photo'}
-                                            </label>
-                                            <input
-                                                id="profile-upload"
-                                                type="file"
-                                                accept="image/*"
-                                                onChange={handleImageUpload}
-                                                disabled={isUploading}
-                                                style={{ display: 'none' }}
-                                            />
-                                        </div>
-                                    </>
+                                {isUploading ? (
+                                    <div className="image-loading">
+                                        <div className="spinner-small"></div>
+                                    </div>
+                                ) : profileImage ? (
+                                    <img
+                                        src={profileImage}
+                                        alt="Profile"
+                                        className="profile-image"
+                                        onError={() => setProfileImage(user.photoURL || null)}
+                                    />
                                 ) : (
-                                    <>
-                                        <FaUser className="default-avatar" />
-                                        <div className="upload-overlay">
-                                            <label htmlFor="profile-upload">
-                                                {isUploading ? 'Uploading...' : 'Upload Photo'}
-                                            </label>
-                                            <input
-                                                id="profile-upload"
-                                                type="file"
-                                                accept="image/*"
-                                                onChange={handleImageUpload}
-                                                disabled={isUploading}
-                                                style={{ display: 'none' }}
-                                            />
-                                        </div>
-                                    </>
+                                    <FaUser className="default-avatar" />
                                 )}
+                                <div className="upload-overlay">
+                                    <label htmlFor="profile-upload">
+                                        {isUploading ? 'Uploading...' : 'Change Photo'}
+                                    </label>
+                                    <input
+                                        id="profile-upload"
+                                        ref={fileInputRef}
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={handleImageUpload}
+                                        disabled={isUploading}
+                                        style={{ display: 'none' }}
+                                    />
+                                </div>
                             </div>
                             <h2>{driverInfo.name}</h2>
                         </div>
@@ -300,26 +307,22 @@ const DriverDashboard = () => {
                 </div>
 
                 <div className="dashboard-actions">
-                    <button 
+                    <button
                         className="action-btn"
                         onClick={() => navigate('/available-deliveries')}
                     >
                         View Available Deliveries
                     </button>
-                    <button 
+                    <button
                         className="action-btn"
                         onClick={() => navigate('/delivery-history')}
                     >
                         Delivery History
                     </button>
-                    {/* <button 
-                        className="action-btn"
-                        onClick={() => navigate('/edit-profile')}
-                    >
-                        Edit Profile
-                    </button> */}
                 </div>
             </div>
+            <LocationTracker />
+            <AvailableShipments />
             <Footer />
         </>
     );
