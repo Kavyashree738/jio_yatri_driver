@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { FaLocationArrow, FaMapMarkerAlt, FaExclamationTriangle, FaSync, FaInfoCircle, FaBatteryThreeQuarters } from 'react-icons/fa';
 import '../styles/LocationTracker.css';
 
-const LocationTracker = ({ updateInterval = 5000 }) => {
+const LocationTracker = ({ updateInterval = 10000 }) => {
   const { user } = useAuth();
   const [location, setLocation] = useState(null);
   const [isTracking, setIsTracking] = useState(false);
