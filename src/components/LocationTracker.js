@@ -27,7 +27,7 @@ const LocationTracker = ({ updateInterval = 5000 }) => {
   const zoomLevelRef = useRef(18);
   const lastPollTimeRef = useRef(0);
 
-  const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://jio-yatri-driver.onrender.com';
+  const API_BASE_URL ='https://jio-yatri-driver.onrender.com';
 
   // Format last updated time
   const formattedLastUpdated = useMemo(() => {
