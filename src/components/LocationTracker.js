@@ -1,9 +1,8 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { FaLocationArrow, FaMapMarkerAlt, FaExclamationTriangle, FaInfoCircle, FaBatteryThreeQuarters } from 'react-icons/fa';
-import '../styles/LocationTracker.css';
+import { FaLocationArrow, FaMapMarkerAlt, FaExclamationTriangle, FaSync, FaInfoCircle, FaBatteryThreeQuarters } from 'react-icons/fa';
 
-const LocationTracker = () => {
+const LocationTracker = ({ updateInterval = 10000 }) => {
   const { user } = useAuth();
   const [location, setLocation] = useState(null);
   const [isTracking, setIsTracking] = useState(false);
@@ -15,43 +14,11 @@ const LocationTracker = () => {
   const [batteryLevel, setBatteryLevel] = useState(null);
   const [heading, setHeading] = useState(null);
   const [speed, setSpeed] = useState(null);
-  const [mapsLoaded, setMapsLoaded] = useState(false);
-  
   const pollingRef = useRef(null);
   const watchIdRef = useRef(null);
   const retryCountRef = useRef(0);
-  const prevLocationRef = useRef(null);
-  const abortControllerRef = useRef(new AbortController());
-  const mapRef = useRef(null);
-  const markerRef = useRef(null);
-  const accuracyCircleRef = useRef(null);
-  const headingLineRef = useRef(null);
 
-  const API_BASE_URL = 'https://jio-yatri-driver.onrender.com';
-
-  // Load Google Maps API
-  useEffect(() => {
-    if (window.google && window.google.maps) {
-      setMapsLoaded(true);
-      return;
-    }
-
-    const script = document.createElement('script');
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.REACT_APP_GOOGLE_API_KEY}&libraries=places`;
-    script.async = true;
-    script.defer = true;
-    script.onload = () => setMapsLoaded(true);
-    script.onerror = () => {
-      console.error('Google Maps failed to load');
-      setError('Failed to load maps. Please refresh the page.');
-    };
-    
-    document.head.appendChild(script);
-
-    return () => {
-      document.head.removeChild(script);
-    };
-  }, []);
+  const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
   // Format last updated time
   const formattedLastUpdated = useMemo(() => {
@@ -59,59 +26,123 @@ const LocationTracker = () => {
     return lastUpdated.toLocaleTimeString();
   }, [lastUpdated]);
 
-  // Calculate distance between coordinates
-  const getDistance = useCallback((lat1, lon1, lat2, lon2) => {
-    const R = 6371e3; // meters
-    const φ1 = lat1 * Math.PI/180;
-    const φ2 = lat2 * Math.PI/180;
-    const Δφ = (lat2-lat1) * Math.PI/180;
-    const Δλ = (lon2-lon1) * Math.PI/180;
+  // LiveMap component
+  const LiveMap = ({ coordinates }) => {
+    const mapRef = useRef(null);
+    const markerRef = useRef(null);
+    const accuracyCircleRef = useRef(null);
+    const headingLineRef = useRef(null);
 
-    const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
-              Math.cos(φ1) * Math.cos(φ2) *
-              Math.sin(Δλ/2) * Math.sin(Δλ/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    useEffect(() => {
+      if (!coordinates || !window.google) return;
 
-    return R * c;
-  }, []);
+      const [lng, lat] = coordinates;
+      
+      const map = new window.google.maps.Map(mapRef.current, {
+        center: { lat, lng },
+        zoom: 18,
+        mapTypeId: 'hybrid',
+        streetViewControl: false,
+        mapTypeControl: true,
+        fullscreenControl: false
+      });
 
-  const computeOffset = useCallback((lat, lng, distance, heading) => {
-    const R = 6378137; // Earth's radius in meters
-    const delta = distance / R;
-    const theta = heading * Math.PI / 180;
-    
-    const phi1 = lat * Math.PI / 180;
-    const lambda1 = lng * Math.PI / 180;
-    
-    const phi2 = Math.asin(Math.sin(phi1) * Math.cos(delta) + 
-               Math.cos(phi1) * Math.sin(delta) * Math.cos(theta));
-    const lambda2 = lambda1 + Math.atan2(
-      Math.sin(theta) * Math.sin(delta) * Math.cos(phi1),
-      Math.cos(delta) - Math.sin(phi1) * Math.sin(phi2)
-    );
-    
-    return {
-      lat: phi2 * 180 / Math.PI,
-      lng: lambda2 * 180 / Math.PI
-    };
-  }, []);
-
-  // Optimized location update function
-  const updateLocation = useCallback((newLocation, newAccuracy, newHeading, newSpeed) => {
-    setLocation(prev => {
-      if (!prev || getDistance(prev[1], prev[0], newLocation[1], newLocation[0]) > 5) {
-        return newLocation;
+      if (!markerRef.current) {
+        markerRef.current = new window.google.maps.Marker({
+          position: { lat, lng },
+          map,
+          icon: {
+            path: window.google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+            scale: 6,
+            rotation: heading || 0,
+            fillColor: '#EA4335',
+            fillOpacity: 1,
+            strokeWeight: 2,
+            strokeColor: '#FFFFFF'
+          }
+        });
+      } else {
+        markerRef.current.setPosition({ lat, lng });
+        markerRef.current.setIcon({
+          ...markerRef.current.getIcon(),
+          rotation: heading || 0
+        });
       }
-      return prev;
-    });
-    
-    setAccuracy(prev => Math.abs(prev - newAccuracy) > 5 ? newAccuracy : prev);
-    setHeading(newHeading);
-    setSpeed(newSpeed);
-    setLastUpdated(new Date());
-  }, [getDistance]);
 
-  const getCurrentLocation = useCallback(() => {
+      if (accuracy) {
+        if (accuracyCircleRef.current) {
+          accuracyCircleRef.current.setMap(null);
+        }
+        
+        accuracyCircleRef.current = new window.google.maps.Circle({
+          strokeColor: '#4285F4',
+          strokeOpacity: 0.8,
+          strokeWeight: 2,
+          fillColor: '#4285F4',
+          fillOpacity: 0.2,
+          map,
+          center: { lat, lng },
+          radius: accuracy
+        });
+      }
+
+      if (heading) {
+        if (headingLineRef.current) {
+          headingLineRef.current.setMap(null);
+        }
+        
+        const headingLine = new window.google.maps.Polyline({
+          path: [
+            { lat, lng },
+            computeOffset(lat, lng, 20, heading)
+          ],
+          geodesic: true,
+          strokeColor: '#EA4335',
+          strokeOpacity: 1.0,
+          strokeWeight: 2,
+          map
+        });
+        headingLineRef.current = headingLine;
+      }
+
+      map.panTo({ lat, lng });
+
+      function computeOffset(lat, lng, distance, heading) {
+        const R = 6378137;
+        const δ = distance / R;
+        const θ = heading * Math.PI / 180;
+        
+        const φ1 = lat * Math.PI / 180;
+        const λ1 = lng * Math.PI / 180;
+        
+        const φ2 = Math.asin(Math.sin(φ1) * Math.cos(δ) + 
+                   Math.cos(φ1) * Math.sin(δ) * Math.cos(θ));
+        const λ2 = λ1 + Math.atan2(Math.sin(θ) * Math.sin(δ) * Math.cos(φ1),
+                           Math.cos(δ) - Math.sin(φ1) * Math.sin(φ2));
+        
+        return {
+          lat: φ2 * 180 / Math.PI,
+          lng: λ2 * 180 / Math.PI
+        };
+      }
+
+    }, [coordinates, accuracy, heading]);
+
+    return (
+      <div 
+        ref={mapRef} 
+        style={{ 
+          width: '100%', 
+          height: '350px',
+          borderRadius: '8px',
+          marginTop: '10px',
+          border: '1px solid #ddd'
+        }} 
+      />
+    );
+  };
+
+  const getCurrentLocation = () => {
     return new Promise((resolve, reject) => {
       if (!navigator.geolocation) {
         reject(new Error('Geolocation not supported by your browser'));
@@ -150,9 +181,9 @@ const LocationTracker = () => {
       retryCountRef.current = 0;
       navigator.geolocation.getCurrentPosition(resolve, errorHandler, options);
     });
-  }, []);
+  };
 
-  const updateLocationToServer = useCallback(async (coords) => {
+  const updateLocationToServer = async (coords) => {
     try {
       setIsLoading(true);
       setError(null);
@@ -182,95 +213,81 @@ const LocationTracker = () => {
       }
 
       const data = await response.json();
-      updateLocation(
-        [coords.longitude, coords.latitude],
-        coords.accuracy,
-        coords.heading || null,
-        coords.speed || null
-      );
+      setLocation([coords.longitude, coords.latitude]);
+      setAccuracy(coords.accuracy);
+      setHeading(coords.heading || null);
+      setSpeed(coords.speed || null);
+      setLastUpdated(new Date());
       
       if (!isTracking) setIsTracking(true);
       
     } catch (err) {
-      const userMessage = err.message.includes('Failed to fetch') 
-        ? 'Network error - Please check your internet connection'
-        : err.message;
-      setError(userMessage);
+      setError(err.message);
       console.error('Location update failed:', err);
       setIsTracking(false);
     } finally {
-      setTimeout(() => setIsLoading(false), 500);
+      setIsLoading(false);
     }
-  }, [user, batteryLevel, isTracking, updateLocation]);
+  };
 
-  const fetchLocation = useCallback(async () => {
-    try {
-      const token = await user.getIdToken();
-      const response = await fetch(`${API_BASE_URL}/api/driver/location`, {
-        headers: { 
-          'Authorization': `Bearer ${token}`,
-          'Accept': 'application/json'
-        },
-        signal: abortControllerRef.current.signal
-      });
-
-      if (!response.ok) throw new Error(`Server error: ${response.status}`);
-      
-      const data = await response.json();
-      if (data.success && data.data?.location?.coordinates) {
-        updateLocation(
-          data.data.location.coordinates,
-          data.data.location.accuracy || accuracy,
-          data.data.location.heading || heading,
-          data.data.location.speed || speed
-        );
-        setIsTracking(data.data.isLocationActive);
-      }
-    } catch (err) {
-      if (err.name !== 'AbortError') {
-        console.error('Polling error:', err);
-        if (err.message.includes('404')) {
-          setError('Endpoint not found');
-          stopPolling();
-        }
-      }
-    }
-  }, [user, accuracy, heading, speed, updateLocation]);
-
-  const startPolling = useCallback(() => {
+  const startPolling = () => {
     stopPolling();
     
-    abortControllerRef.current = new AbortController();
+    const abortController = new AbortController();
+
+    const fetchLocation = async () => {
+      try {
+        const token = await user.getIdToken();
+        const response = await fetch(`${API_BASE_URL}/api/driver/location`, {
+          headers: { 
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json'
+          },
+          signal: abortController.signal
+        });
+
+        if (!response.ok) throw new Error(`Server error: ${response.status}`);
+        
+        const data = await response.json();
+        if (data.success && data.data?.location?.coordinates) {
+          setLocation(data.data.location.coordinates);
+          setIsTracking(data.data.isLocationActive);
+          setLastUpdated(new Date());
+        }
+      } catch (err) {
+        if (err.name !== 'AbortError') {
+          console.error('Polling error:', err);
+          if (err.message.includes('404')) {
+            setError('Endpoint not found');
+            stopPolling();
+          }
+        }
+      }
+    };
 
     fetchLocation();
-    pollingRef.current = setInterval(fetchLocation, 5000); // Changed to 5 seconds
+    pollingRef.current = setInterval(fetchLocation, updateInterval);
 
     return () => {
-      abortControllerRef.current.abort();
+      abortController.abort();
     };
-  }, [fetchLocation]);
+  };
 
-  const stopPolling = useCallback(() => {
+  const stopPolling = () => {
     if (pollingRef.current) {
       clearInterval(pollingRef.current);
       pollingRef.current = null;
     }
-    abortControllerRef.current.abort();
-  }, []);
+  };
 
-  const startWatchingPosition = useCallback(() => {
+  const startWatchingPosition = () => {
     stopWatchingPosition();
     
     watchIdRef.current = navigator.geolocation.watchPosition(
       (position) => {
         const { coords } = position;
-        const newLocation = [coords.longitude, coords.latitude];
-        
-        if (!prevLocationRef.current || 
-            getDistance(prevLocationRef.current[1], prevLocationRef.current[0], coords.latitude, coords.longitude) > 10 ||
-            coords.accuracy < (accuracy || Infinity)) {
+        if (!accuracy || coords.accuracy < accuracy * 1.2 || Date.now() - lastUpdated?.getTime() > 30000) {
           updateLocationToServer(coords);
-          prevLocationRef.current = newLocation;
         }
       },
       (error) => {
@@ -279,20 +296,20 @@ const LocationTracker = () => {
       },
       {
         enableHighAccuracy: true,
-        maximumAge: 3000,
-        timeout: 10000
+        maximumAge: 0,
+        timeout: 30000
       }
     );
-  }, [accuracy, getDistance, updateLocationToServer]);
+  };
 
-  const stopWatchingPosition = useCallback(() => {
+  const stopWatchingPosition = () => {
     if (watchIdRef.current) {
       navigator.geolocation.clearWatch(watchIdRef.current);
       watchIdRef.current = null;
     }
-  }, []);
+  };
 
-  const stopTracking = useCallback(async () => {
+  const stopTracking = async () => {
     try {
       const token = await user.getIdToken();
       await fetch(`${API_BASE_URL}/api/driver/location`, {
@@ -307,13 +324,12 @@ const LocationTracker = () => {
       stopPolling();
       stopWatchingPosition();
       setIsTracking(false);
-      prevLocationRef.current = null;
     } catch (err) {
       setError(err.message);
     }
-  }, [user, stopPolling, stopWatchingPosition]);
+  };
 
-  const startTracking = useCallback(async () => {
+  const startTracking = async () => {
     try {
       if (batteryLevel !== null && batteryLevel < 20) {
         setError('Battery level too low for continuous tracking');
@@ -328,157 +344,24 @@ const LocationTracker = () => {
       setError(err.message);
       setIsTracking(false);
     }
-  }, [batteryLevel, getCurrentLocation, updateLocationToServer, startWatchingPosition, startPolling]);
+  };
 
-  const handleToggle = useCallback(async (e) => {
+  const handleToggle = (e) => {
     e.preventDefault();
-    setIsLoading(true);
-    
-    try {
-      if (isTracking) {
-        await stopTracking();
-      } else {
-        await startTracking();
+    isTracking ? stopTracking() : startTracking();
+  };
+
+  const handleManualRefresh = async () => {
+    if (isTracking) {
+      try {
+        const pos = await getCurrentLocation();
+        await updateLocationToServer(pos.coords);
+      } catch (err) {
+        setError(err.message);
       }
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setTimeout(() => setIsLoading(false), 500);
     }
-  }, [isTracking, startTracking, stopTracking]);
+  };
 
-  // Initialize map and markers when maps are loaded and location is available
-  useEffect(() => {
-    if (!mapsLoaded || !location) return;
-
-    const [lng, lat] = location;
-    
-    // Initialize map only once
-    if (!mapRef.current) {
-      mapRef.current = new window.google.maps.Map(document.getElementById('map'), {
-        center: { lat, lng },
-        zoom: 18,
-        mapTypeId: 'roadmap',
-        streetViewControl: false,
-        mapTypeControl: true,
-        fullscreenControl: false
-      });
-    }
-
-    // Initialize marker only once
-    if (!markerRef.current) {
-      markerRef.current = new window.google.maps.Marker({
-        position: { lat, lng },
-        map: mapRef.current,
-        icon: {
-          url: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png',
-          scaledSize: new window.google.maps.Size(40, 40),
-          anchor: new window.google.maps.Point(20, 20)
-        }
-      });
-    }
-
-    // Initialize accuracy circle only once
-    if (accuracy && !accuracyCircleRef.current) {
-      accuracyCircleRef.current = new window.google.maps.Circle({
-        strokeColor: '#4285F4',
-        strokeOpacity: 0.8,
-        strokeWeight: 2,
-        fillColor: '#4285F4',
-        fillOpacity: 0.2,
-        map: mapRef.current,
-        center: { lat, lng },
-        radius: accuracy
-      });
-    }
-
-    // Initialize heading line only once
-    if (heading && !headingLineRef.current) {
-      const endPoint = computeOffset(lat, lng, 20, heading);
-      headingLineRef.current = new window.google.maps.Polyline({
-        path: [
-          { lat, lng },
-          endPoint
-        ],
-        geodesic: true,
-        strokeColor: '#EA4335',
-        strokeOpacity: 1.0,
-        strokeWeight: 2,
-        map: mapRef.current
-      });
-    }
-
-    return () => {
-      // Cleanup when component unmounts
-      if (mapRef.current) {
-        mapRef.current = null;
-      }
-    };
-  }, [mapsLoaded, location, accuracy, heading, computeOffset]);
-
-  // Update map elements when location changes
-  useEffect(() => {
-    if (!mapsLoaded || !location || !mapRef.current || !markerRef.current) return;
-
-    const [lng, lat] = location;
-    
-    // Smooth marker transition
-    if (prevLocationRef.current) {
-      const [prevLng, prevLat] = prevLocationRef.current;
-      const steps = 10;
-      let step = 0;
-      
-      const animateMarker = () => {
-        step++;
-        const progress = step / steps;
-        const newLat = prevLat + (lat - prevLat) * progress;
-        const newLng = prevLng + (lng - prevLng) * progress;
-        
-        markerRef.current.setPosition({ lat: newLat, lng: newLng });
-        
-        if (accuracyCircleRef.current) {
-          accuracyCircleRef.current.setCenter({ lat: newLat, lng: newLng });
-        }
-        
-        if (headingLineRef.current && heading) {
-          const endPoint = computeOffset(newLat, newLng, 20, heading);
-          headingLineRef.current.setPath([
-            { lat: newLat, lng: newLng },
-            endPoint
-          ]);
-        }
-
-        if (step < steps) {
-          requestAnimationFrame(animateMarker);
-        } else {
-          mapRef.current.panTo({ lat, lng });
-        }
-      };
-      
-      requestAnimationFrame(animateMarker);
-    } else {
-      // Immediate update if no previous position
-      markerRef.current.setPosition({ lat, lng });
-      
-      if (accuracyCircleRef.current) {
-        accuracyCircleRef.current.setCenter({ lat, lng });
-      }
-      
-      if (headingLineRef.current && heading) {
-        const endPoint = computeOffset(lat, lng, 20, heading);
-        headingLineRef.current.setPath([
-          { lat, lng },
-          endPoint
-        ]);
-      }
-      
-      mapRef.current.panTo({ lat, lng });
-    }
-
-    prevLocationRef.current = location;
-  }, [location, accuracy, heading, mapsLoaded, computeOffset]);
-
-  // Network status and battery level monitoring
   useEffect(() => {
     const getBatteryStatus = async () => {
       if ('getBattery' in navigator) {
@@ -491,10 +374,7 @@ const LocationTracker = () => {
           });
         } catch (err) {
           console.error('Battery API error:', err);
-          setBatteryLevel(null);
         }
-      } else {
-        setBatteryLevel(null);
       }
     };
     
@@ -509,145 +389,156 @@ const LocationTracker = () => {
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
     
-    const initializeTracking = async () => {
-      try {
-        const token = await user.getIdToken();
-        const response = await fetch(`${API_BASE_URL}/api/driver/location`, {
-          headers: { 
-            'Authorization': `Bearer ${token}`,
-            'Accept': 'application/json'
-          }
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          if (data.success && data.data) {
-            setIsTracking(data.data.isLocationActive);
-            if (data.data.location?.coordinates) {
-              updateLocation(
-                data.data.location.coordinates,
-                data.data.location.accuracy || null,
-                data.data.location.heading || null,
-                data.data.location.speed || null
-              );
-              setLastUpdated(new Date(data.data.location.timestamp));
-            }
-          }
-        }
-      } catch (err) {
-        console.error('Initialization error:', err);
-      }
-    };
-
-    initializeTracking();
-
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
       stopPolling();
       stopWatchingPosition();
     };
-  }, [user, updateLocation]);
+  }, []);
 
   return (
-    <div className="location-tracker">
-      <div className="tracker-header">
-        <div className="header-content">
-          <div className="location-status">
-            <FaMapMarkerAlt className={`status-icon ${isTracking ? 'active' : ''}`} />
-            <div>
-              <h3 className="status-text">{isTracking ? 'Live Tracking Active' : 'Location Offline'}</h3>
-              <div className="status-meta">
-                <span>Last updated: {formattedLastUpdated}</span>
-                <span>Accuracy: {accuracy ? `${Math.round(accuracy)}m` : 'Unknown'}</span>
-                {batteryLevel !== null && <span>Battery: {batteryLevel}%</span>}
-              </div>
+    <div className="location-tracker" style={{ maxWidth: '800px', margin: '0 auto', padding: '20px' }}>
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center',
+        marginBottom: '15px',
+        padding: '15px',
+        backgroundColor: '#f8f9fa',
+        borderRadius: '8px'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <FaMapMarkerAlt 
+            style={{ 
+              color: isTracking ? '#00C853' : '#757575', 
+              marginRight: '12px',
+              fontSize: '24px'
+            }} 
+          />
+          <div>
+            <h3 style={{ margin: 0 }}>{isTracking ? 'Live Tracking Active' : 'Location Offline'}</h3>
+            <div style={{ fontSize: '0.9rem', color: '#666' }}>
+              Last updated: {formattedLastUpdated} | 
+              Accuracy: {accuracy ? `${Math.round(accuracy)}m` : 'Unknown'} | 
+              {batteryLevel && ` Battery: ${batteryLevel}%`}
             </div>
           </div>
-          
-          <div className="button-group">
-            <button
-              onClick={handleToggle}
+        </div>
+        
+        <div style={{ display: 'flex', gap: '10px' }}>
+          {isTracking && (
+            <button 
+              onClick={handleManualRefresh}
+              style={{
+                backgroundColor: '#34A853',
+                color: 'white',
+                border: 'none',
+                padding: '10px 15px',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}
               disabled={isLoading || !isOnline}
-              className={`btn ${isTracking ? 'btn-danger' : 'btn-primary'} ${!isOnline ? 'disabled' : ''}`}
-              aria-label={isTracking ? 'Stop sharing location' : 'Start sharing location'}
-              aria-busy={isLoading}
             >
-              <FaLocationArrow />
-              {isLoading ? 'Processing...' : isTracking ? 'Stop Sharing' : 'Share Location'}
+              <FaSync /> Refresh
             </button>
-          </div>
+          )}
+          
+          <button
+            onClick={handleToggle}
+            disabled={isLoading || !isOnline}
+            style={{
+              backgroundColor: isTracking ? '#ff4444' : '#4285F4',
+              color: 'white',
+              border: 'none',
+              padding: '10px 20px',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              opacity: !isOnline ? 0.6 : 1
+            }}
+          >
+            <FaLocationArrow />
+            {isLoading ? 'Processing...' : isTracking ? 'Stop Sharing' : 'Share Location'}
+          </button>
         </div>
       </div>
 
       {!isOnline && (
-        <div className="alert alert-error">
-          <FaExclamationTriangle className="alert-icon" />
+        <div className="status-alert offline">
+          <FaExclamationTriangle />
           <span>Offline - Updates will resume when connection is restored</span>
         </div>
       )}
 
       {error && (
-        <div className="alert alert-error">
-          <FaExclamationTriangle className="alert-icon" />
+        <div className="status-alert error">
+          <FaExclamationTriangle />
           <span>{error}</span>
-          <button 
-            onClick={() => setError(null)}
-            className="alert-dismiss"
-            aria-label="Dismiss error"
-          >
-            Dismiss
-          </button>
+          <button onClick={() => setError(null)}>Dismiss</button>
         </div>
       )}
 
       {batteryLevel !== null && batteryLevel < 30 && (
-        <div className="alert alert-warning">
-          <FaBatteryThreeQuarters className="alert-icon" />
+        <div className="status-alert warning">
+          <FaBatteryThreeQuarters />
           <span>Low battery - Location updates may be less frequent</span>
         </div>
       )}
 
-      <div>
+      <div style={{ marginTop: '20px' }}>
         {location ? (
           <div>
-            <div id="map" className="map-container" />
+            <LiveMap coordinates={location} />
             
-            <div className="location-info-grid">
-              <div className="info-card">
-                <div className="info-label">Latitude</div>
-                <div className="info-value accent">{location[1]?.toFixed(6)}</div>
+            <div style={{ 
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+              gap: '15px',
+              marginTop: '15px'
+            }}>
+              <div className="data-card">
+                <div className="data-label">Latitude</div>
+                <div className="data-value">{location[1]?.toFixed(6)}</div>
               </div>
               
-              <div className="info-card">
-                <div className="info-label">Longitude</div>
-                <div className="info-value accent">{location[0]?.toFixed(6)}</div>
+              <div className="data-card">
+                <div className="data-label">Longitude</div>
+                <div className="data-value">{location[0]?.toFixed(6)}</div>
               </div>
               
-              <div className="info-card">
-                <div className="info-label">Accuracy</div>
-                <div className={`info-value ${accuracy > 50 ? 'warning' : 'success'}`}>
+              <div className="data-card">
+                <div className="data-label">Accuracy</div>
+                <div className="data-value" style={{ 
+                  color: accuracy > 50 ? 'orange' : 'green',
+                  fontWeight: 'bold'
+                }}>
                   ~{Math.round(accuracy)} meters
                 </div>
               </div>
               
               {heading && (
-                <div className="info-card">
-                  <div className="info-label">Heading</div>
-                  <div className="info-value">{Math.round(heading)}°</div>
+                <div className="data-card">
+                  <div className="data-label">Heading</div>
+                  <div className="data-value">{Math.round(heading)}°</div>
                 </div>
               )}
               
               {speed && (
-                <div className="info-card">
-                  <div className="info-label">Speed</div>
-                  <div className="info-value">{Math.round(speed * 3.6)} km/h</div>
+                <div className="data-card">
+                  <div className="data-label">Speed</div>
+                  <div className="data-value">{Math.round(speed * 3.6)} km/h</div>
                 </div>
               )}
             </div>
           </div>
         ) : (
-          <div className="map-placeholder">
+          <div className="empty-state">
             {isTracking ? 'Acquiring precise location...' : 'Enable tracking to view location'}
           </div>
         )}
@@ -656,4 +547,4 @@ const LocationTracker = () => {
   );
 };
 
-export default LocationTracker;
+export default LocationTracker
