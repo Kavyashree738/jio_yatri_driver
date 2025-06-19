@@ -18,7 +18,7 @@ const LocationTracker = ({ updateInterval = 5000 }) => {
   const watchIdRef = useRef(null);
   const retryCountRef = useRef(0);
 
-  const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+  const API_BASE_URL = 'https://jio-yatri-driver.onrender.com';
 
   // Format last updated time
   const formattedLastUpdated = useMemo(() => {
