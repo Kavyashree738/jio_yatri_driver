@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { FaLocationArrow, FaMapMarkerAlt, FaExclamationTriangle, FaSync, FaInfoCircle, FaBatteryThreeQuarters } from 'react-icons/fa';
 import '../styles/LocationTracker.css';
@@ -16,10 +16,16 @@ const LocationTracker = ({ updateInterval = 10000 }) => {
   const [heading, setHeading] = useState(null);
   const [speed, setSpeed] = useState(null);
   const [mapsLoaded, setMapsLoaded] = useState(false);
+  
   const pollingRef = useRef(null);
   const watchIdRef = useRef(null);
   const retryCountRef = useRef(0);
   const prevLocationRef = useRef(null);
+  const abortControllerRef = useRef(new AbortController());
+  const mapRef = useRef(null);
+  const markerRef = useRef(null);
+  const accuracyCircleRef = useRef(null);
+  const headingLineRef = useRef(null);
 
   const API_BASE_URL = 'https://jio-yatri-driver.onrender.com';
 
@@ -54,7 +60,7 @@ const LocationTracker = ({ updateInterval = 10000 }) => {
   }, [lastUpdated]);
 
   // Calculate distance between coordinates
-  const getDistance = (lat1, lon1, lat2, lon2) => {
+  const getDistance = useCallback((lat1, lon1, lat2, lon2) => {
     const R = 6371e3; // meters
     const φ1 = lat1 * Math.PI/180;
     const φ2 = lat2 * Math.PI/180;
@@ -67,130 +73,45 @@ const LocationTracker = ({ updateInterval = 10000 }) => {
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 
     return R * c;
-  };
+  }, []);
 
-  // LiveMap component
-  const LiveMap = ({ coordinates }) => {
-    const mapRef = useRef(null);
-    const markerRef = useRef(null);
-    const accuracyCircleRef = useRef(null);
-    const headingLineRef = useRef(null);
-
-    const computeOffset = (lat, lng, distance, heading) => {
-      const R = 6378137; // Earth's radius in meters
-      const delta = distance / R;
-      const theta = heading * Math.PI / 180;
-      
-      const phi1 = lat * Math.PI / 180;
-      const lambda1 = lng * Math.PI / 180;
-      
-      const phi2 = Math.asin(Math.sin(phi1) * Math.cos(delta) + 
-                 Math.cos(phi1) * Math.sin(delta) * Math.cos(theta));
-      const lambda2 = lambda1 + Math.atan2(
-        Math.sin(theta) * Math.sin(delta) * Math.cos(phi1),
-        Math.cos(delta) - Math.sin(phi1) * Math.sin(phi2)
-      );
-      
-      return {
-        lat: phi2 * 180 / Math.PI,
-        lng: lambda2 * 180 / Math.PI
-      };
-    };
-
-    useEffect(() => {
-      if (!coordinates || !mapsLoaded || !window.google?.maps) return;
-
-      const [lng, lat] = coordinates;
-      
-      if (!mapRef.current) {
-        mapRef.current = new window.google.maps.Map(document.getElementById('map'), {
-          center: { lat, lng },
-          zoom: 18,
-          mapTypeId: 'hybrid',
-          streetViewControl: false,
-          mapTypeControl: true,
-          fullscreenControl: false
-        });
-      }
-
-      if (!markerRef.current) {
-        markerRef.current = new window.google.maps.Marker({
-          position: { lat, lng },
-          map: mapRef.current,
-          icon: {
-            path: window.google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
-            scale: 6,
-            rotation: heading || 0,
-            fillColor: '#EA4335',
-            fillOpacity: 1,
-            strokeWeight: 2,
-            strokeColor: '#FFFFFF'
-          }
-        });
-      } else {
-        markerRef.current.setPosition({ lat, lng });
-        markerRef.current.setIcon({
-          ...markerRef.current.getIcon(),
-          rotation: heading || 0
-        });
-      }
-
-      if (accuracy) {
-        if (accuracyCircleRef.current) {
-          accuracyCircleRef.current.setMap(null);
-        }
-        
-        accuracyCircleRef.current = new window.google.maps.Circle({
-          strokeColor: '#4285F4',
-          strokeOpacity: 0.8,
-          strokeWeight: 2,
-          fillColor: '#4285F4',
-          fillOpacity: 0.2,
-          map: mapRef.current,
-          center: { lat, lng },
-          radius: accuracy
-        });
-      }
-
-      if (heading) {
-        if (headingLineRef.current) {
-          headingLineRef.current.setMap(null);
-        }
-        
-        const headingLine = new window.google.maps.Polyline({
-          path: [
-            { lat, lng },
-            computeOffset(lat, lng, 20, heading)
-          ],
-          geodesic: true,
-          strokeColor: '#EA4335',
-          strokeOpacity: 1.0,
-          strokeWeight: 2,
-          map: mapRef.current
-        });
-        headingLineRef.current = headingLine;
-      }
-
-      mapRef.current.panTo({ lat, lng });
-
-      return () => {
-        if (accuracyCircleRef.current) accuracyCircleRef.current.setMap(null);
-        if (headingLineRef.current) headingLineRef.current.setMap(null);
-      };
-    }, [coordinates, accuracy, heading, mapsLoaded]);
-
-    return (
-      <div id="map" className="map-container">
-        {!mapsLoaded && (
-          <div className="map-placeholder">
-            Loading map...
-          </div>
-        )}
-      </div>
+  const computeOffset = useCallback((lat, lng, distance, heading) => {
+    const R = 6378137; // Earth's radius in meters
+    const delta = distance / R;
+    const theta = heading * Math.PI / 180;
+    
+    const phi1 = lat * Math.PI / 180;
+    const lambda1 = lng * Math.PI / 180;
+    
+    const phi2 = Math.asin(Math.sin(phi1) * Math.cos(delta) + 
+               Math.cos(phi1) * Math.sin(delta) * Math.cos(theta));
+    const lambda2 = lambda1 + Math.atan2(
+      Math.sin(theta) * Math.sin(delta) * Math.cos(phi1),
+      Math.cos(delta) - Math.sin(phi1) * Math.sin(phi2)
     );
-  };
+    
+    return {
+      lat: phi2 * 180 / Math.PI,
+      lng: lambda2 * 180 / Math.PI
+    };
+  }, []);
 
-  const getCurrentLocation = () => {
+  // Optimized location update function
+  const updateLocation = useCallback((newLocation, newAccuracy, newHeading, newSpeed) => {
+    setLocation(prev => {
+      if (!prev || getDistance(prev[1], prev[0], newLocation[1], newLocation[0]) > 5) {
+        return newLocation;
+      }
+      return prev;
+    });
+    
+    setAccuracy(prev => Math.abs(prev - newAccuracy) > 5 ? newAccuracy : prev);
+    setHeading(newHeading);
+    setSpeed(newSpeed);
+    setLastUpdated(new Date());
+  }, [getDistance]);
+
+  const getCurrentLocation = useCallback(() => {
     return new Promise((resolve, reject) => {
       if (!navigator.geolocation) {
         reject(new Error('Geolocation not supported by your browser'));
@@ -229,9 +150,9 @@ const LocationTracker = ({ updateInterval = 10000 }) => {
       retryCountRef.current = 0;
       navigator.geolocation.getCurrentPosition(resolve, errorHandler, options);
     });
-  };
+  }, []);
 
-  const updateLocationToServer = async (coords) => {
+  const updateLocationToServer = useCallback(async (coords) => {
     try {
       setIsLoading(true);
       setError(null);
@@ -261,11 +182,12 @@ const LocationTracker = ({ updateInterval = 10000 }) => {
       }
 
       const data = await response.json();
-      setLocation([coords.longitude, coords.latitude]);
-      setAccuracy(coords.accuracy);
-      setHeading(coords.heading || null);
-      setSpeed(coords.speed || null);
-      setLastUpdated(new Date());
+      updateLocation(
+        [coords.longitude, coords.latitude],
+        coords.accuracy,
+        coords.heading || null,
+        coords.speed || null
+      );
       
       if (!isTracking) setIsTracking(true);
       
@@ -279,59 +201,64 @@ const LocationTracker = ({ updateInterval = 10000 }) => {
     } finally {
       setTimeout(() => setIsLoading(false), 500);
     }
-  };
+  }, [user, batteryLevel, isTracking, updateLocation]);
 
-  const startPolling = () => {
-    stopPolling();
-    
-    const abortController = new AbortController();
+  const fetchLocation = useCallback(async () => {
+    try {
+      const token = await user.getIdToken();
+      const response = await fetch(`${API_BASE_URL}/api/driver/location`, {
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json'
+        },
+        signal: abortControllerRef.current.signal
+      });
 
-    const fetchLocation = async () => {
-      try {
-        const token = await user.getIdToken();
-        const response = await fetch(`${API_BASE_URL}/api/driver/location`, {
-          headers: { 
-            'Authorization': `Bearer ${token}`,
-            'Accept': 'application/json'
-          },
-          signal: abortController.signal
-        });
-
-        if (!response.ok) throw new Error(`Server error: ${response.status}`);
-        
-        const data = await response.json();
-        if (data.success && data.data?.location?.coordinates) {
-          setLocation(data.data.location.coordinates);
-          setIsTracking(data.data.isLocationActive);
-          setLastUpdated(new Date());
-        }
-      } catch (err) {
-        if (err.name !== 'AbortError') {
-          console.error('Polling error:', err);
-          if (err.message.includes('404')) {
-            setError('Endpoint not found');
-            stopPolling();
-          }
+      if (!response.ok) throw new Error(`Server error: ${response.status}`);
+      
+      const data = await response.json();
+      if (data.success && data.data?.location?.coordinates) {
+        updateLocation(
+          data.data.location.coordinates,
+          data.data.location.accuracy || accuracy,
+          data.data.location.heading || heading,
+          data.data.location.speed || speed
+        );
+        setIsTracking(data.data.isLocationActive);
+      }
+    } catch (err) {
+      if (err.name !== 'AbortError') {
+        console.error('Polling error:', err);
+        if (err.message.includes('404')) {
+          setError('Endpoint not found');
+          stopPolling();
         }
       }
-    };
+    }
+  }, [user, accuracy, heading, speed, updateLocation]);
+
+  const startPolling = useCallback(() => {
+    stopPolling();
+    
+    abortControllerRef.current = new AbortController();
 
     fetchLocation();
     pollingRef.current = setInterval(fetchLocation, updateInterval);
 
     return () => {
-      abortController.abort();
+      abortControllerRef.current.abort();
     };
-  };
+  }, [fetchLocation, updateInterval]);
 
-  const stopPolling = () => {
+  const stopPolling = useCallback(() => {
     if (pollingRef.current) {
       clearInterval(pollingRef.current);
       pollingRef.current = null;
     }
-  };
+    abortControllerRef.current.abort();
+  }, []);
 
-  const startWatchingPosition = () => {
+  const startWatchingPosition = useCallback(() => {
     stopWatchingPosition();
     
     watchIdRef.current = navigator.geolocation.watchPosition(
@@ -356,16 +283,16 @@ const LocationTracker = ({ updateInterval = 10000 }) => {
         timeout: 10000
       }
     );
-  };
+  }, [accuracy, getDistance, updateLocationToServer]);
 
-  const stopWatchingPosition = () => {
+  const stopWatchingPosition = useCallback(() => {
     if (watchIdRef.current) {
       navigator.geolocation.clearWatch(watchIdRef.current);
       watchIdRef.current = null;
     }
-  };
+  }, []);
 
-  const stopTracking = async () => {
+  const stopTracking = useCallback(async () => {
     try {
       const token = await user.getIdToken();
       await fetch(`${API_BASE_URL}/api/driver/location`, {
@@ -384,9 +311,9 @@ const LocationTracker = ({ updateInterval = 10000 }) => {
     } catch (err) {
       setError(err.message);
     }
-  };
+  }, [user, stopPolling, stopWatchingPosition]);
 
-  const startTracking = async () => {
+  const startTracking = useCallback(async () => {
     try {
       if (batteryLevel !== null && batteryLevel < 20) {
         setError('Battery level too low for continuous tracking');
@@ -401,9 +328,9 @@ const LocationTracker = ({ updateInterval = 10000 }) => {
       setError(err.message);
       setIsTracking(false);
     }
-  };
+  }, [batteryLevel, getCurrentLocation, updateLocationToServer, startWatchingPosition, startPolling]);
 
-  const handleToggle = async (e) => {
+  const handleToggle = useCallback(async (e) => {
     e.preventDefault();
     setIsLoading(true);
     
@@ -418,9 +345,9 @@ const LocationTracker = ({ updateInterval = 10000 }) => {
     } finally {
       setTimeout(() => setIsLoading(false), 500);
     }
-  };
+  }, [isTracking, startTracking, stopTracking]);
 
-  const handleManualRefresh = async () => {
+  const handleManualRefresh = useCallback(async () => {
     if (isTracking) {
       try {
         setIsLoading(true);
@@ -432,8 +359,152 @@ const LocationTracker = ({ updateInterval = 10000 }) => {
         setTimeout(() => setIsLoading(false), 500);
       }
     }
-  };
+  }, [isTracking, getCurrentLocation, updateLocationToServer]);
 
+  // Initialize map and markers when maps are loaded and location is available
+  useEffect(() => {
+    if (!mapsLoaded || !location) return;
+
+    const [lng, lat] = location;
+    
+    // Initialize map only once
+    if (!mapRef.current) {
+      mapRef.current = new window.google.maps.Map(document.getElementById('map'), {
+        center: { lat, lng },
+        zoom: 18,
+        mapTypeId: 'hybrid',
+        streetViewControl: false,
+        mapTypeControl: true,
+        fullscreenControl: false
+      });
+    }
+
+    // Initialize marker only once
+    if (!markerRef.current) {
+      markerRef.current = new window.google.maps.Marker({
+        position: { lat, lng },
+        map: mapRef.current,
+        icon: {
+          path: window.google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+          scale: 6,
+          rotation: heading || 0,
+          fillColor: '#EA4335',
+          fillOpacity: 1,
+          strokeWeight: 2,
+          strokeColor: '#FFFFFF'
+        }
+      });
+    }
+
+    // Initialize accuracy circle only once
+    if (accuracy && !accuracyCircleRef.current) {
+      accuracyCircleRef.current = new window.google.maps.Circle({
+        strokeColor: '#4285F4',
+        strokeOpacity: 0.8,
+        strokeWeight: 2,
+        fillColor: '#4285F4',
+        fillOpacity: 0.2,
+        map: mapRef.current,
+        center: { lat, lng },
+        radius: accuracy
+      });
+    }
+
+    // Initialize heading line only once
+    if (heading && !headingLineRef.current) {
+      const endPoint = computeOffset(lat, lng, 20, heading);
+      headingLineRef.current = new window.google.maps.Polyline({
+        path: [
+          { lat, lng },
+          endPoint
+        ],
+        geodesic: true,
+        strokeColor: '#EA4335',
+        strokeOpacity: 1.0,
+        strokeWeight: 2,
+        map: mapRef.current
+      });
+    }
+
+    return () => {
+      // Cleanup when component unmounts
+      if (mapRef.current) {
+        mapRef.current = null;
+      }
+    };
+  }, [mapsLoaded, location, accuracy, heading, computeOffset]);
+
+  // Update map elements when location changes
+  useEffect(() => {
+    if (!mapsLoaded || !location || !mapRef.current || !markerRef.current) return;
+
+    const [lng, lat] = location;
+    
+    // Smooth marker transition
+    if (prevLocationRef.current) {
+      const [prevLng, prevLat] = prevLocationRef.current;
+      const steps = 10;
+      let step = 0;
+      
+      const animateMarker = () => {
+        step++;
+        const progress = step / steps;
+        const newLat = prevLat + (lat - prevLat) * progress;
+        const newLng = prevLng + (lng - prevLng) * progress;
+        
+        markerRef.current.setPosition({ lat: newLat, lng: newLng });
+        markerRef.current.setIcon({
+          ...markerRef.current.getIcon(),
+          rotation: heading || 0
+        });
+        
+        if (accuracyCircleRef.current) {
+          accuracyCircleRef.current.setCenter({ lat: newLat, lng: newLng });
+        }
+        
+        if (headingLineRef.current && heading) {
+          const endPoint = computeOffset(newLat, newLng, 20, heading);
+          headingLineRef.current.setPath([
+            { lat: newLat, lng: newLng },
+            endPoint
+          ]);
+        }
+
+        if (step < steps) {
+          requestAnimationFrame(animateMarker);
+        } else {
+          mapRef.current.panTo({ lat, lng });
+        }
+      };
+      
+      requestAnimationFrame(animateMarker);
+    } else {
+      // Immediate update if no previous position
+      markerRef.current.setPosition({ lat, lng });
+      markerRef.current.setIcon({
+        ...markerRef.current.getIcon(),
+        rotation: heading || 0
+      });
+      
+      if (accuracyCircleRef.current) {
+        accuracyCircleRef.current.setCenter({ lat, lng });
+      }
+      
+      if (headingLineRef.current && heading) {
+        const endPoint = computeOffset(lat, lng, 20, heading);
+        headingLineRef.current.setPath([
+          { lat, lng },
+          endPoint
+        ]);
+      }
+      
+      mapRef.current.panTo({ lat, lng });
+    }
+
+    prevLocationRef.current = location;
+  }, [location, accuracy, heading, mapsLoaded, computeOffset]);
+
+  // Network status and battery level monitoring
   useEffect(() => {
     const getBatteryStatus = async () => {
       if ('getBattery' in navigator) {
@@ -479,8 +550,12 @@ const LocationTracker = ({ updateInterval = 10000 }) => {
           if (data.success && data.data) {
             setIsTracking(data.data.isLocationActive);
             if (data.data.location?.coordinates) {
-              setLocation(data.data.location.coordinates);
-              setAccuracy(data.data.location.accuracy || null);
+              updateLocation(
+                data.data.location.coordinates,
+                data.data.location.accuracy || null,
+                data.data.location.heading || null,
+                data.data.location.speed || null
+              );
               setLastUpdated(new Date(data.data.location.timestamp));
             }
           }
@@ -498,7 +573,7 @@ const LocationTracker = ({ updateInterval = 10000 }) => {
       stopPolling();
       stopWatchingPosition();
     };
-  }, [user]);
+  }, [user, updateLocation]);
 
   return (
     <div className="location-tracker">
@@ -574,7 +649,7 @@ const LocationTracker = ({ updateInterval = 10000 }) => {
       <div>
         {location ? (
           <div>
-            <LiveMap coordinates={location} />
+            <div id="map" className="map-container" />
             
             <div className="location-info-grid">
               <div className="info-card">
