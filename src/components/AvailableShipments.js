@@ -5,6 +5,7 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import '../styles/AvailableShipments.css';
 import { initializeFCM, setupForegroundNotifications, requestNotificationPermission } from '../services/notificationService';
+import LocationTracker from './LocationTracker';
 
 function AvailableShipments() {
   const [shipments, setShipments] = useState([]);
@@ -12,6 +13,7 @@ function AvailableShipments() {
   const [loading, setLoading] = useState(true);
   const [notificationPermission, setNotificationPermission] = useState(Notification.permission);
   const [showInstructions, setShowInstructions] = useState(false);
+  const [activeShipment, setActiveShipment] = useState(null);
 
   useEffect(() => {
     const setupNotificationsAndData = async () => {
@@ -74,7 +76,7 @@ function AvailableShipments() {
       const token = await user.getIdToken();
 
       // Fetch driver status
-      const statusResponse = await axios.get('https://jio-yatri-driver.onrender.com/api/driver/status', {
+      const statusResponse = await axios.get('http://localhost:5000/api/driver/status', {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -101,13 +103,13 @@ function AvailableShipments() {
 
   const fetchAvailableShipments = async (token) => {
     try {
-      const response = await axios.get('https://jio-yatri-driver.onrender.com/api/shipments/matching', {
+      const response = await axios.get('http://localhost:5000/api/shipments/matching', {
         headers: { Authorization: `Bearer ${token}` },
       });
-      // setShipments(response.data.shipments || []);
-      // // if (response.data.shipments.length === 0) {
-      // //   toast.info('No matching shipments available');
-      // // }
+      setShipments(response.data.shipments || []);
+      if (response.data.shipments.length === 0 && shipments.length !== 0) {
+        toast.info('No matching shipments available');
+      }
     } catch (error) {
       console.error('Error fetching shipments:', error);
       toast.error('Failed to load shipments');
@@ -128,8 +130,8 @@ function AvailableShipments() {
 
       const toastId = toast.loading('Accepting shipment...');
 
-      await axios.put(
-        `https://jio-yatri-driver.onrender.com/api/shipments/${shipmentId}/accept`,
+      const response = await axios.put(
+        `http://localhost:5000/api/shipments/${shipmentId}/accept`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -141,11 +143,43 @@ function AvailableShipments() {
         autoClose: 3000,
       });
 
+      // Set the active shipment
+      setActiveShipment(response.data.shipment);
+      
       // Refresh data immediately after accepting
       await fetchData();
     } catch (error) {
       console.error('Error accepting shipment:', error);
       toast.error(error.response?.data?.message || 'Error accepting shipment');
+    }
+  };
+
+  const handleCompleteShipment = async () => {
+    try {
+      const auth = getAuth();
+      const user = auth.currentUser;
+      const token = await user.getIdToken();
+
+      const toastId = toast.loading('Completing shipment...');
+
+      await axios.put(
+        `http://localhost:5000/api/shipments/${activeShipment._id}/complete`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      toast.update(toastId, {
+        render: 'Shipment completed successfully!',
+        type: 'success',
+        isLoading: false,
+        autoClose: 3000,
+      });
+
+      setActiveShipment(null);
+      await fetchData();
+    } catch (error) {
+      console.error('Error completing shipment:', error);
+      toast.error(error.response?.data?.message || 'Error completing shipment');
     }
   };
 
@@ -213,6 +247,43 @@ function AvailableShipments() {
 
       {loading ? (
         <div className="loading-message">Loading data...</div>
+      ) : activeShipment ? (
+        <div className="active-shipment-container">
+          <div className="active-shipment-header">
+            <h3>Active Shipment: {activeShipment.trackingNumber}</h3>
+            <button 
+              onClick={handleCompleteShipment}
+              className="complete-shipment-btn"
+            >
+              Mark as Delivered
+            </button>
+          </div>
+          
+          <div className="shipment-details">
+            <div className="detail-section">
+              <h4>Pickup Location</h4>
+              <p><strong>Name:</strong> {activeShipment.sender.name}</p>
+              <p><strong>Address:</strong> {activeShipment.sender.address.addressLine1}</p>
+              <p><strong>Phone:</strong> {activeShipment.sender.phone}</p>
+            </div>
+            
+            <div className="detail-section">
+              <h4>Delivery Location</h4>
+              <p><strong>Name:</strong> {activeShipment.receiver.name}</p>
+              <p><strong>Address:</strong> {activeShipment.receiver.address.addressLine1}</p>
+              <p><strong>Phone:</strong> {activeShipment.receiver.phone}</p>
+            </div>
+            
+            <div className="detail-section">
+              <h4>Shipment Details</h4>
+              <p><strong>Vehicle Type:</strong> {activeShipment.vehicleType}</p>
+              <p><strong>Distance:</strong> {activeShipment.distance.toFixed(2)} km</p>
+              <p><strong>Cost:</strong> ₹{activeShipment.cost.toFixed(2)}</p>
+            </div>
+          </div>
+          
+          <LocationTracker shipment={activeShipment} />
+        </div>
       ) : driverStatus !== 'active' ? (
         <div className="inactive-message">
           You must be active to view available shipments.
@@ -227,9 +298,10 @@ function AvailableShipments() {
             <li key={shipment._id} className="shipment-card">
               <div className="shipment-details">
                 <p><strong>Tracking No:</strong> {shipment.trackingNumber}</p>
-                <p><strong>From:</strong> {shipment.sender.address.addressLine1}, {shipment.sender.address.city}</p>
-                <p><strong>To:</strong> {shipment.receiver.address.addressLine1}, {shipment.receiver.address.city}</p>
+                <p><strong>From:</strong> {shipment.sender.address.addressLine1}</p>
+                <p><strong>To:</strong> {shipment.receiver.address.addressLine1}</p>
                 <p><strong>Vehicle Type:</strong> {shipment.vehicleType}</p>
+                <p><strong>Distance:</strong> {shipment.distance.toFixed(2)} km</p>
                 <p><strong>Cost:</strong> ₹{shipment.cost.toFixed(2)}</p>
               </div>
               <button
