@@ -207,3 +207,95 @@
     display: block;
   }
 }
+/* User Profile Icon Styles */
+.user-controls {
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+  padding-left: 20px;
+}
+
+.profile-icon {
+  background: none;
+  border: none;
+  color: #4a6cf7; /* Matching your blue theme */
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  padding: 8px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.profile-icon:hover {
+  color: #3a5bd9; /* Slightly darker blue on hover */
+  background-color: rgba(74, 108, 247, 0.1); /* Subtle background on hover */
+  transform: scale(1.1);
+}
+
+.profile-icon:active {
+  transform: scale(0.95);
+}
+
+/* Pulse animation for attention (optional) */
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+.profile-icon.has-notifications {
+  position: relative;
+  animation: pulse 1.5s infinite;
+}
+
+/* Notification badge (optional) */
+.profile-icon::after {
+  content: '';
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 8px;
+  height: 8px;
+  background-color: #f56565; /* Red for notifications */
+  border-radius: 50%;
+  border: 2px solid white;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.profile-icon.has-notifications::after {
+  opacity: 1;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .user-controls {
+    margin-left: 0;
+    padding-left: 0;
+    justify-content: center;
+    width: 100%;
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+  }
+  
+  .profile-icon {
+    margin-right: 0;
+    font-size: 1.5rem;
+  }
+}
+
+/* Dark mode support (optional) */
+@media (prefers-color-scheme: dark) {
+  .profile-icon {
+    color: #6e8efb;
+  }
+  
+  .profile-icon:hover {
+    color: #8fa3fb;
+    background-color: rgba(110, 142, 251, 0.2);
+  }
+}
