@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { FaLocationArrow, FaMapMarkerAlt, FaExclamationTriangle, FaSync, FaInfoCircle, FaBatteryThreeQuarters } from 'react-icons/fa';
+import { FaLocationArrow, FaMapMarkerAlt, FaExclamationTriangle, FaInfoCircle, FaBatteryThreeQuarters } from 'react-icons/fa';
 import '../styles/LocationTracker.css';
 
-const LocationTracker = ({ updateInterval = 10000 }) => {
+const LocationTracker = () => {
   const { user } = useAuth();
   const [location, setLocation] = useState(null);
   const [isTracking, setIsTracking] = useState(false);
@@ -243,12 +243,12 @@ const LocationTracker = ({ updateInterval = 10000 }) => {
     abortControllerRef.current = new AbortController();
 
     fetchLocation();
-    pollingRef.current = setInterval(fetchLocation, updateInterval);
+    pollingRef.current = setInterval(fetchLocation, 5000); // Changed to 5 seconds
 
     return () => {
       abortControllerRef.current.abort();
     };
-  }, [fetchLocation, updateInterval]);
+  }, [fetchLocation]);
 
   const stopPolling = useCallback(() => {
     if (pollingRef.current) {
@@ -347,20 +347,6 @@ const LocationTracker = ({ updateInterval = 10000 }) => {
     }
   }, [isTracking, startTracking, stopTracking]);
 
-  const handleManualRefresh = useCallback(async () => {
-    if (isTracking) {
-      try {
-        setIsLoading(true);
-        const pos = await getCurrentLocation();
-        await updateLocationToServer(pos.coords);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setTimeout(() => setIsLoading(false), 500);
-      }
-    }
-  }, [isTracking, getCurrentLocation, updateLocationToServer]);
-
   // Initialize map and markers when maps are loaded and location is available
   useEffect(() => {
     if (!mapsLoaded || !location) return;
@@ -372,7 +358,7 @@ const LocationTracker = ({ updateInterval = 10000 }) => {
       mapRef.current = new window.google.maps.Map(document.getElementById('map'), {
         center: { lat, lng },
         zoom: 18,
-        mapTypeId: 'hybrid',
+        mapTypeId: 'roadmap',
         streetViewControl: false,
         mapTypeControl: true,
         fullscreenControl: false
@@ -385,13 +371,9 @@ const LocationTracker = ({ updateInterval = 10000 }) => {
         position: { lat, lng },
         map: mapRef.current,
         icon: {
-          path: window.google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
-          scale: 6,
-          rotation: heading || 0,
-          fillColor: '#EA4335',
-          fillOpacity: 1,
-          strokeWeight: 2,
-          strokeColor: '#FFFFFF'
+          url: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png',
+          scaledSize: new window.google.maps.Size(40, 40),
+          anchor: new window.google.maps.Point(20, 20)
         }
       });
     }
@@ -453,10 +435,6 @@ const LocationTracker = ({ updateInterval = 10000 }) => {
         const newLng = prevLng + (lng - prevLng) * progress;
         
         markerRef.current.setPosition({ lat: newLat, lng: newLng });
-        markerRef.current.setIcon({
-          ...markerRef.current.getIcon(),
-          rotation: heading || 0
-        });
         
         if (accuracyCircleRef.current) {
           accuracyCircleRef.current.setCenter({ lat: newLat, lng: newLng });
@@ -481,10 +459,6 @@ const LocationTracker = ({ updateInterval = 10000 }) => {
     } else {
       // Immediate update if no previous position
       markerRef.current.setPosition({ lat, lng });
-      markerRef.current.setIcon({
-        ...markerRef.current.getIcon(),
-        rotation: heading || 0
-      });
       
       if (accuracyCircleRef.current) {
         accuracyCircleRef.current.setCenter({ lat, lng });
@@ -592,18 +566,6 @@ const LocationTracker = ({ updateInterval = 10000 }) => {
           </div>
           
           <div className="button-group">
-            {isTracking && (
-              <button 
-                onClick={handleManualRefresh}
-                className={`btn btn-success ${isLoading || !isOnline ? 'disabled' : ''}`}
-                disabled={isLoading || !isOnline}
-                aria-label="Refresh location"
-                aria-busy={isLoading}
-              >
-                {isLoading ? <FaSync className="loading-spinner" /> : <FaSync />} Refresh
-              </button>
-            )}
-            
             <button
               onClick={handleToggle}
               disabled={isLoading || !isOnline}
