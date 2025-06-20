@@ -636,8 +636,8 @@ const HeroSection = () => {
                                             </button>
                                             <button
                                                 type="button"
-                                                className={`vehicle-btn ${driverData.vehicleType === 'truck' ? 'active' : ''}`}
-                                                onClick={() => setDriverData({ ...driverData, vehicleType: 'truck' })}
+                                                className={`vehicle-btn ${driverData.vehicleType === 'Truck' ? 'active' : ''}`}
+                                                onClick={() => setDriverData({ ...driverData, vehicleType: 'Truck' })}
                                             >
                                                 <MdLocalShipping /> Truck
                                             </button>
