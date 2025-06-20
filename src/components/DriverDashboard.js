@@ -178,9 +178,9 @@ const DriverDashboard = () => {
         if (!driverInfo?.vehicleType) return <FaCar className="vehicle-icon" />;
         
         switch (driverInfo.vehicleType.toLowerCase()) {
-            case 'twowheeler': return <MdDirectionsBike className="vehicle-icon" />;
-            case 'threewheeler': return <MdDirectionsCar className="vehicle-icon" />;
-            case 'truck': return <MdLocalShipping className="vehicle-icon" />;
+            case 'Twowheeler': return <MdDirectionsBike className="vehicle-icon" />;
+            case 'Threewheeler': return <MdDirectionsCar className="vehicle-icon" />;
+            case 'Truck': return <MdLocalShipping className="vehicle-icon" />;
             default: return <MdDirectionsCar className="vehicle-icon" />;
         }
     };
