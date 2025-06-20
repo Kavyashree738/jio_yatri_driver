@@ -9,7 +9,7 @@ const driverSchema = new mongoose.Schema({
     ref: 'fs.files',
     default: null
   },
-  vehicleType: { type: String, enum: ['TwoWheeler', 'ThreeWheeler', 'truck'], required: true },
+  vehicleType: { type: String, enum: ['TwoWheeler', 'ThreeWheeler', 'Truck'], required: true },
   vehicleNumber: {
     type: String, required: true,
     validate: {
