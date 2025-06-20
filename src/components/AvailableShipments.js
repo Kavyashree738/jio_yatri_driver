@@ -20,11 +20,7 @@ function AvailableShipments() {
       try {
         await initializeFCM();
         setupForegroundNotifications();
-
-        // Fetch initial data
         await fetchData();
-
-        // Set up polling every 10 seconds
         const intervalId = setInterval(fetchData, 10000);
         return () => clearInterval(intervalId);
       } catch (error) {
@@ -48,16 +44,11 @@ function AvailableShipments() {
   };
 
   const openBrowserSettings = () => {
-    // Chrome
     if (navigator.userAgent.includes('Chrome')) {
       window.open('chrome://settings/content/notifications');
-    }
-    // Firefox
-    else if (navigator.userAgent.includes('Firefox')) {
+    } else if (navigator.userAgent.includes('Firefox')) {
       window.open('about:preferences#privacy');
-    }
-    // Safari
-    else if (navigator.userAgent.includes('Safari')) {
+    } else if (navigator.userAgent.includes('Safari')) {
       window.open('x-apple.systempreferences:com.apple.preference.notifications');
     }
   };
@@ -75,19 +66,16 @@ function AvailableShipments() {
 
       const token = await user.getIdToken();
 
-      // Fetch driver status
-      const statusResponse = await axios.get('https://jio-yatri-driver.onrender.com/api/driver/status', {
+      const statusResponse = await axios.get('http://localhost:5000/api/driver/status', {
         headers: { Authorization: `Bearer ${token}` },
       });
 
       const newStatus = statusResponse.data.data.status;
 
-      // Update status if changed
       if (newStatus !== driverStatus) {
         setDriverStatus(newStatus);
       }
 
-      // Always fetch shipments when active (in case shipments changed without status change)
       if (newStatus === 'active') {
         await fetchAvailableShipments(token);
       } else {
@@ -103,7 +91,7 @@ function AvailableShipments() {
 
   const fetchAvailableShipments = async (token) => {
     try {
-      const response = await axios.get('https://jio-yatri-driver.onrender.com/api/shipments/matching', {
+      const response = await axios.get('http://localhost:5000/api/shipments/matching', {
         headers: { Authorization: `Bearer ${token}` },
       });
       setShipments(response.data.shipments || []);
@@ -143,10 +131,7 @@ function AvailableShipments() {
         autoClose: 3000,
       });
 
-      // Set the active shipment
       setActiveShipment(response.data.shipment);
-      
-      // Refresh data immediately after accepting
       await fetchData();
     } catch (error) {
       console.error('Error accepting shipment:', error);
@@ -200,7 +185,6 @@ function AvailableShipments() {
 
       <h2>Available Shipments</h2>
 
-      {/* Notification Permission Section */}
       {notificationPermission === "default" && (
         <div className="permission-request notification-section">
           <h3>Enable Notifications</h3>
@@ -249,40 +233,7 @@ function AvailableShipments() {
         <div className="loading-message">Loading data...</div>
       ) : activeShipment ? (
         <div className="active-shipment-container">
-          <div className="active-shipment-header">
-            <h3>Active Shipment: {activeShipment.trackingNumber}</h3>
-            <button 
-              onClick={handleCompleteShipment}
-              className="complete-shipment-btn"
-            >
-              Mark as Delivered
-            </button>
-          </div>
-          
-          <div className="shipment-details">
-            <div className="detail-section">
-              <h4>Pickup Location</h4>
-              <p><strong>Name:</strong> {activeShipment.sender.name}</p>
-              <p><strong>Address:</strong> {activeShipment.sender.address.addressLine1}</p>
-              <p><strong>Phone:</strong> {activeShipment.sender.phone}</p>
-            </div>
-            
-            <div className="detail-section">
-              <h4>Delivery Location</h4>
-              <p><strong>Name:</strong> {activeShipment.receiver.name}</p>
-              <p><strong>Address:</strong> {activeShipment.receiver.address.addressLine1}</p>
-              <p><strong>Phone:</strong> {activeShipment.receiver.phone}</p>
-            </div>
-            
-            <div className="detail-section">
-              <h4>Shipment Details</h4>
-              <p><strong>Vehicle Type:</strong> {activeShipment.vehicleType}</p>
-              <p><strong>Distance:</strong> {activeShipment.distance.toFixed(2)} km</p>
-              <p><strong>Cost:</strong> ₹{activeShipment.cost.toFixed(2)}</p>
-            </div>
-          </div>
-          
-          <LocationTracker shipment={activeShipment} />
+          <LocationTracker key={activeShipment._id} shipment={activeShipment} />
         </div>
       ) : driverStatus !== 'active' ? (
         <div className="inactive-message">
