@@ -50,20 +50,6 @@ const Header = () => {
                         {user && (
                             <Link to="/my-documents" onClick={handleLinkClick}>Documents</Link>
                         )}
-                        {user && (
-                            <div className="user-controls">
-                                <button
-                                    className="profile-icon"
-                                    onClick={handleProfileClick}
-                                    aria-label="User profile"
-                                >
-                                    <FaUserCircle size={24} />
-                                </button>
-                                {/* <button onClick={handleLogout} className="logout-button">
-                  Logout
-                </button> */}
-                            </div>
-                        )}
                     </nav>
 
                     <div
