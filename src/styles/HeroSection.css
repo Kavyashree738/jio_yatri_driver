@@ -877,16 +877,19 @@ progress::-webkit-progress-value {
   font-size: 0.9rem;
 }
 
-/* OTP Input Boxes */
+/* Responsive OTP Input Boxes */
 .otp-container {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 2rem;
+  flex-wrap: wrap;
   gap: 8px;
+  margin-bottom: 2rem;
 }
 
 .otp-input {
-  width: 45px;
+  flex: 1;
+  min-width: 45px;
+  max-width: 60px;
   height: 55px;
   text-align: center;
   font-size: 1.5rem;
@@ -973,6 +976,15 @@ progress::-webkit-progress-value {
   margin-bottom: 1rem;
   min-height: 1.2rem;
 }
+
+@media (max-width: 400px) {
+  .otp-input {
+    font-size: 1.2rem;
+    height: 48px;
+    min-width: 40px;
+  }
+}
+
 .welcome-message {
   text-align: center;
   padding: 2rem;
