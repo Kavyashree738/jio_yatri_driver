@@ -58,7 +58,9 @@
   grid-template-columns: 1fr 1fr;
   gap: 15px;
   border-top: 1px solid rgba(0, 0, 0, 0.05);
+  margin-top: -4px; /* optional to snug it below map */
 }
+
 
 .eta-display p {
   margin: 0;
