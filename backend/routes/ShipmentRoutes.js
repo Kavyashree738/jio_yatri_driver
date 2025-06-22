@@ -21,7 +21,28 @@ router.get('/:orderId/status', verifyFirebaseToken, shipmentController.getOrderS
 
 router.get('/matching',verifyFirebaseToken , shipmentController.getMatchingShipments);
 
+router.put('/:id/cancel', verifyFirebaseToken, shipmentController.cancelShipment);
+
+// Mark shipment as delivered
+router.put('/:id/deliver', verifyFirebaseToken, shipmentController.deliverShipment);
+
+router.put(
+  '/:id/cancel',
+  verifyFirebaseToken,
+  shipmentController.cancelShipment
+);
+
+router.put(
+  '/:id/deliver',
+  verifyFirebaseToken,
+  shipmentController.deliverShipment
+);
 
 
+router.patch(
+  '/:id/driver-location',
+  verifyFirebaseToken,
+  shipmentController.updateDriverLocation
+);
 
 module.exports = router;
