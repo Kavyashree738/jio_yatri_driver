@@ -55,7 +55,7 @@ exports.registerDriver = async (req, res) => {
       },
       status: 'active'
     });
-    console.log(driver)
+    console.log(`the driver details ${driver}`)
     await driver.save();
     
     res.status(201).json({ 
@@ -173,8 +173,6 @@ exports.getDriverStatus = async (req, res) => {
 };
 
 
-
-// GET driver location
 exports.getDriverLocation = async (req, res) => {
   try {
     const driver = await Driver.findOne({ userId: req.user.uid })
@@ -205,8 +203,33 @@ exports.getDriverLocation = async (req, res) => {
 // UPDATE driver location
 exports.updateDriverLocation = async (req, res) => {
   try {
+    // console.log('Incoming location update:', req.body); // Debug log
+
+    // Validate coordinates if location is being activated
+    if (req.body.isLocationActive !== false) {
+      if (!req.body.coordinates || !Array.isArray(req.body.coordinates)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Coordinates must be provided as an array [longitude, latitude]'
+        });
+      }
+
+      // Additional coordinate validation
+      const [lng, lat] = req.body.coordinates;
+      if (typeof lng !== 'number' || typeof lat !== 'number' ||
+          lng < -180 || lng > 180 || lat < -90 || lat > 90) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid coordinates. Longitude must be [-180,180] and latitude [-90,90]'
+        });
+      }
+    }
+
     const update = req.body.isLocationActive === false
-      ? { isLocationActive: false }
+      ? { 
+          isLocationActive: false,
+          'location.lastUpdated': Date.now()
+        }
       : {
           location: {
             type: 'Point',
@@ -219,8 +242,8 @@ exports.updateDriverLocation = async (req, res) => {
 
     const driver = await Driver.findOneAndUpdate(
       { userId: req.user.uid },
-      update,
-      { new: true }
+      { $set: update },
+      { new: true, runValidators: true }
     );
     
     if (!driver) {
@@ -230,23 +253,26 @@ exports.updateDriverLocation = async (req, res) => {
       });
     }
 
+    // console.log('Updated driver location:', driver.location); // Debug log
+
     res.status(200).json({
       success: true,
-      data: req.body.isLocationActive === false
-        ? { isLocationActive: false }
-        : {
-            coordinates: driver.location.coordinates,
-            lastUpdated: driver.location.lastUpdated
-          }
+      data: {
+        coordinates: driver.location.coordinates,
+        lastUpdated: driver.location.lastUpdated,
+        isLocationActive: driver.isLocationActive
+      }
     });
   } catch (err) {
     console.error('Error updating location:', err);
     res.status(500).json({ 
       success: false, 
-      error: 'Failed to update location' 
+      error: err.message || 'Failed to update location' 
     });
   }
 };
+
+
 
 // In your driverController.js
 exports.registerFCMToken = async (req, res) => {
