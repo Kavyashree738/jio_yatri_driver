@@ -258,7 +258,7 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
     try {
       const token = await user.getIdToken();
       await axios.put(
-        `http://localhost:5000/api/shipments/${activeShipment._id}/cancel`,
+        `https://jio-yatri-driver.onrender.com/api/shipments/${activeShipment._id}/cancel`,
         { reason: "Driver cancelled the shipment" },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -287,7 +287,7 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
     try {
       const token = await user.getIdToken();
       await axios.put(
-        `http://localhost:5000/api/shipments/${activeShipment._id}/deliver`,
+        `https://jio-yatri-driver.onrender.com/api/shipments/${activeShipment._id}/deliver`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
