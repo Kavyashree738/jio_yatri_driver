@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState,useCallback } from 'react';
 import axios from 'axios';
 import { getAuth } from 'firebase/auth';
 import { ToastContainer, toast } from 'react-toastify';
@@ -66,15 +66,12 @@ function AvailableShipments() {
 
       const token = await user.getIdToken();
 
-      const statusResponse = await axios.get('http://localhost:5000/api/driver/status', {
+      const statusResponse = await axios.get(`${process.env.REACT_APP_API_URL}/api/driver/status`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
       const newStatus = statusResponse.data.data.status;
-
-      if (newStatus !== driverStatus) {
-        setDriverStatus(newStatus);
-      }
+      setDriverStatus(newStatus);
 
       if (newStatus === 'active') {
         await fetchAvailableShipments(token);
@@ -91,7 +88,7 @@ function AvailableShipments() {
 
   const fetchAvailableShipments = async (token) => {
     try {
-      const response = await axios.get('http://localhost:5000/api/shipments/matching', {
+      const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/shipments/matching`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setShipments(response.data.shipments || []);
@@ -114,13 +111,34 @@ function AvailableShipments() {
         return;
       }
 
+      const position = await new Promise((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(
+          resolve, 
+          reject, 
+          {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0
+          }
+        );
+      }).catch(error => {
+        console.error('Geolocation error:', error);
+        toast.error('Could not get your current location');
+        throw error;
+      });
+
+      const location = [
+        position.coords.longitude,
+        position.coords.latitude
+      ];
+
       const token = await user.getIdToken();
 
       const toastId = toast.loading('Accepting shipment...');
 
       const response = await axios.put(
-        `http://localhost:5000/api/shipments/${shipmentId}/accept`,
-        {},
+        `${process.env.REACT_APP_API_URL}/api/shipments/${shipmentId}/accept`,
+        { location },
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -139,49 +157,20 @@ function AvailableShipments() {
     }
   };
 
-  const handleCompleteShipment = async () => {
-    try {
-      const auth = getAuth();
-      const user = auth.currentUser;
-      const token = await user.getIdToken();
-
-      const toastId = toast.loading('Completing shipment...');
-
-      await axios.put(
-        `http://localhost:5000/api/shipments/${activeShipment._id}/complete`,
-        {},
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      toast.update(toastId, {
-        render: 'Shipment completed successfully!',
-        type: 'success',
-        isLoading: false,
-        autoClose: 3000,
-      });
-
-      setActiveShipment(null);
-      await fetchData();
-    } catch (error) {
-      console.error('Error completing shipment:', error);
-      toast.error(error.response?.data?.message || 'Error completing shipment');
+  const handleStatusUpdate = useCallback((newStatus) => {
+    setActiveShipment(prev => {
+      if (!prev) return null;
+      return { ...prev, status: newStatus };
+    });
+    
+    if (['cancelled', 'delivered'].includes(newStatus)) {
+      fetchData();
     }
-  };
+  }, []);
 
   return (
     <div className="available-shipments">
-      <ToastContainer
-        position="top-right"
-        autoClose={5000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="colored"
-      />
+      <ToastContainer position="top-right" autoClose={5000} theme="colored" />
 
       <h2>Available Shipments</h2>
 
@@ -225,15 +214,15 @@ function AvailableShipments() {
         </div>
       )}
 
-      <div className={`status-indicator ${driverStatus === 'active' ? 'status-active' : 'status-inactive'}`}>
-        Current Status: <strong>{driverStatus.toUpperCase()}</strong>
-      </div>
-
       {loading ? (
         <div className="loading-message">Loading data...</div>
       ) : activeShipment ? (
         <div className="active-shipment-container">
-          <LocationTracker key={activeShipment._id} shipment={activeShipment} />
+          <LocationTracker 
+            key={activeShipment._id} 
+            shipment={activeShipment}
+            onStatusUpdate={handleStatusUpdate}
+          />
         </div>
       ) : driverStatus !== 'active' ? (
         <div className="inactive-message">
