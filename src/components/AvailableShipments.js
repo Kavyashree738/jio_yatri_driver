@@ -66,7 +66,7 @@ function AvailableShipments() {
 
       const token = await user.getIdToken();
 
-      const statusResponse = await axios.get(`${process.env.REACT_APP_API_URL}/api/driver/status`, {
+      const statusResponse = await axios.get(`https://jio-yatri-driver.onrender.com/api/driver/status`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -88,7 +88,7 @@ function AvailableShipments() {
 
   const fetchAvailableShipments = async (token) => {
     try {
-      const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/shipments/matching`, {
+      const response = await axios.get(`https://jio-yatri-driver.onrender.com/api/shipments/matching`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setShipments(response.data.shipments || []);
@@ -137,7 +137,7 @@ function AvailableShipments() {
       const toastId = toast.loading('Accepting shipment...');
 
       const response = await axios.put(
-        `${process.env.REACT_APP_API_URL}/api/shipments/${shipmentId}/accept`,
+        `https://jio-yatri-driver.onrender.com/api/shipments/${shipmentId}/accept`,
         { location },
         { headers: { Authorization: `Bearer ${token}` } }
       );
