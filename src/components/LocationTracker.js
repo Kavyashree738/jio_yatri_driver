@@ -1,7 +1,28 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { debounce } from 'lodash';
-import '../styles/LocationTracker.css'
+import '../styles/LocationTracker.css';
+import axios from 'axios';
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
+const calculateDistance = (coord1, coord2) => {
+  const [lon1, lat1] = coord1;
+  const [lon2, lat2] = coord2;
+  const R = 6371e3;
+  const ϕ1 = lat1 * Math.PI / 180;
+  const ϕ2 = lat2 * Math.PI / 180;
+  const Δϕ = (lat2 - lat1) * Math.PI / 180;
+  const Δλ = (lon2 - lon1) * Math.PI / 180;
+
+  const a = Math.sin(Δϕ / 2) * Math.sin(Δϕ / 2) +
+    Math.cos(ϕ1) * Math.cos(ϕ2) *
+    Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+  return R * c;
+};
+
 const useGeolocation = (options) => {
   const [position, setPosition] = useState(null);
   const [error, setError] = useState(null);
@@ -13,13 +34,17 @@ const useGeolocation = (options) => {
     }
 
     const watchId = navigator.geolocation.watchPosition(
-      (pos) => setPosition({
-        coords: {
-          latitude: pos.coords.latitude,
-          longitude: pos.coords.longitude,
-          heading: pos.coords.heading
-        }
-      }),
+      (pos) => {
+        const newPos = {
+          coords: {
+            latitude: pos.coords.latitude,
+            longitude: pos.coords.longitude,
+            heading: pos.coords.heading
+          }
+        };
+        setPosition(newPos);
+        localStorage.setItem("lastKnownLocation", JSON.stringify([pos.coords.longitude, pos.coords.latitude]));
+      },
       (err) => setError(err.message),
       options
     );
@@ -41,20 +66,44 @@ const EtaDisplay = React.memo(({ etaToSender, etaToReceiver, distanceToSender, d
   </div>
 ));
 
-const LocationTracker = ({ updateInterval = 5000, shipment }) => {
+const LocationTracker = ({ shipment, onStatusUpdate }) => {
   const { user } = useAuth();
-  const { position: geoPosition, error: geoError } = useGeolocation({
+  const { position: geoPosition } = useGeolocation({
     enableHighAccuracy: true,
     timeout: 10000,
     maximumAge: 0
   });
 
-  const [routeError, setRouteError] = useState(null);
+  const [localShipment, setLocalShipment] = useState(() => {
+    const saved = localStorage.getItem('lastShipment');
+    return saved ? JSON.parse(saved) : null;
+  });
+
+  useEffect(() => {
+    if (shipment) {
+      localStorage.setItem("lastShipment", JSON.stringify(shipment));
+      setLocalShipment(shipment);
+    }
+  }, [shipment]);
+
+  const activeShipment = shipment || localShipment;
+
+  const location = useMemo(() => {
+    if (geoPosition?.coords) {
+      return [geoPosition.coords.longitude, geoPosition.coords.latitude];
+    }
+    const stored = localStorage.getItem('lastKnownLocation');
+    return stored ? JSON.parse(stored) : null;
+  }, [geoPosition]);
+
+  const heading = geoPosition?.coords?.heading || 0;
+
   const [mapLoaded, setMapLoaded] = useState(false);
   const [etaToSender, setEtaToSender] = useState('');
   const [distanceToSender, setDistanceToSender] = useState('');
   const [etaToReceiver, setEtaToReceiver] = useState('');
   const [distanceToReceiver, setDistanceToReceiver] = useState('');
+  const [routeError, setRouteError] = useState(null);
 
   const mapRef = useRef(null);
   const mapContainerRef = useRef(null);
@@ -63,54 +112,29 @@ const LocationTracker = ({ updateInterval = 5000, shipment }) => {
   const receiverMarkerRef = useRef(null);
   const directionsRendererRef = useRef(null);
   const directionsServiceRef = useRef(null);
-  const initialCentered = useRef(false);
   const googleMapsScriptRef = useRef(null);
-  const resizeObserverRef = useRef(null);
 
-  const senderCoords = shipment?.sender?.address?.coordinates || {};
-  const receiverCoords = shipment?.receiver?.address?.coordinates || {};
+  const senderLatLng = {
+    lat: activeShipment?.sender?.address?.coordinates?.lat,
+    lng: activeShipment?.sender?.address?.coordinates?.lng,
+  };
 
-  const senderLatLng = useMemo(() => ({ 
-    lat: senderCoords.lat, 
-    lng: senderCoords.lng 
-  }), [senderCoords]);
-
-  const receiverLatLng = useMemo(() => ({
-    lat: receiverCoords.lat,
-    lng: receiverCoords.lng
-  }), [receiverCoords]);
-
-  const location = geoPosition?.coords ? 
-    [geoPosition.coords.longitude, geoPosition.coords.latitude] : null;
-  const heading = geoPosition?.coords?.heading || null;
-
-  const defaultMapOptions = useMemo(() => ({
-    zoom: 15,
-    mapTypeId: 'roadmap',
-    streetViewControl: false,
-    fullscreenControl: true,
-    mapTypeControl: false,
-  }), []);
-
-  const cleanupMap = useCallback(() => {
-    if (markerRef.current) markerRef.current.setMap(null);
-    if (senderMarkerRef.current) senderMarkerRef.current.setMap(null);
-    if (receiverMarkerRef.current) receiverMarkerRef.current.setMap(null);
-    if (directionsRendererRef.current) directionsRendererRef.current.setMap(null);
-    if (resizeObserverRef.current) resizeObserverRef.current.disconnect();
-    mapRef.current = null;
-  }, []);
+  const receiverLatLng = {
+    lat: activeShipment?.receiver?.address?.coordinates?.lat,
+    lng: activeShipment?.receiver?.address?.coordinates?.lng,
+  };
 
   const initMap = useCallback(() => {
-    if (!shipment || !mapContainerRef.current || mapRef.current) return;
+    if (!activeShipment || !mapContainerRef.current || mapRef.current) return;
 
     const center = location
       ? { lat: location[1], lng: location[0] }
       : { lat: 12.9716, lng: 77.5946 };
 
     mapRef.current = new window.google.maps.Map(mapContainerRef.current, {
-      ...defaultMapOptions,
-      center
+      zoom: 15,
+      center,
+      mapTypeId: 'roadmap'
     });
 
     directionsRendererRef.current = new window.google.maps.DirectionsRenderer({
@@ -125,223 +149,211 @@ const LocationTracker = ({ updateInterval = 5000, shipment }) => {
 
     directionsRendererRef.current.setMap(mapRef.current);
     directionsServiceRef.current = new window.google.maps.DirectionsService();
-
-    // Set up resize observer
-    resizeObserverRef.current = new ResizeObserver(() => {
-      window.google.maps.event.trigger(mapRef.current, 'resize');
-    });
-    resizeObserverRef.current.observe(mapContainerRef.current);
-
     setMapLoaded(true);
-  }, [location, shipment, defaultMapOptions]);
+  }, [location, activeShipment]);
 
-  const updateMap = useCallback(
-    (coords) => {
-      if (!mapRef.current || !window.google || !coords || !mapLoaded || !shipment) return;
+  const updateMap = useCallback(() => {
+    if (!mapRef.current || !location || !activeShipment || !window.google) return;
 
-      const driverLatLng = { lat: coords[1], lng: coords[0] };
+    const driverLatLng = { lat: location[1], lng: location[0] };
 
-      if (!driverLatLng.lat || !senderLatLng.lat || !receiverLatLng.lat) return;
+    if (!markerRef.current) {
+      markerRef.current = new window.google.maps.Marker({
+        position: driverLatLng,
+        map: mapRef.current,
+        icon: {
+          path: window.google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+          scale: 6,
+          rotation: heading,
+          fillColor: '#EA4335',
+          fillOpacity: 1,
+          strokeWeight: 2,
+          strokeColor: '#FFFFFF',
+        },
+        title: 'Your Location',
+      });
+    } else {
+      markerRef.current.setPosition(driverLatLng);
+    }
 
-      // Update or create driver marker
-      if (!markerRef.current) {
-        markerRef.current = new window.google.maps.Marker({
-          position: driverLatLng,
-          map: mapRef.current,
-          icon: {
-            path: window.google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
-            scale: 6,
-            rotation: heading || 0,
-            fillColor: '#EA4335',
-            fillOpacity: 1,
-            strokeWeight: 2,
-            strokeColor: '#FFFFFF',
-          },
-          title: 'Your Location',
-        });
-      } else {
-        markerRef.current.setPosition(driverLatLng);
-        if (heading !== null) {
-          markerRef.current.setIcon({
-            ...markerRef.current.getIcon(),
-            rotation: heading,
-          });
+    if (!senderMarkerRef.current) {
+      senderMarkerRef.current = new window.google.maps.Marker({
+        position: senderLatLng,
+        map: mapRef.current,
+        label: { text: 'S', color: '#FFFFFF' },
+        icon: 'https://maps.google.com/mapfiles/ms/icons/green-dot.png',
+      });
+    }
+
+    if (!receiverMarkerRef.current) {
+      receiverMarkerRef.current = new window.google.maps.Marker({
+        position: receiverLatLng,
+        map: mapRef.current,
+        label: { text: 'R', color: '#FFFFFF' },
+        icon: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png',
+      });
+    }
+
+    directionsServiceRef.current.route(
+      {
+        origin: driverLatLng,
+        destination: receiverLatLng,
+        waypoints: [{ location: senderLatLng, stopover: true }],
+        travelMode: window.google.maps.TravelMode.DRIVING,
+      },
+      (result, status) => {
+        if (status === 'OK') {
+          directionsRendererRef.current.setDirections(result);
+          setRouteError(null);
+          const legs = result.routes[0].legs;
+          if (legs.length === 2) {
+            setDistanceToSender(legs[0].distance.text);
+            setEtaToSender(legs[0].duration.text);
+            setDistanceToReceiver(legs[1].distance.text);
+            setEtaToReceiver(legs[1].duration.text);
+          }
+        } else {
+          setRouteError(`Route error: ${status}`);
         }
       }
+    );
+  }, [location, heading, activeShipment]);
 
-      // Calculate route
-      directionsServiceRef.current.route(
-        {
-          origin: driverLatLng,
-          destination: receiverLatLng,
-          waypoints: [{ location: senderLatLng, stopover: true }],
-          travelMode: window.google.maps.TravelMode.DRIVING,
-          optimizeWaypoints: true,
-        },
-        (result, status) => {
-          if (status === 'OK') {
-            directionsRendererRef.current.setDirections(result);
-            setRouteError(null);
-
-            // Update or create sender marker
-            if (!senderMarkerRef.current) {
-              senderMarkerRef.current = new window.google.maps.Marker({
-                position: senderLatLng,
-                map: mapRef.current,
-                label: { text: 'S', color: '#FFFFFF' },
-                icon: 'https://maps.google.com/mapfiles/ms/icons/green-dot.png',
-              });
-            }
-
-            // Update or create receiver marker
-            if (!receiverMarkerRef.current) {
-              receiverMarkerRef.current = new window.google.maps.Marker({
-                position: receiverLatLng,
-                map: mapRef.current,
-                label: { text: 'R', color: '#FFFFFF' },
-                icon: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png',
-              });
-            }
-
-            // Update ETA and distance information
-            const legs = result.routes[0].legs;
-            if (legs.length === 2) {
-              setDistanceToSender(legs[0].distance.text);
-              setEtaToSender(legs[0].duration.text);
-              setDistanceToReceiver(legs[1].distance.text);
-              setEtaToReceiver(legs[1].duration.text);
-            } else if (legs.length === 1) {
-              setDistanceToSender('');
-              setEtaToSender('');
-              setDistanceToReceiver(legs[0].distance.text);
-              setEtaToReceiver(legs[0].duration.text);
-            }
-          } else {
-            setRouteError(`Route error: ${status}`);
-          }
-        }
-      );
-    },
-    [heading, senderLatLng, receiverLatLng, mapLoaded, shipment]
-  );
-
-  // Debounced version of updateMap
-  const debouncedUpdateMap = useMemo(
-    () => debounce(updateMap, 1000),
-    [updateMap]
-  );
-
-  // Load Google Maps script and initialize map
   useEffect(() => {
-    if (!shipment) {
-      cleanupMap();
+    if (!activeShipment || ['cancelled', 'delivered'].includes(activeShipment.status)) {
+      mapRef.current = null;
+      localStorage.removeItem('lastShipment');
       return;
     }
 
     if (window.google && window.google.maps) {
       initMap();
-      return;
+    } else if (!googleMapsScriptRef.current) {
+      const script = document.createElement('script');
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.REACT_APP_GOOGLE_API_KEY}&libraries=places`;
+      script.async = true;
+      script.defer = true;
+      script.onload = () => {
+        initMap();
+      };
+      document.body.appendChild(script);
+      googleMapsScriptRef.current = script;
     }
+  }, [activeShipment, initMap]);
 
-    if (googleMapsScriptRef.current) return;
-
-    const script = document.createElement('script');
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.REACT_APP_GOOGLE_API_KEY}&libraries=places`;
-    script.async = true;
-    script.defer = true;
-    script.onload = () => {
-      initMap();
-      setMapLoaded(true);
-    };
-    script.onerror = () => setRouteError("Failed to load Google Maps script.");
-    document.body.appendChild(script);
-    googleMapsScriptRef.current = script;
-
-    return () => {
-      if (googleMapsScriptRef.current) {
-        document.body.removeChild(googleMapsScriptRef.current);
-        googleMapsScriptRef.current = null;
-      }
-      cleanupMap();
-    };
-  }, [initMap, cleanupMap, shipment]);
-
-  // Update map when location changes
   useEffect(() => {
-    if (location) {
-      debouncedUpdateMap(location);
-      
-      if (!initialCentered.current && mapRef.current) {
-        mapRef.current.setCenter({ lat: location[1], lng: location[0] });
-        initialCentered.current = true;
-      }
+    if (mapLoaded && location) {
+      updateMap();
     }
-  }, [location, debouncedUpdateMap]);
-
-  // Handle online/offline status
-  useEffect(() => {
-    const handleOnline = () => setRouteError(null);
-    const handleOffline = () => setRouteError("Connection lost - showing cached data");
-
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, []);
+  }, [location, mapLoaded, updateMap]);
 
   const handleRecenter = () => {
-    if (location && mapRef.current) {
+    if (mapRef.current && location) {
       mapRef.current.panTo({ lat: location[1], lng: location[0] });
-      mapRef.current.setZoom(15);
     }
   };
 
-  if (!shipment) {
-    return (
-      <div className="no-shipment-map">
-        <p>No active shipment selected</p>
-      </div>
-    );
+  // Updated handleCancelShipment and handleDeliverShipment functions
+  const handleCancelShipment = async () => {
+    try {
+      const token = await user.getIdToken();
+      await axios.put(
+        `http://localhost:5000/api/shipments/${activeShipment._id}/cancel`,
+        { reason: "Driver cancelled the shipment" },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      // Clear local storage and state
+      localStorage.removeItem('lastShipment');
+      setLocalShipment(null);
+
+      if (onStatusUpdate) {
+        onStatusUpdate('cancelled');
+      }
+
+      // Clean up map resources
+      if (mapRef.current) {
+        mapRef.current = null;
+      }
+
+      toast.success("Shipment cancelled successfully");
+    } catch (error) {
+      console.error('Error cancelling shipment:', error);
+      toast.error(error.response?.data?.message || 'Error cancelling shipment');
+    }
+  };
+
+  const handleDeliverShipment = async () => {
+    try {
+      const token = await user.getIdToken();
+      await axios.put(
+        `http://localhost:5000/api/shipments/${activeShipment._id}/deliver`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      // Clear local storage and state
+      localStorage.removeItem('lastShipment');
+      setLocalShipment(null);
+
+      if (onStatusUpdate) {
+        onStatusUpdate('delivered');
+      }
+
+      // Clean up map resources
+      if (mapRef.current) {
+        mapRef.current = null;
+      }
+
+      toast.success("Shipment delivered successfully!");
+    } catch (error) {
+      console.error('Error delivering shipment:', error);
+      toast.error(error.response?.data?.message || 'Error delivering shipment');
+    }
+  };
+
+  // Update the conditional rendering at the bottom
+  if (!activeShipment ||
+    (activeShipment.status && ['cancelled', 'delivered'].includes(activeShipment.status))) {
+    return <p>No active shipment</p>;
   }
 
   return (
-    <div className="location-tracker-container" style={{ position: 'relative' }}>
+    <div className="location-tracker-container">
       <div
         ref={mapContainerRef}
-        role="application"
-        aria-label="Interactive map showing shipment route"
-        style={{
-          height: '500px',
-          width: '100%',
-          borderRadius: '8px',
-          boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
-        }}
+        className="map-container"
+        style={{ height: '500px', width: '100%' }}
       />
-      
       <button
         onClick={handleRecenter}
         className="recenter-button"
-        aria-label="Center map on current location"
-        title="Center on my location"
+        title="Recenter Map"
       >
         📍
       </button>
-
       <EtaDisplay
         etaToSender={etaToSender}
         etaToReceiver={etaToReceiver}
         distanceToSender={distanceToSender}
         distanceToReceiver={distanceToReceiver}
       />
+      {routeError && <p className="error-message">{routeError}</p>}
 
-      {(routeError || geoError) && (
-        <p className="error-message">
-          {routeError || geoError}
-        </p>
-      )}
+      <div className="shipment-actions">
+        <button
+          onClick={handleCancelShipment}
+          className="cancel-button"
+        >
+          Cancel Shipment
+        </button>
+        <button
+          onClick={handleDeliverShipment}
+          className="deliver-button"
+        >
+          Mark as Delivered
+        </button>
+      </div>
     </div>
   );
 };
