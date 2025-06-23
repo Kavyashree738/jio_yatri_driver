@@ -8,9 +8,10 @@ import Footer from './Footer';
 import LocationTracker from './LocationTracker';
 import AvailableShipments from './AvailableShipments';
 import '../styles/DriverDashboard.css';
-
+import { signOut } from 'firebase/auth';
+import { auth } from '../firebase';
 const DriverDashboard = () => {
-    const { user } = useAuth();
+    const { user ,setMessage } = useAuth();
     const navigate = useNavigate();
     const [driverInfo, setDriverInfo] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -20,6 +21,16 @@ const DriverDashboard = () => {
     const [profileImage, setProfileImage] = useState(null);
     const [isUploading, setIsUploading] = useState(false);
     const fileInputRef = useRef(null);
+
+    const handleLogout = async () => {
+        try {
+            await signOut(auth);
+            setMessage({ text: 'Logged out successfully.', isError: false });
+            navigate('/');
+        } catch (error) {
+            setMessage({ text: 'Logout failed: ' + error.message, isError: true });
+        }
+    };
 
     // Fetch driver info
     const fetchDriverInfo = useCallback(async () => {
@@ -272,7 +283,9 @@ const DriverDashboard = () => {
                                 <FaPhone className="detail-icon" />
                                 <span>{driverInfo.phone}</span>
                             </div>
-
+                              <button onClick={handleLogout} className="logout-button">
+                                    Logout
+                                </button> 
                             <div className="detail-item">
                                 {getVehicleIcon()}
                                 <div className="vehicle-info">
@@ -303,6 +316,7 @@ const DriverDashboard = () => {
                             <h3>Rating</h3>
                             <p>{driverInfo.rating || 'Not rated yet'}</p>
                         </div>
+
                     </div>
                 </div>
 
