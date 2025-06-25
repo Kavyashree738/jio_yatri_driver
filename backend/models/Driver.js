@@ -1,51 +1,32 @@
 const mongoose = require('mongoose');
 
 const driverSchema = new mongoose.Schema({
-  userId:    { type: String, required: true, unique: true },
-  name:      { type: String, required: true },
-  phone:     { type: String, required: true },
-  profileImage: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'fs.files',
-    default: null
-  },
+  userId: { type: String, required: true, unique: true },
+  name: { type: String, required: true },
+  phone: { type: String, required: true },
   vehicleType: { type: String, enum: ['TwoWheeler', 'ThreeWheeler', 'Truck'], required: true },
-  vehicleNumber: {
-    type: String, required: true,
-    validate: {
-      validator: v => /^[A-Z]{2}[0-9]{1,2}[A-Z]{1,2}[0-9]{4}$/.test(v),
-      message: props => `${props.value} is not a valid vehicle number!`
-    }
-  },
-  documents: {
-    license: { type: mongoose.Schema.Types.ObjectId, ref: 'fs.files' },
-    rc:      { type: mongoose.Schema.Types.ObjectId, ref: 'fs.files' }
-  },
-  status:     { type: String, enum: ['active', 'inactive'], default: 'inactive' },
-  lastUpdated:{ type: Date, default: Date.now },
+  vehicleNumber: { type: String, required: true },
+  status: { type: String, enum: ['active', 'inactive'], default: 'inactive' },
   location: {
-    type: {
-      type: String,
-      enum: ['Point'],
-      default: 'Point'
-    },
-    coordinates: {
-      type: [Number], // [longitude, latitude]
-      default: [0, 0]
-    },
-    lastUpdated: { type: Date, default: Date.now },
-    address:     { type: String, default: '' }
+    type: { type: String, enum: ['Point'], default: 'Point' },
+    coordinates: { type: [Number], default: [0, 0] }
   },
-  isLocationActive: { type: Boolean, default: false },
-  fcmToken: { type: String, default: null }, 
-   activeShipment: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Shipment',
-    default: null
+  isAvailable: { type: Boolean, default: true },
+  activeShipment: { type: mongoose.Schema.Types.ObjectId, ref: 'Shipment' },
+  earnings: { type: Number, default: 0 },
+  paymentBreakdown: {
+    cash: { type: Number, default: 0 },
+    online: { type: Number, default: 0 }
   },
+  collectedPayments: [{
+    shipment: { type: mongoose.Schema.Types.ObjectId, ref: 'Shipment' },
+    amount: Number,
+    method: String,
+    collectedAt: { type: Date, default: Date.now }
+  }]
 });
 
-// Geospatial index for proximity queries
 driverSchema.index({ location: '2dsphere' });
+driverSchema.index({ earnings: 1 });
 
 module.exports = mongoose.model('Driver', driverSchema);
