@@ -120,107 +120,102 @@ exports.verifyPayment = async (req, res) => {
 
 exports.markCashPaid = async (req, res) => {
   try {
-    console.log('🚚 Starting cash payment for shipment:', req.params.id);
+    console.log('\n=== CASH PAYMENT INITIATED ===');
 
-    // 1. Find shipment with all necessary fields
     const shipment = await Shipment.findById(req.params.id);
+    console.log('[CASH] Shipment fetched:', shipment);
+
     if (!shipment) {
-      console.log('❌ Shipment not found');
-      return res.status(404).json({ error: 'Shipment not found' });
-    }
-
-    // 2. Validate shipment status
-    if (shipment.status !== 'delivered') {
-      return res.status(400).json({ error: 'Shipment must be delivered first' });
-    }
-
-    // 3. Validate payment status
-    if (shipment.payment?.status !== 'pending') {
-      return res.status(400).json({ error: 'Payment already processed' });
-    }
-
-    // 4. DEBUG: Log complete assignedDriver structure
-    console.log('🔍 AssignedDriver inspection:', {
-      isObject: typeof shipment.assignedDriver === 'object',
-      isMongooseDoc: shipment.assignedDriver instanceof mongoose.Document,
-      rawData: shipment.assignedDriver,
-      stringified: JSON.parse(JSON.stringify(shipment.assignedDriver)),
-      idFields: {
-        _id: shipment.assignedDriver?._id,
-        driverId: shipment.assignedDriver?.driverId,
-        id: shipment.assignedDriver?.id
-      }
-    });
-
-    // 5. ULTIMATE FIX: Proper driver ID extraction
-    let driverId;
-    if (shipment.assignedDriver) {
-      // Handle both Mongoose subdocuments and plain objects
-      const driverObj = shipment.assignedDriver.toObject 
-        ? shipment.assignedDriver.toObject() 
-        : shipment.assignedDriver;
-      
-      driverId = driverObj._id || driverObj.driverId || driverObj.id;
-    }
-
-    console.log('✅ Extracted driverId:', driverId);
-
-    if (!driverId) {
-      console.error('❌ No valid driver ID found in:', shipment.assignedDriver);
-      return res.status(400).json({ 
-        error: 'Invalid driver assignment',
-        details: {
-          problem: 'Could not resolve driver reference',
-          received: shipment.assignedDriver
-        }
+      console.log('[CASH] Shipment not found');
+      return res.status(404).json({
+        success: false,
+        error: 'Shipment not found'
       });
     }
 
-    // 6. Verify driver exists
-    const driver = await Driver.findById(driverId);
-    if (!driver) {
-      console.error('❌ Driver not found:', driverId);
-      return res.status(404).json({ error: 'Driver not found' });
+    console.log('[CASH] Shipment status:', shipment.status);
+    if (shipment.status !== 'delivered') {
+      console.log('[CASH] Shipment not yet delivered');
+      return res.status(400).json({
+        success: false,
+        error: 'Shipment must be delivered first'
+      });
     }
 
-    // 7. Update payment status
+    console.log('[CASH] Payment status:', shipment.payment?.status);
+    if (shipment.payment?.status !== 'pending') {
+      console.log('[CASH] Payment already processed');
+      return res.status(400).json({
+        success: false,
+        error: 'Payment already processed'
+      });
+    }
+
+    // ✅ Use .toObject() to extract driverId safely
+    const shipmentObj = shipment.toObject();
+    const driverId = shipmentObj.assignedDriver && shipmentObj.assignedDriver._id;
+    console.log('[CASH] Driver ID:', driverId);
+
+    if (!driverId) {
+      console.log('[CASH] No valid driver assigned');
+      return res.status(400).json({
+        success: false,
+        error: 'No valid driver assigned'
+      });
+    }
+
+    // ✅ Update shipment payment
     shipment.payment = {
       method: 'cash',
       status: 'paid',
       collectedAt: new Date(),
       collectedBy: driverId
     };
+    console.log('[CASH] Shipment payment updated');
 
-    // 8. Update driver earnings
-    driver.earnings = Number(driver.earnings) + Number(shipment.cost);
-    driver.paymentBreakdown.cash = Number(driver.paymentBreakdown.cash) + Number(shipment.cost);
-    driver.collectedPayments.push({
-      shipment: shipment._id,
+    // ✅ Add to shipment's payment history
+    shipment.paymentHistory.push({
       amount: shipment.cost,
       method: 'cash',
+      transactionId: `cash-${Date.now()}`,
+      recordedBy: driverId,
       collectedAt: new Date()
     });
-    
+    console.log('[CASH] Shipment payment history updated');
 
-    // 9. Save changes
-    await Promise.all([shipment.save(), driver.save()]);
-    console.log('💰 Payment processed successfully');
+    // ✅ Update driver earnings
+    await Driver.findByIdAndUpdate(driverId, {
+      $inc: {
+        earnings: shipment.cost,
+        'paymentBreakdown.cash': shipment.cost
+      },
+      $push: {
+        collectedPayments: {
+          shipment: shipment._id,
+          amount: shipment.cost,
+          method: 'cash',
+          collectedAt: new Date()
+        }
+      }
+    });
+    console.log('[CASH] Driver earnings updated');
 
-    return res.json({ 
+    await shipment.save();
+    console.log('[CASH] Shipment saved successfully');
+
+    return res.json({
       success: true,
-      payment: shipment.payment,
-      driverEarnings: driver.earnings
+      message: 'Cash payment recorded successfully'
     });
 
   } catch (err) {
-    console.error('🔥 Payment error:', {
-      message: err.message,
-      stack: err.stack,
-      shipmentId: req.params.id
-    });
-    return res.status(500).json({ 
-      error: 'Payment processing failed',
+    console.error('[CASH] Error during cash payment:', err);
+    return res.status(500).json({
+      success: false,
+      error: 'Cash payment processing failed',
       details: process.env.NODE_ENV === 'development' ? err.message : undefined
     });
+  } finally {
+    console.log('=== CASH PAYMENT PROCESS COMPLETED ===\n');
   }
 };
