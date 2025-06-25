@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const shipmentController = require('../controllers/ShipmentController');
 const verifyFirebaseToken = require('../middleware/verifyFirebaseToken');
-
+const Shipment = require('../models/Shipment');
 // Debugging check
 console.log('[Debug] Middleware type:', typeof verifyFirebaseToken);
 console.log('[Debug] Controller methods:', {
@@ -44,5 +44,21 @@ router.patch(
   verifyFirebaseToken,
   shipmentController.updateDriverLocation
 );
+
+router.get('/driver/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    console.log('[Debug] Fetching shipments for userId:', userId);
+
+    const shipments = await Shipment.find({ 'assignedDriver.userId': userId });
+
+    console.log('[Debug] Shipments found:', shipments.length);
+    res.status(200).json(shipments);
+  } catch (error) {
+    console.error('[Error] Failed to fetch shipments:', error);
+    res.status(500).json({ error: 'Failed to fetch shipments' });
+  }
+});
+
 
 module.exports = router;
