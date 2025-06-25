@@ -1,0 +1,226 @@
+const Shipment = require('../models/Shipment');
+const Driver = require('../models/Driver');
+const Razorpay = require('razorpay');
+const crypto = require('crypto');
+const mongoose=require('mongoose')
+const rzp = new Razorpay({
+  key_id: process.env.RAZORPAY_KEY_ID,
+  key_secret: process.env.RAZORPAY_KEY_SECRET
+});
+
+exports.initiatePayment = async (req, res) => {
+  console.log('Initiate payment request received');
+  console.log('Headers:', req.headers);
+  console.log('Params:', req.params);
+
+  try {
+    const shipment = await Shipment.findById(req.params.id);
+    if (!shipment) {
+      console.log('Shipment not found');
+      return res.status(404).json({ error: 'Shipment not found' });
+    }
+
+    console.log('Found shipment:', {
+      id: shipment._id,
+      status: shipment.status,
+      payment: shipment.payment
+    });
+
+    if (shipment.status !== 'delivered') {
+      console.log('Shipment not in delivered state');
+      return res.status(400).json({ error: 'Shipment not available for payment' });
+    }
+
+    if (shipment.payment.status !== 'pending') {
+      console.log('Payment already processed:', shipment.payment.status);
+      return res.status(400).json({ error: 'Payment already processed' });
+    }
+
+    console.log('Creating Razorpay order for amount:', shipment.cost * 100);
+    const order = await rzp.orders.create({
+      amount: shipment.cost * 100,
+      currency: 'INR',
+      receipt: `shipment_${shipment.trackingNumber}`,
+    });
+
+    console.log('Order created:', order);
+
+    shipment.payment = {
+      method: 'razorpay',
+      status: 'pending',
+      razorpayOrderId: order.id
+    };
+
+    await shipment.save();
+    console.log('Shipment updated with payment details');
+
+    res.json(order);
+  } catch (err) {
+    console.error('Error in initiatePayment:', {
+      message: err.message,
+      stack: err.stack,
+      response: err.response?.data
+    });
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.verifyPayment = async (req, res) => {
+  const { razorpay_payment_id, razorpay_order_id, razorpay_signature } = req.body;
+
+  try {
+    const hmac = crypto.createHmac('sha256', process.env.RAZORPAY_KEY_SECRET);
+    hmac.update(razorpay_order_id + "|" + razorpay_payment_id);
+    const generatedSignature = hmac.digest('hex');
+
+    if (generatedSignature !== razorpay_signature) {
+      return res.status(400).json({ error: 'Invalid payment signature' });
+    }
+
+    const shipment = await Shipment.findOne({
+      _id: req.body.shipmentId,
+      'payment.razorpayOrderId': razorpay_order_id
+    });
+
+    if (!shipment) return res.status(404).json({ error: 'Shipment not found' });
+
+    shipment.payment = {
+      method: 'razorpay',
+      status: 'paid',
+      razorpayPaymentId: razorpay_payment_id,
+      razorpaySignature: razorpay_signature,
+      collectedAt: new Date()
+    };
+
+    shipment.paymentHistory.push({
+      amount: shipment.cost,
+      method: 'razorpay',
+      transactionId: razorpay_payment_id,
+      recordedBy: shipment.userId
+    });
+
+    await shipment.save();
+
+    // Update driver if assigned
+    if (shipment.assignedDriver?.driverId) {
+      await Driver.findByIdAndUpdate(shipment.assignedDriver.driverId, {
+        $inc: {
+          'earnings': shipment.cost,
+          'paymentBreakdown.online': shipment.cost
+        }
+      });
+    }
+
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+
+exports.markCashPaid = async (req, res) => {
+  try {
+    console.log('🚚 Starting cash payment for shipment:', req.params.id);
+
+    // 1. Find shipment with all necessary fields
+    const shipment = await Shipment.findById(req.params.id);
+    if (!shipment) {
+      console.log('❌ Shipment not found');
+      return res.status(404).json({ error: 'Shipment not found' });
+    }
+
+    // 2. Validate shipment status
+    if (shipment.status !== 'delivered') {
+      return res.status(400).json({ error: 'Shipment must be delivered first' });
+    }
+
+    // 3. Validate payment status
+    if (shipment.payment?.status !== 'pending') {
+      return res.status(400).json({ error: 'Payment already processed' });
+    }
+
+    // 4. DEBUG: Log complete assignedDriver structure
+    console.log('🔍 AssignedDriver inspection:', {
+      isObject: typeof shipment.assignedDriver === 'object',
+      isMongooseDoc: shipment.assignedDriver instanceof mongoose.Document,
+      rawData: shipment.assignedDriver,
+      stringified: JSON.parse(JSON.stringify(shipment.assignedDriver)),
+      idFields: {
+        _id: shipment.assignedDriver?._id,
+        driverId: shipment.assignedDriver?.driverId,
+        id: shipment.assignedDriver?.id
+      }
+    });
+
+    // 5. ULTIMATE FIX: Proper driver ID extraction
+    let driverId;
+    if (shipment.assignedDriver) {
+      // Handle both Mongoose subdocuments and plain objects
+      const driverObj = shipment.assignedDriver.toObject 
+        ? shipment.assignedDriver.toObject() 
+        : shipment.assignedDriver;
+      
+      driverId = driverObj._id || driverObj.driverId || driverObj.id;
+    }
+
+    console.log('✅ Extracted driverId:', driverId);
+
+    if (!driverId) {
+      console.error('❌ No valid driver ID found in:', shipment.assignedDriver);
+      return res.status(400).json({ 
+        error: 'Invalid driver assignment',
+        details: {
+          problem: 'Could not resolve driver reference',
+          received: shipment.assignedDriver
+        }
+      });
+    }
+
+    // 6. Verify driver exists
+    const driver = await Driver.findById(driverId);
+    if (!driver) {
+      console.error('❌ Driver not found:', driverId);
+      return res.status(404).json({ error: 'Driver not found' });
+    }
+
+    // 7. Update payment status
+    shipment.payment = {
+      method: 'cash',
+      status: 'paid',
+      collectedAt: new Date(),
+      collectedBy: driverId
+    };
+
+    // 8. Update driver earnings
+    driver.earnings = Number(driver.earnings) + Number(shipment.cost);
+    driver.paymentBreakdown.cash = Number(driver.paymentBreakdown.cash) + Number(shipment.cost);
+    driver.collectedPayments.push({
+      shipment: shipment._id,
+      amount: shipment.cost,
+      method: 'cash',
+      collectedAt: new Date()
+    });
+    
+
+    // 9. Save changes
+    await Promise.all([shipment.save(), driver.save()]);
+    console.log('💰 Payment processed successfully');
+
+    return res.json({ 
+      success: true,
+      payment: shipment.payment,
+      driverEarnings: driver.earnings
+    });
+
+  } catch (err) {
+    console.error('🔥 Payment error:', {
+      message: err.message,
+      stack: err.stack,
+      shipmentId: req.params.id
+    });
+    return res.status(500).json({ 
+      error: 'Payment processing failed',
+      details: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
+  }
+};
