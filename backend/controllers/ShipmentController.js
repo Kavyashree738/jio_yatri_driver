@@ -422,6 +422,8 @@ exports.updateDriverLocation = async (req, res) => {
   }
 };
 
+
+
 exports.cancelShipment = async (req, res) => {
   const session = await mongoose.startSession();
   session.startTransaction();
@@ -539,4 +541,36 @@ exports.deliverShipment = async (req, res) => {
   } finally {
     session.endSession();
   }
+};
+
+exports.getDriverHistory = async (req, res) => {
+    try {
+        const { status } = req.query;
+        const driverId = req.user.id; // From auth middleware
+        
+        let query = { driver: driverId };
+        
+        if (status && status !== 'all') {
+            query.status = status;
+        }
+        
+        const shipments = await Shipment.find(query)
+            .populate('sender receiver')
+            .sort({ createdAt: -1 })
+            .lean();
+            
+        res.json({ 
+            success: true,
+            data: shipments.map(shipment => ({
+                ...shipment,
+                cost: parseFloat(shipment.cost.toFixed(2))
+            }))
+        });
+    } catch (error) {
+        console.error('Error fetching driver history:', error);
+        res.status(500).json({ 
+            success: false,
+            error: 'Failed to fetch shipment history' 
+        });
+    }
 };
