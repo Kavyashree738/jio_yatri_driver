@@ -12,6 +12,7 @@ const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
 const verifyFirebaseToken=require('./middleware/verifyFirebaseToken')
 const addressRoutes=require('./routes/addressRoutes')
 const authRoutes=require('./routes/authRoutes')
+const paymentRoutes=require('./routes/paymentRoutes')
 
 
 app.use(cors());
@@ -39,6 +40,7 @@ app.use('/api/driver',driverRoutes)
 app.use('/api/shipments',ShipmentRoutes)
 app.use('/api/address', addressRoutes); 
 app.use('/api/auth', authRoutes);
+app.use('/api/payment',paymentRoutes)
 
 
 app.use((err, req, res, next) => {
