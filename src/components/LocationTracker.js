@@ -6,22 +6,7 @@ import axios from 'axios';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-const calculateDistance = (coord1, coord2) => {
-  const [lon1, lat1] = coord1;
-  const [lon2, lat2] = coord2;
-  const R = 6371e3;
-  const ϕ1 = lat1 * Math.PI / 180;
-  const ϕ2 = lat2 * Math.PI / 180;
-  const Δϕ = (lat2 - lat1) * Math.PI / 180;
-  const Δλ = (lon2 - lon1) * Math.PI / 180;
-
-  const a = Math.sin(Δϕ / 2) * Math.sin(Δϕ / 2) +
-    Math.cos(ϕ1) * Math.cos(ϕ2) *
-    Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-  return R * c;
-};
+const API_BASE_URL = 'https://jio-yatri-driver.onrender.com';
 
 const useGeolocation = (options) => {
   const [position, setPosition] = useState(null);
@@ -66,6 +51,37 @@ const EtaDisplay = React.memo(({ etaToSender, etaToReceiver, distanceToSender, d
   </div>
 ));
 
+const ShipmentDetailsCard = ({ shipment }) => {
+  if (!shipment) return null;
+
+  return (
+    <div className="shipment-details-card">
+      <div className="shipment-header">
+        <h3>Shipment #{shipment.trackingNumber}</h3>
+        <span className={`status-badge ${shipment.status}`}>{shipment.status}</span>
+      </div>
+
+      <div className="shipment-body">
+        <div className="address-section">
+          <div className="address-card sender">
+            <h4>Sender</h4>
+            <p><strong>Name:</strong> {shipment.sender?.name}</p>
+            <p><strong>Phone:</strong> {shipment.sender?.phone}</p>
+            <p>{shipment.sender?.address?.addressLine1}</p>
+          </div>
+
+          <div className="address-card receiver">
+            <h4>Receiver</h4>
+            <p><strong>Name:</strong> {shipment.receiver?.name}</p>
+            <p><strong>Phone:</strong> {shipment.receiver?.phone}</p>
+            <p>{shipment.receiver?.address?.addressLine1}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const LocationTracker = ({ shipment, onStatusUpdate }) => {
   const { user } = useAuth();
   const { position: geoPosition } = useGeolocation({
@@ -74,11 +90,16 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
     maximumAge: 0
   });
 
+  // Initialize localShipment from localStorage if available
   const [localShipment, setLocalShipment] = useState(() => {
     const saved = localStorage.getItem('lastShipment');
     return saved ? JSON.parse(saved) : null;
   });
 
+  const [loadingMap, setLoadingMap] = useState(true);
+  const activeShipment = shipment || localShipment;
+
+  // Sync shipment to localStorage whenever it changes
   useEffect(() => {
     if (shipment) {
       localStorage.setItem("lastShipment", JSON.stringify(shipment));
@@ -86,7 +107,14 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
     }
   }, [shipment]);
 
-  const activeShipment = shipment || localShipment;
+  // Clear local shipment if it's cancelled or delivered
+  useEffect(() => {
+    if (activeShipment && ['cancelled', 'delivered'].includes(activeShipment.status)) {
+      localStorage.removeItem('lastShipment');
+      setLocalShipment(null);
+      if (onStatusUpdate) onStatusUpdate(activeShipment.status);
+    }
+  }, [activeShipment, onStatusUpdate]);
 
   const location = useMemo(() => {
     if (geoPosition?.coords) {
@@ -98,7 +126,6 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
 
   const heading = geoPosition?.coords?.heading || 0;
 
-  const [mapLoaded, setMapLoaded] = useState(false);
   const [etaToSender, setEtaToSender] = useState('');
   const [distanceToSender, setDistanceToSender] = useState('');
   const [etaToReceiver, setEtaToReceiver] = useState('');
@@ -114,15 +141,15 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
   const directionsServiceRef = useRef(null);
   const googleMapsScriptRef = useRef(null);
 
-  const senderLatLng = {
+  const senderLatLng = useMemo(() => ({
     lat: activeShipment?.sender?.address?.coordinates?.lat,
     lng: activeShipment?.sender?.address?.coordinates?.lng,
-  };
+  }), [activeShipment]);
 
-  const receiverLatLng = {
+  const receiverLatLng = useMemo(() => ({
     lat: activeShipment?.receiver?.address?.coordinates?.lat,
     lng: activeShipment?.receiver?.address?.coordinates?.lng,
-  };
+  }), [activeShipment]);
 
   const initMap = useCallback(() => {
     if (!activeShipment || !mapContainerRef.current || mapRef.current) return;
@@ -149,7 +176,7 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
 
     directionsRendererRef.current.setMap(mapRef.current);
     directionsServiceRef.current = new window.google.maps.DirectionsService();
-    setMapLoaded(true);
+    setLoadingMap(false);
   }, [location, activeShipment]);
 
   const updateMap = useCallback(() => {
@@ -164,7 +191,7 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
         icon: {
           path: window.google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
           scale: 6,
-          rotation: heading,
+          rotation: heading || 0,
           fillColor: '#EA4335',
           fillOpacity: 1,
           strokeWeight: 2,
@@ -217,12 +244,11 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
         }
       }
     );
-  }, [location, heading, activeShipment]);
+  }, [location, heading, activeShipment, senderLatLng, receiverLatLng]);
 
   useEffect(() => {
-    if (!activeShipment || ['cancelled', 'delivered'].includes(activeShipment.status)) {
+    if (!activeShipment) {
       mapRef.current = null;
-      localStorage.removeItem('lastShipment');
       return;
     }
 
@@ -233,19 +259,41 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
       script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.REACT_APP_GOOGLE_API_KEY}&libraries=places`;
       script.async = true;
       script.defer = true;
-      script.onload = () => {
-        initMap();
-      };
+      script.onload = () => initMap();
       document.body.appendChild(script);
       googleMapsScriptRef.current = script;
     }
   }, [activeShipment, initMap]);
 
   useEffect(() => {
-    if (mapLoaded && location) {
+    if (!loadingMap && location) {
       updateMap();
     }
-  }, [location, mapLoaded, updateMap]);
+  }, [location, loadingMap, updateMap]);
+
+  const debouncedSendLocation = useCallback(
+    debounce(async (coords) => {
+      if (!coords || !user) return;
+      try {
+        const token = await user.getIdToken();
+        await axios.put(`${API_BASE_URL}/api/driver/location`, {
+          coordinates: coords,
+          isLocationActive: true
+        }, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+      } catch (err) {
+        console.error("Failed to update location:", err);
+      }
+    }, 5000),
+    [user]
+  );
+
+  useEffect(() => {
+    if (location && user) {
+      debouncedSendLocation(location);
+    }
+  }, [location, user, debouncedSendLocation]);
 
   const handleRecenter = () => {
     if (mapRef.current && location) {
@@ -253,29 +301,18 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
     }
   };
 
-  // Updated handleCancelShipment and handleDeliverShipment functions
   const handleCancelShipment = async () => {
     try {
       const token = await user.getIdToken();
       await axios.put(
-        `https://jio-yatri-driver.onrender.com/api/shipments/${activeShipment._id}/cancel`,
+        `${API_BASE_URL}/api/shipments/${activeShipment._id}/cancel`,
         { reason: "Driver cancelled the shipment" },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-
-      // Clear local storage and state
       localStorage.removeItem('lastShipment');
       setLocalShipment(null);
-
-      if (onStatusUpdate) {
-        onStatusUpdate('cancelled');
-      }
-
-      // Clean up map resources
-      if (mapRef.current) {
-        mapRef.current = null;
-      }
-
+      if (onStatusUpdate) onStatusUpdate('cancelled');
+      mapRef.current = null;
       toast.success("Shipment cancelled successfully");
     } catch (error) {
       console.error('Error cancelling shipment:', error);
@@ -287,24 +324,14 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
     try {
       const token = await user.getIdToken();
       await axios.put(
-        `https://jio-yatri-driver.onrender.com/api/shipments/${activeShipment._id}/deliver`,
+        `${API_BASE_URL}/api/shipments/${activeShipment._id}/deliver`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
-
-      // Clear local storage and state
       localStorage.removeItem('lastShipment');
       setLocalShipment(null);
-
-      if (onStatusUpdate) {
-        onStatusUpdate('delivered');
-      }
-
-      // Clean up map resources
-      if (mapRef.current) {
-        mapRef.current = null;
-      }
-
+      if (onStatusUpdate) onStatusUpdate('delivered');
+      mapRef.current = null;
       toast.success("Shipment delivered successfully!");
     } catch (error) {
       console.error('Error delivering shipment:', error);
@@ -312,26 +339,27 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
     }
   };
 
-  // Update the conditional rendering at the bottom
-  if (!activeShipment ||
-    (activeShipment.status && ['cancelled', 'delivered'].includes(activeShipment.status))) {
-    return <p>No active shipment</p>;
+  if (!activeShipment) {
+    return <div className="no-shipment">No active shipment</div>;
+  }
+
+  if (['cancelled', 'delivered'].includes(activeShipment.status)) {
+    return <div className="no-shipment">Shipment {activeShipment.status}</div>;
   }
 
   return (
     <div className="location-tracker-container">
-      <div
-        ref={mapContainerRef}
-        className="map-container"
-        style={{ height: '500px', width: '100%' }}
-      />
-      <button
-        onClick={handleRecenter}
-        className="recenter-button"
-        title="Recenter Map"
-      >
-        📍
-      </button>
+      <ShipmentDetailsCard shipment={activeShipment} />
+
+      <div className="map-section">
+        <div
+          ref={mapContainerRef}
+          className="map-container"
+          style={{ height: '500px', width: '100%' }}
+        />
+        <button onClick={handleRecenter} className="recenter-button">📍</button>
+      </div>
+
       <EtaDisplay
         etaToSender={etaToSender}
         etaToReceiver={etaToReceiver}
@@ -341,18 +369,8 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
       {routeError && <p className="error-message">{routeError}</p>}
 
       <div className="shipment-actions">
-        <button
-          onClick={handleCancelShipment}
-          className="cancel-button"
-        >
-          Cancel Shipment
-        </button>
-        <button
-          onClick={handleDeliverShipment}
-          className="deliver-button"
-        >
-          Mark as Delivered
-        </button>
+        <button onClick={handleCancelShipment} className="cancel-button">Cancel Shipment</button>
+        <button onClick={handleDeliverShipment} className="deliver-button">Mark as Delivered</button>
       </div>
     </div>
   );
