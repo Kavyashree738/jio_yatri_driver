@@ -53,7 +53,6 @@ const EtaDisplay = React.memo(({ etaToSender, etaToReceiver, distanceToSender, d
 
 const ShipmentDetailsCard = ({ shipment }) => {
   if (!shipment) return null;
-
   return (
     <div className="shipment-details-card">
       <div className="shipment-header">
@@ -274,19 +273,64 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
   const debouncedSendLocation = useCallback(
     debounce(async (coords) => {
       if (!coords || !user) return;
+
+      console.log('[DEBUG] Attempting to update locations with coords:', coords);
+
       try {
         const token = await user.getIdToken();
-        await axios.put(`${API_BASE_URL}/api/driver/location`, {
+        console.log('[DEBUG] Obtained user token');
+
+        // Update driver location
+        console.log('[DEBUG] Updating driver location...');
+        const driverResponse = await axios.put(`${API_BASE_URL}/api/driver/location`, {
           coordinates: coords,
           isLocationActive: true
         }, {
           headers: { Authorization: `Bearer ${token}` }
         });
+        console.log('[DEBUG] Driver location updated successfully:', driverResponse.data);
+
+        // If there's an active shipment, update shipment's driver location too
+        if (activeShipment?._id) {
+          try {
+            console.log('[DEBUG] Updating shipment location for shipment:', activeShipment._id);
+            const shipmentResponse = await axios.put(
+              `${API_BASE_URL}/api/shipments/${activeShipment._id}/driver-location`,
+              {
+                coordinates: coords,
+                status: 'in_transit' // Explicitly set status
+              },
+              {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                  'Content-Type': 'application/json'
+                }
+              }
+            );
+            console.log('[DEBUG] Shipment location updated successfully:', shipmentResponse.data);
+          } catch (shipmentErr) {
+            console.error("[DEBUG] Failed to update shipment location:", {
+              error: shipmentErr,
+              response: {
+                status: shipmentErr.response?.status,
+                data: shipmentErr.response?.data,
+                headers: shipmentErr.response?.headers
+              },
+              config: shipmentErr.config
+            });
+            toast.warn(`Shipment location update failed: ${shipmentErr.response?.data?.message || 'Unknown error'}`);
+          }
+        }
       } catch (err) {
-        console.error("Failed to update location:", err);
+        console.error("[DEBUG] Failed to update location:", {
+          error: err,
+          response: err.response?.data,
+          config: err.config
+        });
+        toast.error("Failed to update your location");
       }
     }, 5000),
-    [user]
+    [user, activeShipment]
   );
 
   useEffect(() => {
