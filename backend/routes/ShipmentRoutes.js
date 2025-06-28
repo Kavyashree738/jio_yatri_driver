@@ -39,7 +39,7 @@ router.put(
 );
 
 
-router.patch(
+router.put(
   '/:id/driver-location',
   verifyFirebaseToken,
   shipmentController.updateDriverLocation
