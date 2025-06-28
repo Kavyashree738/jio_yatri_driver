@@ -385,9 +385,9 @@ exports.updateDriverLocation = async (req, res) => {
           coordinates: coordinates
         },
         // Optionally update status to "in-transit" if it was "assigned"
-        $set: {
-          status: req.body.status || 'in-transit'
-        }
+        // $set: {
+        //   status: req.body.status || 'in-transit'
+        // }
       },
       { 
         new: true,
