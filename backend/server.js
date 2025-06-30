@@ -44,6 +44,7 @@ mongoose.connect(process.env.MONGO_URI, {
 
 
 
+
 app.use('/api/upload', uploadRoutes);
 app.use('/api/driver',driverRoutes)
 app.use('/api/shipments',ShipmentRoutes)
