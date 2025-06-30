@@ -16,7 +16,15 @@ const authRoutes=require('./routes/authRoutes')
 const paymentRoutes=require('./routes/paymentRoutes')
 
 
-app.use(cors());
+// app.use(cors());
+const corsOptions = {
+  origin: ['https://driver.jioyatri.com'], // ✅ Allow your frontend origin
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  credentials: true // Optional, only if you use cookies or tokens
+};
+
+app.use(cors(corsOptions));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
