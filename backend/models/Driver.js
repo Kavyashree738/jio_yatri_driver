@@ -42,7 +42,7 @@ const driverSchema = new mongoose.Schema({
       type: String,
       default: ''
     }
-  }
+  },
   isLocationActive: { type: Boolean, default: false },
   fcmToken: { type: String, default: null }, 
   isAvailable: { type: Boolean, default: true },
