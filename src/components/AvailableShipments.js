@@ -16,7 +16,6 @@ function AvailableShipments() {
   const [activeShipment, setActiveShipment] = useState(null);
   const notifiedShipmentIdsRef = useRef(new Set());
 
-
   useEffect(() => {
     const setupNotificationsAndData = async () => {
       try {
@@ -82,7 +81,6 @@ function AvailableShipments() {
       }
     } catch (error) {
       console.error('Error fetching data:', error);
-      // toast.error('Failed to fetch data');
     } finally {
       setLoading(false);
     }
@@ -97,26 +95,27 @@ function AvailableShipments() {
       const newShipments = response.data.shipments || [];
       const notifiedSet = notifiedShipmentIdsRef.current;
 
-      // Notify only for new shipments that haven't been notified yet
       newShipments.forEach(shipment => {
         if (!notifiedSet.has(shipment._id)) {
-          // 🔔 Show notification only once
-          new Notification('🚚 New Shipment Available!', {
-            body: `From: ${shipment.sender.address.addressLine1} ➡ To: ${shipment.receiver.address.addressLine1}`,
-            icon: '/logo.jpg'
-          });
+          // 🔔 Show browser notification
+          if (Notification.permission === 'granted') {
+            new Notification('🚚 New Shipment Available!', {
+              body: `From: ${shipment.sender.address.addressLine1} ➡ To: ${shipment.receiver.address.addressLine1}`,
+              icon: '/logo.jpg'
+            });
+          }
+
+          // 🔊 Play sound
           const audio = new Audio('/notification.wav');
-         
           audio.play().catch(err => {
-            console.warn('Audio playback blocked or failed:', err);
+            console.warn('Audio playback failed:', err);
           });
+
           notifiedSet.add(shipment._id); // ✅ Mark as notified
         }
       });
 
-      // Update state
       setShipments(newShipments);
-
     } catch (error) {
       console.error('Error fetching shipments:', error);
       toast.error('Failed to load shipments');
@@ -137,16 +136,8 @@ function AvailableShipments() {
         navigator.geolocation.getCurrentPosition(
           resolve,
           reject,
-          {
-            enableHighAccuracy: true,
-            timeout: 20000,
-            maximumAge: 0
-          }
+          { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 }
         );
-      }).catch(error => {
-        console.error('Geolocation error:', error);
-        toast.error('Could not get your current location');
-        throw error;
       });
 
       const location = [
@@ -213,7 +204,6 @@ function AvailableShipments() {
         <div className="permission-denied notification-section">
           <h3>Notifications Blocked</h3>
           <p>You won't receive shipment updates. To enable:</p>
-
           <button onClick={openBrowserSettings} className="settings-btn">
             Open Browser Settings
           </button>
