@@ -17,9 +17,32 @@ const driverSchema = new mongoose.Schema({
   },
   status: { type: String, enum: ['active', 'inactive'], default: 'active' },
   location: {
-    type: { type: String, enum: ['Point'], default: 'Point' },
-    coordinates: { type: [Number], default: [0, 0] }
-  },
+    type: {
+      type: String,
+      enum: ['Point'],
+      default: 'Point'
+    },
+    coordinates: {
+      type: [Number],
+      default: [0, 0],
+      validate: {
+        validator: function (value) {
+          return value.length === 2 &&
+            typeof value[0] === 'number' &&
+            typeof value[1] === 'number';
+        },
+        message: 'Coordinates must be an array of two numbers [lng, lat]'
+      }
+    },
+    lastUpdated: {
+      type: Date,
+      default: Date.now
+    },
+    address: {
+      type: String,
+      default: ''
+    }
+  }
   isLocationActive: { type: Boolean, default: false },
   fcmToken: { type: String, default: null }, 
   isAvailable: { type: Boolean, default: true },
