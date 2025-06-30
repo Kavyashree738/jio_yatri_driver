@@ -59,7 +59,6 @@ const ShipmentDetailsCard = ({ shipment }) => {
         <h3>Shipment #{shipment.trackingNumber}</h3>
         <span className={`status-badge ${shipment.status}`}>{shipment.status}</span>
       </div>
-
       <div className="shipment-body">
         <div className="address-section">
           <div className="address-card sender">
@@ -68,7 +67,6 @@ const ShipmentDetailsCard = ({ shipment }) => {
             <p><strong>Phone:</strong> {shipment.sender?.phone}</p>
             <p>{shipment.sender?.address?.addressLine1}</p>
           </div>
-
           <div className="address-card receiver">
             <h4>Receiver</h4>
             <p><strong>Name:</strong> {shipment.receiver?.name}</p>
@@ -89,7 +87,6 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
     maximumAge: 0
   });
 
-  // Initialize localShipment from localStorage if available
   const [localShipment, setLocalShipment] = useState(() => {
     const saved = localStorage.getItem('lastShipment');
     return saved ? JSON.parse(saved) : null;
@@ -98,7 +95,6 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
   const [loadingMap, setLoadingMap] = useState(true);
   const activeShipment = shipment || localShipment;
 
-  // Sync shipment to localStorage whenever it changes
   useEffect(() => {
     if (shipment) {
       localStorage.setItem("lastShipment", JSON.stringify(shipment));
@@ -106,14 +102,18 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
     }
   }, [shipment]);
 
-  // Clear local shipment if it's cancelled or delivered
+  // ✅ FIXED useEffect to avoid infinite loop
   useEffect(() => {
-    if (activeShipment && ['cancelled', 'delivered'].includes(activeShipment.status)) {
+    if (
+      !shipment &&
+      localShipment &&
+      ['cancelled', 'delivered'].includes(localShipment.status)
+    ) {
       localStorage.removeItem('lastShipment');
       setLocalShipment(null);
-      if (onStatusUpdate) onStatusUpdate(activeShipment.status);
+      if (onStatusUpdate) onStatusUpdate(localShipment.status);
     }
-  }, [activeShipment, onStatusUpdate]);
+  }, [shipment, localShipment, onStatusUpdate]);
 
   const location = useMemo(() => {
     if (geoPosition?.coords) {
@@ -274,59 +274,32 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
     debounce(async (coords) => {
       if (!coords || !user) return;
 
-      console.log('[DEBUG] Attempting to update locations with coords:', coords);
-
       try {
         const token = await user.getIdToken();
-        console.log('[DEBUG] Obtained user token');
 
-        // Update driver location
-        console.log('[DEBUG] Updating driver location...');
-        const driverResponse = await axios.put(`${API_BASE_URL}/api/driver/location`, {
+        await axios.put(`${API_BASE_URL}/api/driver/location`, {
           coordinates: coords,
           isLocationActive: true
         }, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        console.log('[DEBUG] Driver location updated successfully:', driverResponse.data);
 
-        // If there's an active shipment, update shipment's driver location too
         if (activeShipment?._id) {
-          try {
-            console.log('[DEBUG] Updating shipment location for shipment:', activeShipment._id);
-            const shipmentResponse = await axios.put(
-              `${API_BASE_URL}/api/shipments/${activeShipment._id}/driver-location`,
-              {
-                coordinates: coords,
-                status: 'in_transit' // Explicitly set status
-              },
-              {
-                headers: {
-                  Authorization: `Bearer ${token}`,
-                  'Content-Type': 'application/json'
-                }
+          await axios.put(
+            `${API_BASE_URL}/api/shipments/${activeShipment._id}/driver-location`,
+            {
+              coordinates: coords,
+              status: 'in_transit'
+            },
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json'
               }
-            );
-            console.log('[DEBUG] Shipment location updated successfully:', shipmentResponse.data);
-          } catch (shipmentErr) {
-            console.error("[DEBUG] Failed to update shipment location:", {
-              error: shipmentErr,
-              response: {
-                status: shipmentErr.response?.status,
-                data: shipmentErr.response?.data,
-                headers: shipmentErr.response?.headers
-              },
-              config: shipmentErr.config
-            });
-            toast.warn(`Shipment location update failed: ${shipmentErr.response?.data?.message || 'Unknown error'}`);
-          }
+            }
+          );
         }
       } catch (err) {
-        console.error("[DEBUG] Failed to update location:", {
-          error: err,
-          response: err.response?.data,
-          config: err.config
-        });
         toast.error("Failed to update your location");
       }
     }, 5000),
@@ -359,7 +332,6 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
       mapRef.current = null;
       toast.success("Shipment cancelled successfully");
     } catch (error) {
-      console.error('Error cancelling shipment:', error);
       toast.error(error.response?.data?.message || 'Error cancelling shipment');
     }
   };
@@ -378,17 +350,16 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
       mapRef.current = null;
       toast.success("Shipment delivered successfully!");
     } catch (error) {
-      console.error('Error delivering shipment:', error);
       toast.error(error.response?.data?.message || 'Error delivering shipment');
     }
   };
 
-  if (!activeShipment) {
-    return <div className="no-shipment">No active shipment</div>;
-  }
-
-  if (['cancelled', 'delivered'].includes(activeShipment.status)) {
-    return <div className="no-shipment">Shipment {activeShipment.status}</div>;
+  if (!activeShipment || ['cancelled', 'delivered'].includes(activeShipment.status)) {
+    return (
+      <div className="no-shipment">
+        {activeShipment ? `Shipment ${activeShipment.status}` : 'No active shipment'}
+      </div>
+    );
   }
 
   return (
