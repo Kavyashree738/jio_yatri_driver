@@ -1,4 +1,4 @@
-import React, { useEffect, useState,useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import axios from 'axios';
 import { getAuth } from 'firebase/auth';
 import { ToastContainer, toast } from 'react-toastify';
@@ -14,6 +14,8 @@ function AvailableShipments() {
   const [notificationPermission, setNotificationPermission] = useState(Notification.permission);
   const [showInstructions, setShowInstructions] = useState(false);
   const [activeShipment, setActiveShipment] = useState(null);
+  const notifiedShipmentIdsRef = useRef(new Set());
+
 
   useEffect(() => {
     const setupNotificationsAndData = async () => {
@@ -35,7 +37,7 @@ function AvailableShipments() {
   const handleEnableNotifications = async () => {
     const token = await requestNotificationPermission();
     setNotificationPermission(Notification.permission);
-    
+
     if (token) {
       toast.success("Notifications enabled successfully");
     } else {
@@ -80,7 +82,7 @@ function AvailableShipments() {
       }
     } catch (error) {
       console.error('Error fetching data:', error);
-      toast.error('Failed to fetch data');
+      // toast.error('Failed to fetch data');
     } finally {
       setLoading(false);
     }
@@ -91,10 +93,30 @@ function AvailableShipments() {
       const response = await axios.get(`https://jio-yatri-driver.onrender.com/api/shipments/matching`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setShipments(response.data.shipments || []);
-      if (response.data.shipments.length === 0 && shipments.length !== 0) {
-        toast.info('No matching shipments available');
-      }
+
+      const newShipments = response.data.shipments || [];
+      const notifiedSet = notifiedShipmentIdsRef.current;
+
+      // Notify only for new shipments that haven't been notified yet
+      newShipments.forEach(shipment => {
+        if (!notifiedSet.has(shipment._id)) {
+          // 🔔 Show notification only once
+          new Notification('🚚 New Shipment Available!', {
+            body: `From: ${shipment.sender.address.addressLine1} ➡ To: ${shipment.receiver.address.addressLine1}`,
+            icon: '/logo.jpg'
+          });
+          const audio = new Audio('/notification.wav');
+         
+          audio.play().catch(err => {
+            console.warn('Audio playback blocked or failed:', err);
+          });
+          notifiedSet.add(shipment._id); // ✅ Mark as notified
+        }
+      });
+
+      // Update state
+      setShipments(newShipments);
+
     } catch (error) {
       console.error('Error fetching shipments:', error);
       toast.error('Failed to load shipments');
@@ -113,11 +135,11 @@ function AvailableShipments() {
 
       const position = await new Promise((resolve, reject) => {
         navigator.geolocation.getCurrentPosition(
-          resolve, 
-          reject, 
+          resolve,
+          reject,
           {
             enableHighAccuracy: true,
-            timeout: 10000,
+            timeout: 20000,
             maximumAge: 0
           }
         );
@@ -162,7 +184,7 @@ function AvailableShipments() {
       if (!prev) return null;
       return { ...prev, status: newStatus };
     });
-    
+
     if (['cancelled', 'delivered'].includes(newStatus)) {
       fetchData();
     }
@@ -178,7 +200,7 @@ function AvailableShipments() {
         <div className="permission-request notification-section">
           <h3>Enable Notifications</h3>
           <p>Get real-time updates about new shipments and deliveries</p>
-          <button 
+          <button
             onClick={handleEnableNotifications}
             className="enable-notifications-btn"
           >
@@ -191,11 +213,11 @@ function AvailableShipments() {
         <div className="permission-denied notification-section">
           <h3>Notifications Blocked</h3>
           <p>You won't receive shipment updates. To enable:</p>
-          
+
           <button onClick={openBrowserSettings} className="settings-btn">
             Open Browser Settings
           </button>
-          
+
           {showInstructions && (
             <div className="instructions">
               <ol>
@@ -203,7 +225,7 @@ function AvailableShipments() {
                 <li>Change from "Block" to "Allow"</li>
                 <li>Refresh this page</li>
               </ol>
-              <button 
+              <button
                 onClick={() => window.location.reload()}
                 className="refresh-btn"
               >
@@ -218,8 +240,8 @@ function AvailableShipments() {
         <div className="loading-message">Loading data...</div>
       ) : activeShipment ? (
         <div className="active-shipment-container">
-          <LocationTracker 
-            key={activeShipment._id} 
+          <LocationTracker
+            key={activeShipment._id}
             shipment={activeShipment}
             onStatusUpdate={handleStatusUpdate}
           />
