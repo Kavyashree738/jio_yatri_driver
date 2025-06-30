@@ -60,7 +60,7 @@ const sendTokenToBackend = async (token) => {
 
   try {
     const idToken = await user.getIdToken();
-    await axios.post('http://localhost:5000/api/driver/fcm-token', { token }, {
+    await axios.post('https://jio-yatri-driver.onrender.com/api/driver/fcm-token', { token }, {
       headers: { Authorization: `Bearer ${idToken}` },
     });
     console.log("FCM token sent to backend");
