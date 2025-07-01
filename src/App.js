@@ -9,8 +9,6 @@ import DeliveryHistory from './components/DeliveryHistory'
 import { Routes, Route } from 'react-router-dom';
 
 const App = () => {
-
-
   return (
     <AuthProvider>
       <Routes>
