@@ -98,18 +98,23 @@ function AvailableShipments() {
       newShipments.forEach(shipment => {
         if (!notifiedSet.has(shipment._id)) {
           // 🔔 Show browser notification
-          if (Notification.permission === 'granted') {
-            new Notification('🚚 New Shipment Available!', {
-              body: `From: ${shipment.sender.address.addressLine1} ➡ To: ${shipment.receiver.address.addressLine1}`,
-              icon: '/logo.jpg'
-            });
-          }
+          if ('Notification' in window && Notification.permission === 'granted') {
+  try {
+    new Notification('🚚 New Shipment Available!', {
+      body: `From: ${shipment.sender.address.addressLine1} ➡ To: ${shipment.receiver.address.addressLine1}`,
+      icon: '/logo.jpg'
+    });
+  } catch (e) {
+    console.warn("Notification error:", e);
+  }
+}
 
-          // 🔊 Play sound
-          const audio = new Audio('/notification.wav');
-          audio.play().catch(err => {
-            console.warn('Audio playback failed:', err);
-          });
+try {
+  const audio = new Audio('/notification.wav');
+  await audio.play();
+} catch (err) {
+  console.warn("Audio blocked on mobile:", err.message);
+}
 
           notifiedSet.add(shipment._id); // ✅ Mark as notified
         }
