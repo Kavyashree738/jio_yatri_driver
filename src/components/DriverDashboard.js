@@ -32,7 +32,7 @@ const DriverDashboard = () => {
                 fetch(`https://jio-yatri-driver.onrender.com/api/driver/info/${user.uid}`, {
                     headers: { Authorization: `Bearer ${token}` }
                 }),
-                fetch(`http://localhost:5000/api/upload/profile-image/${user.uid}`, {
+                fetch(`https://jio-yatri-driver.onrender.com/api/upload/profile-image/${user.uid}`, {
                     headers: { Authorization: `Bearer ${token}` }
                 })
             ]);
