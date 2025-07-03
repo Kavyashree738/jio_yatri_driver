@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import axios from 'axios';
-import { getAuth } from 'firebase/auth';
+import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import '../styles/AvailableShipments.css';
@@ -14,35 +14,44 @@ function AvailableShipments() {
   const [notificationPermission, setNotificationPermission] = useState(Notification.permission);
   const [showInstructions, setShowInstructions] = useState(false);
   const [activeShipment, setActiveShipment] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
   const notifiedShipmentIdsRef = useRef(new Set());
 
   useEffect(() => {
-    const setupNotificationsAndData = async () => {
-      try {
-        await initializeFCM();
-        setupForegroundNotifications(handleForegroundNotification);
-        await fetchData();
-        const intervalId = setInterval(fetchData, 10000);
-        return () => clearInterval(intervalId);
-      } catch (error) {
-        console.error('Initialization error:', error);
+    const auth = getAuth();
+
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setCurrentUser(user);
+        setupNotificationsAndData(user);
+      } else {
+        setCurrentUser(null);
+        toast.warning("Please log in to view shipments");
         setLoading(false);
       }
-    };
+    });
 
-    setupNotificationsAndData();
+    return () => unsubscribe();
   }, []);
 
+  const setupNotificationsAndData = async (user) => {
+    try {
+      await initializeFCM();
+      setupForegroundNotifications(handleForegroundNotification);
+      await fetchData(user);
+      const intervalId = setInterval(() => fetchData(user), 10000);
+      return () => clearInterval(intervalId);
+    } catch (error) {
+      console.error('Initialization error:', error);
+      setLoading(false);
+    }
+  };
+
   const handleForegroundNotification = (payload) => {
-    // Handle foreground notifications from FCM
     const { title, body } = payload.notification;
     toast.info(`${title}: ${body}`);
-    
-    // Play notification sound
     playNotificationSound();
-    
-    // Refresh data to show new shipments
-    fetchData();
+    if (currentUser) fetchData(currentUser);
   };
 
   const playNotificationSound = () => {
@@ -53,8 +62,6 @@ function AvailableShipments() {
   };
 
   const showLocalNotification = (title, body) => {
-    // For mobile devices, we rely on FCM
-    // For desktop, use the Notification API
     if (window.Notification && Notification.permission === "granted") {
       new Notification(title, { body, icon: '/logo.jpg' });
     }
@@ -78,28 +85,20 @@ function AvailableShipments() {
   };
 
   const openBrowserSettings = () => {
-    if (navigator.userAgent.includes('Chrome')) {
+    const ua = navigator.userAgent;
+    if (ua.includes('Chrome')) {
       window.open('chrome://settings/content/notifications');
-    } else if (navigator.userAgent.includes('Firefox')) {
+    } else if (ua.includes('Firefox')) {
       window.open('about:preferences#privacy');
-    } else if (navigator.userAgent.includes('Safari')) {
+    } else if (ua.includes('Safari')) {
       window.open('x-apple.systempreferences:com.apple.preference.notifications');
     } else {
       toast.info("Please check your device settings to enable notifications");
     }
   };
 
-  const fetchData = async () => {
+  const fetchData = async (user) => {
     try {
-      const auth = getAuth();
-      const user = auth.currentUser;
-
-      if (!user) {
-        toast.warning("Please log in to view shipments");
-        setLoading(false);
-        return;
-      }
-
       const token = await user.getIdToken();
 
       const statusResponse = await axios.get(`https://jio-yatri-driver.onrender.com/api/driver/status`, {
@@ -115,7 +114,7 @@ function AvailableShipments() {
         setShipments([]);
       }
     } catch (error) {
-      console.error('Error fetching data:', error);
+      console.error('Error fetching driver status:', error);
     } finally {
       setLoading(false);
     }
@@ -130,7 +129,6 @@ function AvailableShipments() {
       const newShipments = response.data.shipments || [];
       const notifiedSet = notifiedShipmentIdsRef.current;
 
-      // Notify only for new shipments that haven't been notified yet
       newShipments.forEach(shipment => {
         if (!notifiedSet.has(shipment._id)) {
           showLocalNotification(
@@ -144,33 +142,26 @@ function AvailableShipments() {
       setShipments(newShipments);
     } catch (error) {
       console.error('Error fetching shipments:', error);
-      toast.error('Failed to load shipments');
+      toast.error('Failed to load shipment');
     }
   };
 
   const handleAccept = async (shipmentId) => {
     try {
-      const auth = getAuth();
-      const user = auth.currentUser;
-
-      if (!user) {
+      if (!currentUser) {
         toast.error('Please log in to accept shipments');
         return;
       }
 
       const position = await new Promise((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(
-          resolve,
-          reject,
-          {
-            enableHighAccuracy: true,
-            timeout: 20000,
-            maximumAge: 0
-          }
-        );
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: 20000,
+          maximumAge: 0
+        });
       }).catch(error => {
         console.error('Geolocation error:', error);
-        toast.error('Could not get your current location');
+        toast.error('Location access denied or unavailable. Please enable location services.');
         throw error;
       });
 
@@ -179,8 +170,7 @@ function AvailableShipments() {
         position.coords.latitude
       ];
 
-      const token = await user.getIdToken();
-
+      const token = await currentUser.getIdToken();
       const toastId = toast.loading('Accepting shipment...');
 
       const response = await axios.put(
@@ -197,7 +187,7 @@ function AvailableShipments() {
       });
 
       setActiveShipment(response.data.shipment);
-      await fetchData();
+      fetchData(currentUser);
     } catch (error) {
       console.error('Error accepting shipment:', error);
       toast.error(error.response?.data?.message || 'Error accepting shipment');
@@ -205,30 +195,22 @@ function AvailableShipments() {
   };
 
   const handleStatusUpdate = useCallback((newStatus) => {
-    setActiveShipment(prev => {
-      if (!prev) return null;
-      return { ...prev, status: newStatus };
-    });
-
-    if (['cancelled', 'delivered'].includes(newStatus)) {
-      fetchData();
+    setActiveShipment(prev => prev ? { ...prev, status: newStatus } : null);
+    if (['cancelled', 'delivered'].includes(newStatus) && currentUser) {
+      fetchData(currentUser);
     }
-  }, []);
+  }, [currentUser]);
 
   return (
     <div className="available-shipments">
       <ToastContainer position="top-right" autoClose={5000} theme="colored" />
-
       <h2>Available Shipments</h2>
 
       {notificationPermission === "default" && (
         <div className="permission-request notification-section">
           <h3>Enable Notifications</h3>
           <p>Get real-time updates about new shipments and deliveries</p>
-          <button
-            onClick={handleEnableNotifications}
-            className="enable-notifications-btn"
-          >
+          <button onClick={handleEnableNotifications} className="enable-notifications-btn">
             🔔 Enable Notifications
           </button>
         </div>
@@ -238,11 +220,7 @@ function AvailableShipments() {
         <div className="permission-denied notification-section">
           <h3>Notifications Blocked</h3>
           <p>You won't receive shipment updates. To enable:</p>
-
-          <button onClick={openBrowserSettings} className="settings-btn">
-            Open Browser Settings
-          </button>
-
+          <button onClick={openBrowserSettings} className="settings-btn">Open Browser Settings</button>
           {showInstructions && (
             <div className="instructions">
               <ol>
@@ -250,10 +228,7 @@ function AvailableShipments() {
                 <li>Change from "Block" to "Allow"</li>
                 <li>Refresh this page</li>
               </ol>
-              <button
-                onClick={() => window.location.reload()}
-                className="refresh-btn"
-              >
+              <button onClick={() => window.location.reload()} className="refresh-btn">
                 I've Enabled Notifications - Refresh
               </button>
             </div>
@@ -293,10 +268,7 @@ function AvailableShipments() {
               </div>
               <button
                 onClick={() => {
-                  window.scrollTo({
-                    top: 30,
-                    behavior: "smooth",
-                  });
+                  window.scrollTo({ top: 30, behavior: "smooth" });
                   handleAccept(shipment._id);
                 }}
                 className="accept-button"
