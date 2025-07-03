@@ -14,8 +14,14 @@ function AvailableShipments() {
   const [notificationPermission, setNotificationPermission] = useState(Notification.permission);
   const [showInstructions, setShowInstructions] = useState(false);
   const [activeShipment, setActiveShipment] = useState(null);
+  const [isMobileDevice, setIsMobileDevice] = useState(false);
   const notifiedShipmentIdsRef = useRef(new Set());
 
+  // Check if mobile device on component mount
+  useEffect(() => {
+    const mobileCheck = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    setIsMobileDevice(mobileCheck);
+  }, []);
 
   useEffect(() => {
     const setupNotificationsAndData = async () => {
@@ -35,13 +41,23 @@ function AvailableShipments() {
   }, []);
 
   const handleEnableNotifications = async () => {
-    const token = await requestNotificationPermission();
-    setNotificationPermission(Notification.permission);
+    try {
+      if (isMobileDevice) {
+        toast.info("For best mobile experience, please install the app and enable notifications in device settings");
+        return;
+      }
 
-    if (token) {
-      toast.success("Notifications enabled successfully");
-    } else {
-      setShowInstructions(true);
+      const token = await requestNotificationPermission();
+      setNotificationPermission(Notification.permission);
+
+      if (token) {
+        toast.success("Notifications enabled successfully");
+      } else {
+        setShowInstructions(true);
+      }
+    } catch (error) {
+      console.error('Error enabling notifications:', error);
+      toast.error("Failed to enable notifications");
     }
   };
 
@@ -52,6 +68,34 @@ function AvailableShipments() {
       window.open('about:preferences#privacy');
     } else if (navigator.userAgent.includes('Safari')) {
       window.open('x-apple.systempreferences:com.apple.preference.notifications');
+    }
+  };
+
+  const showNewShipmentNotification = (shipment) => {
+    // Show desktop notification if not mobile and permission granted
+    if (!isMobileDevice && Notification.permission === 'granted') {
+      try {
+        new Notification('🚚 New Shipment Available!', {
+          body: `From: ${shipment.sender.address.addressLine1} ➡ To: ${shipment.receiver.address.addressLine1}`,
+          icon: '/logo.jpg'
+        });
+      } catch (error) {
+        console.error('Desktop notification failed:', error);
+      }
+    }
+
+    // Always show toast notification
+    toast.info(`New shipment to ${shipment.receiver.address.addressLine1}`, {
+      autoClose: 5000,
+      hideProgressBar: false,
+    });
+
+    // Play notification sound
+    try {
+      const audio = new Audio('/notification.wav');
+      audio.play().catch(err => console.warn('Audio playback failed:', err));
+    } catch (error) {
+      console.error('Sound notification failed:', error);
     }
   };
 
@@ -82,7 +126,6 @@ function AvailableShipments() {
       }
     } catch (error) {
       console.error('Error fetching data:', error);
-      // toast.error('Failed to fetch data');
     } finally {
       setLoading(false);
     }
@@ -97,26 +140,14 @@ function AvailableShipments() {
       const newShipments = response.data.shipments || [];
       const notifiedSet = notifiedShipmentIdsRef.current;
 
-      // Notify only for new shipments that haven't been notified yet
       newShipments.forEach(shipment => {
         if (!notifiedSet.has(shipment._id)) {
-          // 🔔 Show notification only once
-          new Notification('🚚 New Shipment Available!', {
-            body: `From: ${shipment.sender.address.addressLine1} ➡ To: ${shipment.receiver.address.addressLine1}`,
-            icon: '/logo.jpg'
-          });
-          const audio = new Audio('/notification.wav');
-
-          audio.play().catch(err => {
-            console.warn('Audio playback blocked or failed:', err);
-          });
-          notifiedSet.add(shipment._id); // ✅ Mark as notified
+          showNewShipmentNotification(shipment);
+          notifiedSet.add(shipment._id);
         }
       });
 
-      // Update state
       setShipments(newShipments);
-
     } catch (error) {
       console.error('Error fetching shipments:', error);
       toast.error('Failed to load shipments');
@@ -137,11 +168,7 @@ function AvailableShipments() {
         navigator.geolocation.getCurrentPosition(
           resolve,
           reject,
-          {
-            enableHighAccuracy: true,
-            timeout: 20000,
-            maximumAge: 0
-          }
+          { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 }
         );
       }).catch(error => {
         console.error('Geolocation error:', error);
@@ -155,7 +182,6 @@ function AvailableShipments() {
       ];
 
       const token = await user.getIdToken();
-
       const toastId = toast.loading('Accepting shipment...');
 
       const response = await axios.put(
@@ -192,7 +218,12 @@ function AvailableShipments() {
 
   return (
     <div className="available-shipments">
-      <ToastContainer position="top-right" autoClose={5000} theme="colored" />
+      <ToastContainer 
+        position="top-right" 
+        autoClose={5000} 
+        theme="colored" 
+        pauseOnFocusLoss={false}
+      />
 
       <h2>Available Shipments</h2>
 
@@ -206,19 +237,36 @@ function AvailableShipments() {
           >
             🔔 Enable Notifications
           </button>
+          {isMobileDevice && (
+            <p className="mobile-notice">
+              On mobile devices, please ensure you've enabled notifications in your browser settings.
+            </p>
+          )}
         </div>
       )}
 
       {notificationPermission === "denied" && (
         <div className="permission-denied notification-section">
           <h3>Notifications Blocked</h3>
-          <p>You won't receive shipment updates. To enable:</p>
+          {isMobileDevice ? (
+            <>
+              <p>For mobile notifications:</p>
+              <ol>
+                <li>Open your device settings</li>
+                <li>Find notification settings for your browser</li>
+                <li>Enable notifications for this website</li>
+              </ol>
+            </>
+          ) : (
+            <>
+              <p>You won't receive shipment updates. To enable:</p>
+              <button onClick={openBrowserSettings} className="settings-btn">
+                Open Browser Settings
+              </button>
+            </>
+          )}
 
-          <button onClick={openBrowserSettings} className="settings-btn">
-            Open Browser Settings
-          </button>
-
-          {showInstructions && (
+          {showInstructions && !isMobileDevice && (
             <div className="instructions">
               <ol>
                 <li>Find this website in the list</li>
@@ -268,12 +316,7 @@ function AvailableShipments() {
               </div>
               <button
                 onClick={() => {
-                  // Scroll to top first (optional: smooth scrolling)
-                  window.scrollTo({
-                    top: 30,
-                    behavior: "smooth", // Optional: Adds smooth scrolling
-                  });
-                  // Then handle order acceptance
+                  window.scrollTo({ top: 30, behavior: "smooth" });
                   handleAccept(shipment._id);
                 }}
                 className="accept-button"
