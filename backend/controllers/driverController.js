@@ -1,4 +1,5 @@
 const Driver = require('../models/Driver');
+const Shipment = require('../models/Shipment');
 
 // Check if driver exists before registration
 exports.checkDriverExists = async (req, res) => {
@@ -18,7 +19,6 @@ exports.checkDriverExists = async (req, res) => {
     });
   }
 };
-
 // Register driver with proper validation
 exports.registerDriver = async (req, res) => {
   try {
@@ -78,7 +78,6 @@ exports.registerDriver = async (req, res) => {
     });
   }
 };
-
 // Get driver by userId
 exports.getDriver = async (req, res) => {
   try {
@@ -100,7 +99,6 @@ exports.getDriver = async (req, res) => {
     });
   }
 };
-
 // Update driver status
 exports.updateDriverStatus = async (req, res) => {
   try {
@@ -146,7 +144,6 @@ exports.updateDriverStatus = async (req, res) => {
     });
   }
 };
-
 // Get driver status
 exports.getDriverStatus = async (req, res) => {
   try {
@@ -171,8 +168,6 @@ exports.getDriverStatus = async (req, res) => {
     });
   }
 };
-
-
 exports.getDriverLocation = async (req, res) => {
   try {
     const driver = await Driver.findOne({ userId: req.user.uid })
@@ -199,7 +194,6 @@ exports.getDriverLocation = async (req, res) => {
     });
   }
 };
-
 // UPDATE driver location
 exports.updateDriverLocation = async (req, res) => {
   try {
@@ -271,36 +265,6 @@ exports.updateDriverLocation = async (req, res) => {
     });
   }
 };
-
-// In your driverController.js
-exports.getDriverLocation = async (req, res) => {
-  try {
-    const driver = await Driver.findOne({ 
-      userId: req.params.driverId 
-    }).select('location -_id');
-    
-    if (!driver) {
-      return res.status(404).json({ 
-        success: false, 
-        error: 'Driver not found' 
-      });
-    }
-
-    res.status(200).json({ 
-      success: true, 
-      location: driver.location 
-    });
-  } catch (err) {
-    res.status(500).json({ 
-      success: false, 
-      error: 'Failed to get driver location' 
-    });
-  }
-};
-
-// In your driverRoutes.js
-
-
 // In your driverController.js
 exports.registerFCMToken = async (req, res) => {
   try {
@@ -330,6 +294,44 @@ exports.registerFCMToken = async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Failed to save FCM token'
+    });
+  }
+};
+
+
+
+exports.incrementCompletedDeliveries = async (req, res) => {
+  console.log('Incrementing completed deliveries for user:', req.user.uid);
+  try {
+    const driver = await Driver.findOneAndUpdate(
+      { userId: req.user.uid },
+      { 
+        $inc: { completedDeliveries: 1 },
+        $set: { lastUpdated: Date.now() }
+      },
+      { new: true }
+    );
+
+    console.log('Update result:', driver);
+
+    if (!driver) {
+      console.error('Driver not found for user:', req.user.uid);
+      return res.status(404).json({
+        success: false,
+        error: 'Driver not found'
+      });
+    }
+
+    console.log('Successfully incremented deliveries. New count:', driver.completedDeliveries);
+    res.status(200).json({
+      success: true,
+      data: driver
+    });
+  } catch (err) {
+    console.error('Error incrementing deliveries:', err);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to update completed deliveries'
     });
   }
 };
