@@ -29,7 +29,7 @@ const DriverDashboard = () => {
         try {
             const token = await user.getIdToken();
             const [driverRes, imageRes] = await Promise.all([
-                fetch(`http://localhost:5000/api/driver/info/${user.uid}`, {
+                fetch(`https://jio-yatri-driver.onrender.com/api/driver/info/${user.uid}`, {
                     headers: { Authorization: `Bearer ${token}` }
                 }),
                 fetch(`http://localhost:5000/api/upload/profile-image/${user.uid}`, {
@@ -64,7 +64,7 @@ const DriverDashboard = () => {
 
         const fetchShipments = async () => {
             try {
-                const res = await axios.get(`http://localhost:5000/api/shipments/driver/${user.uid}`);
+                const res = await axios.get(`https://jio-yatri-driver.onrender.com/api/shipments/driver/${user.uid}`);
                 setShipments(res.data);
             } catch (err) {
                 console.error('Error fetching shipments:', err.message);
@@ -83,7 +83,7 @@ const DriverDashboard = () => {
         setIsUpdating(true);
         try {
             const token = await user.getIdToken(true);
-            const res = await fetch('http://localhost:5000/api/driver/status', {
+            const res = await fetch('https://jio-yatri-driver.onrender.com/api/driver/status', {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -133,7 +133,7 @@ const DriverDashboard = () => {
             formData.append('file', file);
 
             const token = await user.getIdToken(true);
-            await fetch('http://localhost:5000/api/upload/profile-image', {
+            await fetch('https://jio-yatri-driver.onrender.com/api/upload/profile-image', {
                 method: 'POST',
                 headers: { Authorization: `Bearer ${token}` },
                 body: formData
