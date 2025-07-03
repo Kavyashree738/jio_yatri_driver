@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
-import '../styles/UserDocumentViewer.css';
 import Header from './Header';
 import Footer from './Footer';
+import '../styles/UserDocumentViewer.css';
+
+// Import your placeholder image
+import documentPlaceholder from '../assets/images/pdf.png';
 
 const UserDocumentsViewer = () => {
   const { user } = useAuth();
@@ -18,7 +21,7 @@ const UserDocumentsViewer = () => {
       try {
         const token = await user.getIdToken(true);
         const response = await axios.get(
-          `https://jio-yatri-driver.onrender.com/api/upload/user-documents/${user.uid}`,
+          `http://localhost:5000/api/upload/user-documents/${user.uid}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         
@@ -42,7 +45,7 @@ const UserDocumentsViewer = () => {
     try {
       const token = await user.getIdToken(true);
       const response = await axios.get(
-        `https://jio-yatri-driver.onrender.com/api/upload/file/${filename}`,
+        `http://localhost:5000/api/upload/file/${filename}`,
         {
           headers: { Authorization: `Bearer ${token}` },
           responseType: 'blob'
@@ -71,7 +74,7 @@ const UserDocumentsViewer = () => {
     try {
       const token = await user.getIdToken();
       const response = await axios.get(
-        `https://jio-yatri-driver.onrender.com/api/upload/file/${filename}`,
+        `http://localhost:5000/api/upload/file/${filename}`,
         {
           headers: { Authorization: `Bearer ${token}` },
           responseType: 'blob'
@@ -94,121 +97,143 @@ const UserDocumentsViewer = () => {
     }
   };
 
-  if (loading) return (
-    <div className="loading-container">
-      <div className="spinner"></div>
-      <p>Loading your documents...</p>
-    </div>
-  );
+  const getFileIcon = (mimetype) => {
+    if (mimetype.startsWith('image/')) return 'fa-file-image';
+    if (mimetype.includes('pdf')) return 'fa-file-pdf';
+    if (mimetype.includes('word')) return 'fa-file-word';
+    if (mimetype.includes('excel')) return 'fa-file-excel';
+    if (mimetype.includes('zip')) return 'fa-file-archive';
+    return 'fa-file-alt';
+  };
 
-  if (error) return (
-    <div className="error-container">
-      <div className="error-icon">!</div>
-      <h3>Error loading documents</h3>
-      <p>{error}</p>
-      <button 
-        className="retry-button"
-        onClick={() => window.location.reload()}
-      >
-        Try Again
-      </button>
-    </div>
-  );
+  const formatDate = (dateString) => {
+    const options = { year: 'numeric', month: 'short', day: 'numeric' };
+    return new Date(dateString).toLocaleDateString(undefined, options);
+  };
 
   return (
     <>
       <Header/>
-      <div className="user-documents-viewer">
-        <section className="documents-section">
-          <header className="viewer-header">
-            <h2>My Documents</h2>
-            <p className="document-count">
-              {documents.length} {documents.length === 1 ? 'document' : 'documents'}
-            </p>
-          </header>
-          
-          <div className="documents-grid">
-            {documents.map(doc => (
-              <div 
-                key={doc.id} 
-                className={`document-card ${activeDoc === doc.id ? 'active' : ''}`}
-                onMouseEnter={() => setActiveDoc(doc.id)}
-                onMouseLeave={() => setActiveDoc(null)}
+      <div className="documents-viewer-container">
+        <div className="documents-viewer-content">
+          <div className="documents-header">
+            <h1 className="documents-title">My Documents</h1>
+            <div className="documents-summary">
+              <span className="summary-item">
+                <i className="fas fa-file-alt"></i> {documents.length} Documents
+              </span>
+              {/* <span className="summary-item">
+                <i className="fas fa-user-circle"></i> {profileImages.length} Profile Images
+              </span> */}
+            </div>
+          </div>
+
+          {loading ? (
+            <div className="loading-state">
+              <div className="loading-spinner">
+                <div className="spinner"></div>
+                <p>Loading your documents...</p>
+              </div>
+            </div>
+          ) : error ? (
+            <div className="error-state">
+              <div className="error-icon">
+                <i className="fas fa-exclamation-triangle"></i>
+              </div>
+              <h3>Couldn't load documents</h3>
+              <p>{error}</p>
+              <button 
+                className="retry-button"
+                onClick={() => window.location.reload()}
               >
+                <i className="fas fa-sync-alt"></i> Try Again
+              </button>
+            </div>
+          ) : (
+            <div className="documents-grid">
+              {documents.map(doc => (
                 <div 
-                  className="document-preview" 
-                  onClick={() => handleViewInBrowser(doc.filename, doc.mimetype)}
+                  key={doc.id} 
+                  className={`document-card ${activeDoc === doc.id ? 'active' : ''}`}
+                  onMouseEnter={() => setActiveDoc(doc.id)}
+                  onMouseLeave={() => setActiveDoc(null)}
                 >
-                  {doc.mimetype?.startsWith('image/') ? (
-                    <div className="image-preview-wrapper">
-                      <img 
-                        src={`https://jio-yatri-driver.onrender.com/api/upload/file/${doc.filename}`}
-                        alt={doc.originalName}
-                        className="document-image"
-                        onError={(e) => {
-                          e.target.onerror = null;
-                          e.target.src = 'https://via.placeholder.com/250x180?text=Image+Not+Found';
-                        }}
-                      />
-                    </div>
-                  ) : (
-                    <div className="document-icon-large">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                              d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                              d="M14 2v6h6M16 13H8M16 17H8M10 9H8" />
-                      </svg>
-                      <span className="file-extension">
-                        {doc.originalName.split('.').pop().toUpperCase()}
+                  <div 
+                    className="document-preview"
+                    onClick={() => handleViewInBrowser(doc.filename, doc.mimetype)}
+                  >
+                    {doc.mimetype?.startsWith('image/') ? (
+                      <div className="image-preview">
+                        <img 
+                          src={`http://localhost:5000/api/upload/file/${doc.filename}`}
+                          alt={doc.originalName}
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = documentPlaceholder;
+                          }}
+                        />
+                        <div className="image-overlay">
+                          <i className="fas fa-expand"></i>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="file-preview">
+                        <div className="file-placeholder">
+                          <img 
+                            src={documentPlaceholder} 
+                            alt="Document Placeholder" 
+                            className="placeholder-image"
+                          />
+                          <div className="file-type-badge">
+                            <i className={`fas ${getFileIcon(doc.mimetype)}`}></i>
+                            <span className="file-extension">
+                              {doc.originalName.split('.').pop().toUpperCase()}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <div className="document-info">
+                    <h3 className="document-name" title={doc.originalName}>
+                      {doc.originalName.length > 25 
+                        ? `${doc.originalName.substring(0, 25)}...` 
+                        : doc.originalName}
+                    </h3>
+                    <div className="document-meta">
+                      <span className="document-type">
+                        <i className="fas fa-tag"></i> {doc.docType}
+                      </span>
+                      <span className="document-date">
+                        <i className="fas fa-calendar-alt"></i> {formatDate(doc.uploadDate)}
                       </span>
                     </div>
-                  )}
-                </div>
-                <div className="document-details">
-                  <h3 className="document-title" title={doc.originalName}>
-                    {doc.originalName.length > 20 
-                      ? `${doc.originalName.substring(0, 20)}...` 
-                      : doc.originalName}
-                  </h3>
-                  <div className="document-meta">
-                    <span className="document-type">{doc.docType}</span>
-                    <span className="document-date">
-                      {new Date(doc.uploadDate).toLocaleDateString()}
-                    </span>
-                  </div>
-                  <div className="document-actions">
-                    <button 
-                      className="view-button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleViewInBrowser(doc.filename, doc.mimetype);
-                      }}
-                    >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                      </svg>
-                      View
-                    </button>
-                    <button 
-                      className="download-button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDownload(doc.filename, doc.originalName, doc.mimetype);
-                      }}
-                    >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                      </svg>
-                      Download
-                    </button>
+                    <div className="document-actions">
+                      <button 
+                        className="action-button view-button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleViewInBrowser(doc.filename, doc.mimetype);
+                        }}
+                      >
+                        <i className="fas fa-eye"></i> View
+                      </button>
+                      <button 
+                        className="action-button download-button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDownload(doc.filename, doc.originalName, doc.mimetype);
+                        }}
+                      >
+                        <i className="fas fa-download"></i> Download
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        </section>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
       <Footer/>
     </>
