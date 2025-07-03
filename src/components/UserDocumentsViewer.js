@@ -21,7 +21,7 @@ const UserDocumentsViewer = () => {
       try {
         const token = await user.getIdToken(true);
         const response = await axios.get(
-          `http://localhost:5000/api/upload/user-documents/${user.uid}`,
+          `https://jio-yatri-driver.onrender.com/api/upload/user-documents/${user.uid}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         
@@ -45,7 +45,7 @@ const UserDocumentsViewer = () => {
     try {
       const token = await user.getIdToken(true);
       const response = await axios.get(
-        `http://localhost:5000/api/upload/file/${filename}`,
+        `https://jio-yatri-driver.onrender.com/api/upload/file/${filename}`,
         {
           headers: { Authorization: `Bearer ${token}` },
           responseType: 'blob'
@@ -74,7 +74,7 @@ const UserDocumentsViewer = () => {
     try {
       const token = await user.getIdToken();
       const response = await axios.get(
-        `http://localhost:5000/api/upload/file/${filename}`,
+        `https://jio-yatri-driver.onrender.com/api/upload/file/${filename}`,
         {
           headers: { Authorization: `Bearer ${token}` },
           responseType: 'blob'
@@ -165,7 +165,7 @@ const UserDocumentsViewer = () => {
                     {doc.mimetype?.startsWith('image/') ? (
                       <div className="image-preview">
                         <img 
-                          src={`http://localhost:5000/api/upload/file/${doc.filename}`}
+                          src={`https://jio-yatri-driver.onrender.com/api/upload/file/${doc.filename}`}
                           alt={doc.originalName}
                           onError={(e) => {
                             e.target.onerror = null;
