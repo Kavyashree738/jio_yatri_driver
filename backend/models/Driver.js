@@ -16,6 +16,39 @@ const driverSchema = new mongoose.Schema({
     rc: { type: mongoose.Schema.Types.ObjectId, ref: 'fs.files' }
   },
   status: { type: String, enum: ['active', 'inactive'], default: 'active' },
+  ratings: {
+    average: { 
+      type: Number, 
+      default: 0,
+      min: 0,
+      max: 5
+    },
+    count: { 
+      type: Number, 
+      default: 0 
+    },
+    details: [{
+      shipmentId: { 
+        type: mongoose.Schema.Types.ObjectId, 
+        ref: 'Shipment' 
+      },
+      rating: { 
+        type: Number, 
+        required: true,
+        min: 1,
+        max: 5
+      },
+      feedback: String,
+      userId: {
+        type: String,
+        required: true
+      },
+      createdAt: { 
+        type: Date, 
+        default: Date.now 
+      }
+    }]
+  },
   location: {
     type: {
       type: String,
@@ -42,12 +75,12 @@ const driverSchema = new mongoose.Schema({
       type: String,
       default: ''
     }
-  }
-,
+  },
   isLocationActive: { type: Boolean, default: false },
   fcmToken: { type: String, default: null },
   isAvailable: { type: Boolean, default: true },
   activeShipment: { type: mongoose.Schema.Types.ObjectId, ref: 'Shipment' },
+  completedDeliveries: { type: Number, default: 0 },
   earnings: { type: Number, default: 0 },
   paymentBreakdown: {
     cash: { type: Number, default: 0 },
