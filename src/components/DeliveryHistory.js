@@ -18,7 +18,7 @@ const DeliveryHistory = () => {
 
       try {
         const response = await axios.get(
-          `http://localhost:5000/api/shipments/driver/${user.uid}`
+          `https://jio-yatri-driver.onrender.com/api/shipments/driver/${user.uid}`
         );
         setShipments(response.data);
       } catch (err) {
