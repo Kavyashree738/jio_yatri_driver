@@ -1,151 +1,168 @@
-/* DeliveryHistory.css */
+/* Delivery History Specific Styles - All classes prefixed with dh- */
 
-.delivery-history-container {
+.dh-container {
   max-width: 1200px;
-  margin: 0 auto;
-  padding: 2rem;
+  margin: 130px auto;
+  padding: 0 1rem;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
-.delivery-history-title {
-  color: #2c3e50;
+.dh-title {
   text-align: center;
+  font-size: 2.5rem;
   margin-bottom: 2rem;
-  font-size: 2.2rem;
-  font-weight: 600;
+  color: #2c3e50;
   position: relative;
+  padding-bottom: 0.5rem;
+  font-weight: 600;
 }
 
-.delivery-history-title::after {
+.dh-title::after {
   content: '';
-  display: block;
-  width: 80px;
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100px;
   height: 4px;
-  background: #3498db;
-  margin: 0.5rem auto;
+  background: linear-gradient(90deg, #3498db, #9b59b6);
   border-radius: 2px;
 }
 
-.error-message {
-  color: #e74c3c;
-  background-color: #fadbd8;
+.dh-error {
+  background-color: #ffebee;
+  color: #c62828;
   padding: 1rem;
-  border-radius: 5px;
+  border-radius: 8px;
   margin-bottom: 1.5rem;
   text-align: center;
-  font-weight: 500;
+  border-left: 4px solid #c62828;
 }
 
-.no-shipments {
+.dh-empty {
   text-align: center;
-  color: #7f8c8d;
   font-size: 1.2rem;
-  margin-top: 2rem;
+  color: #7f8c8d;
+  padding: 2rem;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 }
 
-.shipments-list {
-  list-style: none;
-  padding: 0;
+.dh-shipments-list {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
   gap: 1.5rem;
+  padding: 0;
+  list-style: none;
 }
 
-.shipment-card {
+.dh-shipment-card {
   background: white;
   border-radius: 12px;
   padding: 1.5rem;
-  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-  border-left: 5px solid #3498db;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid #e0e0e0;
 }
 
-.shipment-card:hover {
+.dh-shipment-card:hover {
   transform: translateY(-5px);
-  box-shadow: 0 12px 20px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.12);
 }
 
-.shipment-header {
+.dh-shipment-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: linear-gradient(to bottom, #3498db, #9b59b6);
+}
+
+.dh-shipment-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 1rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid #ecf0f1;
 }
 
-.tracking-number {
-  font-weight: 700;
-  color: #2c3e50;
+.dh-tracking-number {
+  font-weight: 600;
   font-size: 1.1rem;
+  color: #2c3e50;
+  background: #f5f5f5;
+  padding: 0.3rem 0.8rem;
+  border-radius: 20px;
+  letter-spacing: 0.5px;
 }
 
-.status-badge {
+.dh-status-badge {
   padding: 0.3rem 0.8rem;
   border-radius: 20px;
   font-size: 0.8rem;
   font-weight: 600;
   text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
-.status-pending {
-  background-color: #f39c12;
-  color: white;
+.dh-status-pending {
+  background-color: #da290a;
+  color: #e65100;
 }
 
-.status-in-progress {
-  background-color: #3498db;
-  color: white;
+.dh-status-in-progress {
+  background-color: #0387e6;
+  color: #1565c0;
 }
 
-.status-delivered {
-  background-color: #2ecc71;
-  color: white;
+.dh-status-delivered {
+  background-color: #00f114;
+  color: #2e7d32;
 }
 
-.status-cancelled {
-  background-color: #e74c3c;
-  color: white;
+.dh-status-cancelled {
+  background-color: #e91132;
+  color: #c7bebe;
 }
 
-.shipment-detail {
-  margin: 0.8rem 0;
-  color: #34495e;
+.dh-detail {
+  margin: 0.7rem 0;
+  font-size: 0.95rem;
+  color: #555;
   line-height: 1.5;
 }
 
-.shipment-detail strong {
+.dh-detail strong {
   color: #2c3e50;
   font-weight: 600;
 }
 
-.shipment-divider {
+.dh-divider {
   border: none;
   height: 1px;
-  background-color: #ecf0f1;
+  background: linear-gradient(90deg, transparent, #e0e0e0, transparent);
   margin: 1.2rem 0;
 }
 
-.payment-section {
-  background-color: #f8f9fa;
+.dh-payment-section {
+  background-color: #f9f9f9;
   padding: 1rem;
   border-radius: 8px;
   margin-top: 1rem;
-}
-
-.driver-section {
-  background-color: #e8f4fc;
-  padding: 1rem;
-  border-radius: 8px;
-  margin-top: 1rem;
+  border-left: 3px solid #3498db;
 }
 
 @media (max-width: 768px) {
-  .delivery-history-container {
-    padding: 1rem;
+  .dh-shipments-list {
+    grid-template-columns: 1fr;
   }
   
-  .shipments-list {
-    grid-template-columns: 1fr;
+  .dh-title {
+    font-size: 2rem;
   }
 }
