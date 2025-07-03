@@ -203,7 +203,7 @@ exports.getDriverLocation = async (req, res) => {
 // UPDATE driver location
 exports.updateDriverLocation = async (req, res) => {
   try {
-    // console.log('Incoming location update:', req.body); // Debug log
+    console.log('Incoming location update:', req.body); // Debug log
 
     // Validate coordinates if location is being activated
     if (req.body.isLocationActive !== false) {
@@ -253,7 +253,7 @@ exports.updateDriverLocation = async (req, res) => {
       });
     }
 
-    // console.log('Updated driver location:', driver.location); // Debug log
+    console.log('Updated driver location:', driver.location); // Debug log
 
     res.status(200).json({
       success: true,
@@ -272,6 +272,33 @@ exports.updateDriverLocation = async (req, res) => {
   }
 };
 
+// In your driverController.js
+exports.getDriverLocation = async (req, res) => {
+  try {
+    const driver = await Driver.findOne({ 
+      userId: req.params.driverId 
+    }).select('location -_id');
+    
+    if (!driver) {
+      return res.status(404).json({ 
+        success: false, 
+        error: 'Driver not found' 
+      });
+    }
+
+    res.status(200).json({ 
+      success: true, 
+      location: driver.location 
+    });
+  } catch (err) {
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to get driver location' 
+    });
+  }
+};
+
+// In your driverRoutes.js
 
 
 // In your driverController.js
