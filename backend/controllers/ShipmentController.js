@@ -1,16 +1,18 @@
 const axios = require('axios');
 const Shipment = require('../models/Shipment');
-const Driver=require('../models/Driver')
+const Driver = require('../models/Driver')
 const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY;
+const { notifyNewShipment } = require('../services/notificationService');
+
 const mongoose = require('mongoose');  // Add this line at the top
 exports.calculateDistance = async (req, res) => {
   try {
     const { origin, destination } = req.body;
 
-    if (!origin || !destination || 
-        typeof origin.lat !== 'number' || typeof origin.lng !== 'number' ||
-        typeof destination.lat !== 'number' || typeof destination.lng !== 'number') {
-      return res.status(400).json({ 
+    if (!origin || !destination ||
+      typeof origin.lat !== 'number' || typeof origin.lng !== 'number' ||
+      typeof destination.lat !== 'number' || typeof destination.lng !== 'number') {
+      return res.status(400).json({
         error: 'Invalid coordinates format',
         details: 'Expected { lat: number, lng: number } for both origin and destination'
       });
@@ -20,7 +22,7 @@ exports.calculateDistance = async (req, res) => {
       'https://maps.googleapis.com/maps/api/directions/json',
       {
         params: {
-          origin:` ${origin.lat},${origin.lng}`,
+          origin: ` ${origin.lat},${origin.lng}`,
           destination: `${destination.lat},${destination.lng}`,
           key: GOOGLE_MAPS_API_KEY,
           units: 'metric'
@@ -29,7 +31,7 @@ exports.calculateDistance = async (req, res) => {
     );
 
     if (response.data.status !== 'OK') {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: 'Could not calculate route',
         status: response.data.status,
         message: response.data.error_message || 'No route could be found between the specified locations'
@@ -42,7 +44,7 @@ exports.calculateDistance = async (req, res) => {
     const distanceInKm = leg.distance.value / 1000;
     const duration = leg.duration.text;
 
-    res.json({ 
+    res.json({
       distance: distanceInKm,
       duration: duration,
       polyline: route.overview_polyline.points
@@ -50,7 +52,7 @@ exports.calculateDistance = async (req, res) => {
 
   } catch (error) {
     console.error('Route calculation error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Failed to calculate distance',
       details: error.message
     });
@@ -93,6 +95,10 @@ exports.createShipment = async (req, res) => {
     });
 
     const savedShipment = await newShipment.save();
+    console.log(savedShipment)
+    console.log('Matching drivers for notification:', matchingDrivers);
+    console.log(`Sending notification to driver UID: ${Driver.userId}`)
+   
 
     res.status(201).json({
       message: 'Shipment created successfully',
@@ -101,7 +107,7 @@ exports.createShipment = async (req, res) => {
     });
   } catch (error) {
     console.error('Error creating shipment:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       message: 'Failed to create shipment',
       error: error.message,
       details: error.errors
@@ -125,10 +131,10 @@ exports.getOrderStatus = async (req, res) => {
   try {
     const order = await Shipment.findById(req.params.orderId);
     if (!order) return res.status(404).json({ error: 'Order not found' });
-    res.json({ 
+    res.json({
       status: order.status,
       driverId: order.assignedDriver,
-      trackingNumber: order.trackingNumber 
+      trackingNumber: order.trackingNumber
     });
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch order status' });
@@ -213,26 +219,26 @@ exports.acceptShipment = async (req, res) => {
       console.log('Location received in request:', location);
       if (!Array.isArray(location)) {
         console.error('Location is not an array');
-        return res.status(400).json({ 
-          message: 'Invalid location format. Expected [longitude, latitude]' 
+        return res.status(400).json({
+          message: 'Invalid location format. Expected [longitude, latitude]'
         });
       }
       if (location.length !== 2) {
         console.error('Location array length is not 2');
-        return res.status(400).json({ 
-          message: 'Invalid location format. Expected [longitude, latitude]' 
+        return res.status(400).json({
+          message: 'Invalid location format. Expected [longitude, latitude]'
         });
       }
       if (typeof location[0] !== 'number' || typeof location[1] !== 'number') {
         console.error('Location coordinates are not numbers');
-        return res.status(400).json({ 
-          message: 'Invalid coordinates. Longitude and latitude must be numbers' 
+        return res.status(400).json({
+          message: 'Invalid coordinates. Longitude and latitude must be numbers'
         });
       }
       if (location[0] < -180 || location[0] > 180 || location[1] < -90 || location[1] > 90) {
         console.error('Location coordinates out of valid range');
-        return res.status(400).json({ 
-          message: 'Invalid coordinates. Longitude must be between -180 and 180, latitude between -90 and 90' 
+        return res.status(400).json({
+          message: 'Invalid coordinates. Longitude must be between -180 and 180, latitude between -90 and 90'
         });
       }
     } else {
@@ -247,7 +253,7 @@ exports.acceptShipment = async (req, res) => {
       // 1. Find the driver
       console.log('Looking for driver with UID:', firebaseUid);
       const driver = await Driver.findOne({ userId: firebaseUid }).session(session);
-      
+
       if (!driver) {
         console.error('Driver not found');
         await session.abortTransaction();
@@ -262,8 +268,8 @@ exports.acceptShipment = async (req, res) => {
       });
 
       // Determine driver location to use
-      const driverLocation = location || 
-                            (driver.location?.coordinates || [0, 0]);
+      const driverLocation = location ||
+        (driver.location?.coordinates || [0, 0]);
       console.log('Driver location to be saved:', driverLocation);
 
       // 2. Update the driver
@@ -330,15 +336,15 @@ exports.acceptShipment = async (req, res) => {
 
       await session.commitTransaction();
       console.log('Transaction committed successfully');
-      
+
       // Emit real-time update if using Socket.io
       if (req.io) {
         console.log('Emitting socket.io update for shipment:', shipmentId);
         req.io.to(`shipment_${shipmentId}`).emit('shipment_updated', shipment);
       }
 
-      res.status(200).json({ 
-        message: 'Shipment accepted successfully', 
+      res.status(200).json({
+        message: 'Shipment accepted successfully',
         shipment,
         driverLocation: shipment.driverLocation
       });
@@ -359,9 +365,9 @@ exports.acceptShipment = async (req, res) => {
       stack: error.stack,
       ...(error.response && { responseData: error.response.data })
     });
-    res.status(500).json({ 
+    res.status(500).json({
       message: 'Internal server error',
-      error: error.message 
+      error: error.message
     });
   }
 };
@@ -369,11 +375,11 @@ exports.acceptShipment = async (req, res) => {
 exports.updateDriverLocation = async (req, res) => {
   try {
     const { coordinates } = req.body;
-    
+
     if (!coordinates || !Array.isArray(coordinates) || coordinates.length !== 2) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         success: false,
-        message: 'Valid coordinates array [longitude, latitude] is required' 
+        message: 'Valid coordinates array [longitude, latitude] is required'
       });
     }
 
@@ -389,16 +395,16 @@ exports.updateDriverLocation = async (req, res) => {
           status: req.body.status || 'in-transit'
         }
       },
-      { 
+      {
         new: true,
-        runValidators: true 
+        runValidators: true
       }
     );
 
     if (!shipment) {
-      return res.status(404).json({ 
+      return res.status(404).json({
         success: false,
-        message: 'Shipment not found' 
+        message: 'Shipment not found'
       });
     }
 
@@ -414,7 +420,7 @@ exports.updateDriverLocation = async (req, res) => {
 
   } catch (err) {
     console.error(`Error updating driver location: ${err.message}`.red);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
       message: 'Server error',
       error: process.env.NODE_ENV === 'development' ? err.message : undefined
@@ -427,7 +433,7 @@ exports.updateDriverLocation = async (req, res) => {
 exports.cancelShipment = async (req, res) => {
   const session = await mongoose.startSession();
   session.startTransaction();
-  
+
   try {
     const { id } = req.params;
     const { reason } = req.body;
@@ -435,7 +441,7 @@ exports.cancelShipment = async (req, res) => {
     // 1. Update the shipment status
     const shipment = await Shipment.findByIdAndUpdate(
       id,
-      { 
+      {
         status: 'cancelled',
         cancellationReason: reason,
         $unset: { driverLocation: 1 } // Remove driver location
@@ -452,7 +458,7 @@ exports.cancelShipment = async (req, res) => {
     if (shipment.assignedDriver?.userId) {
       await Driver.findOneAndUpdate(
         { userId: shipment.assignedDriver.userId },
-        { 
+        {
           $set: { isLocationActive: false },
           $unset: { activeShipment: 1 }
         },
@@ -461,20 +467,20 @@ exports.cancelShipment = async (req, res) => {
     }
 
     await session.commitTransaction();
-    
+
     // Emit real-time update if using Socket.io
     if (req.io) {
       req.io.to(`shipment_${shipment._id}`).emit('shipment_updated', shipment);
     }
 
-    res.status(200).json({ 
+    res.status(200).json({
       success: true,
       data: shipment
     });
   } catch (error) {
     await session.abortTransaction();
     console.error('Error cancelling shipment:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
       error: 'Failed to cancel shipment',
       details: process.env.NODE_ENV === 'development' ? error.message : undefined
@@ -494,7 +500,7 @@ exports.deliverShipment = async (req, res) => {
     // 1. Update the shipment status
     const shipment = await Shipment.findByIdAndUpdate(
       id,
-      { 
+      {
         status: 'delivered',
         deliveredAt: new Date(),
         $unset: { driverLocation: 1 } // Remove driver location
@@ -511,7 +517,7 @@ exports.deliverShipment = async (req, res) => {
     if (shipment.assignedDriver?.userId) {
       await Driver.findOneAndUpdate(
         { userId: shipment.assignedDriver.userId },
-        { 
+        {
           $set: { isLocationActive: false },
           $unset: { activeShipment: 1 }
         },
@@ -520,20 +526,20 @@ exports.deliverShipment = async (req, res) => {
     }
 
     await session.commitTransaction();
-    
+
     // Emit real-time update if using Socket.io
     if (req.io) {
       req.io.to(`shipment_${shipment._id}`).emit('shipment_updated', shipment);
     }
 
-    res.status(200).json({ 
+    res.status(200).json({
       success: true,
       data: shipment
     });
   } catch (error) {
     await session.abortTransaction();
     console.error('Error delivering shipment:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
       error: 'Failed to mark shipment as delivered',
       details: process.env.NODE_ENV === 'development' ? error.message : undefined
@@ -544,78 +550,36 @@ exports.deliverShipment = async (req, res) => {
 };
 
 exports.getDriverHistory = async (req, res) => {
-    try {
-        const { status } = req.query;
-        const driverId = req.user.id; // From auth middleware
-        
-        let query = { driver: driverId };
-        
-        if (status && status !== 'all') {
-            query.status = status;
-        }
-        
-        const shipments = await Shipment.find(query)
-            .populate('sender receiver')
-            .sort({ createdAt: -1 })
-            .lean();
-            
-        res.json({ 
-            success: true,
-            data: shipments.map(shipment => ({
-                ...shipment,
-                cost: parseFloat(shipment.cost.toFixed(2))
-            }))
-        });
-    } catch (error) {
-        console.error('Error fetching driver history:', error);
-        res.status(500).json({ 
-            success: false,
-            error: 'Failed to fetch shipment history' 
-        });
-    }
-};
-
-
-// exports.getShipmentById = async (req, res) => {
-//   try {
-//     const shipment = await Shipment.findById(req.params.id);
-//     if (!shipment) {
-//       return res.status(404).json({ message: 'Shipment not found' });
-//     }
-//     res.status(200).json(shipment);
-//   } catch (error) {
-//     console.error('Error fetching shipment:', error);
-//     res.status(500).json({ message: 'Server error' });
-//   }
-// };
-
-
-exports.getShipmentById = async (req, res) => {
-  const id = req.params.id;
-
-  // Validate MongoDB ObjectId before querying
-  if (!mongoose.Types.ObjectId.isValid(id)) {
-    return res.status(400).json({ message: 'Invalid shipment ID format' });
-  }
-
   try {
-    const shipment = await Shipment.findById(id)
-      .select({
-        _id: 1,
-        status: 1,
-        'driverLocation.coordinates': 1,
-        'sender.address.coordinates': 1,
-        'receiver.address.coordinates': 1,
-      })
+    const { status } = req.query;
+    const driverId = req.user.id; // From auth middleware
+
+    let query = { driver: driverId };
+
+    if (status && status !== 'all') {
+      query.status = status;
+    }
+
+    const shipments = await Shipment.find(query)
+      .populate('sender receiver')
+      .sort({ createdAt: -1 })
       .lean();
 
-    if (!shipment) {
-      return res.status(404).json({ message: 'Shipment not found' });
-    }
-
-    res.status(200).json(shipment);
+    res.json({
+      success: true,
+      data: shipments.map(shipment => ({
+        ...shipment,
+        cost: parseFloat(shipment.cost.toFixed(2))
+      }))
+    });
   } catch (error) {
-    console.error('Error fetching shipment:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Error fetching driver history:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch shipment history'
+    });
   }
 };
+
+
+
