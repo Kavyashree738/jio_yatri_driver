@@ -1,7 +1,7 @@
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { FaUser, FaPhone, FaToggleOn, FaToggleOff, FaCar } from 'react-icons/fa';
+import { FaUser, FaPhone, FaToggleOn, FaToggleOff, FaCar, FaStar } from 'react-icons/fa';
 import { MdDirectionsCar, MdDirectionsBike, MdLocalShipping } from 'react-icons/md';
 import Header from './Header';
 import Footer from './Footer';
@@ -10,10 +10,13 @@ import AvailableShipments from './AvailableShipments';
 import '../styles/DriverDashboard.css';
 import { signOut } from 'firebase/auth';
 import { auth } from '../firebase';
+import axios from 'axios';
+
 const DriverDashboard = () => {
-    const { user ,setMessage } = useAuth();
+    const { user, setMessage } = useAuth();
     const navigate = useNavigate();
     const [driverInfo, setDriverInfo] = useState(null);
+    const [shipments, setShipments] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [status, setStatus] = useState('inactive');
@@ -22,37 +25,26 @@ const DriverDashboard = () => {
     const [isUploading, setIsUploading] = useState(false);
     const fileInputRef = useRef(null);
 
-    const handleLogout = async () => {
-        try {
-            await signOut(auth);
-            setMessage({ text: 'Logged out successfully.', isError: false });
-            navigate('/');
-        } catch (error) {
-            setMessage({ text: 'Logout failed: ' + error.message, isError: true });
-        }
-    };
-
-    // Fetch driver info
     const fetchDriverInfo = useCallback(async () => {
         try {
             const token = await user.getIdToken();
-            const [driverResponse, imageResponse] = await Promise.all([
-                fetch(`https://jio-yatri-driver.onrender.com/api/driver/info/${user.uid}`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
+            const [driverRes, imageRes] = await Promise.all([
+                fetch(`http://localhost:5000/api/driver/info/${user.uid}`, {
+                    headers: { Authorization: `Bearer ${token}` }
                 }),
-                fetch(`https://jio-yatri-driver.onrender.com/api/upload/profile-image/${user.uid}`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
+                fetch(`http://localhost:5000/api/upload/profile-image/${user.uid}`, {
+                    headers: { Authorization: `Bearer ${token}` }
                 })
             ]);
 
-            if (!driverResponse.ok) throw new Error('Failed to fetch driver info');
-            
-            const driverData = await driverResponse.json();
+            if (!driverRes.ok) throw new Error('Failed to fetch driver info');
+
+            const driverData = await driverRes.json();
             setDriverInfo(driverData.data);
             setStatus(driverData.data?.status || 'inactive');
-            
-            if (imageResponse.ok) {
-                const blob = await imageResponse.blob();
+
+            if (imageRes.ok) {
+                const blob = await imageRes.blob();
                 const imageUrl = URL.createObjectURL(blob);
                 setProfileImage(imageUrl);
             } else if (user.photoURL) {
@@ -66,38 +58,50 @@ const DriverDashboard = () => {
     }, [user]);
 
     useEffect(() => {
-        if (!user) {
-            navigate('/orders');
-            return;
-        }
+        if (!user) return;
+
         fetchDriverInfo();
-    }, [user, navigate, fetchDriverInfo]);
+
+        const fetchShipments = async () => {
+            try {
+                const res = await axios.get(`http://localhost:5000/api/shipments/driver/${user.uid}`);
+                setShipments(res.data);
+            } catch (err) {
+                console.error('Error fetching shipments:', err.message);
+            }
+        };
+
+        fetchShipments();
+    }, [user, fetchDriverInfo]);
+
+    const completedDeliveries = useMemo(() => {
+        return shipments.filter(s => s.status?.toLowerCase() === 'delivered').length;
+    }, [shipments]);
 
     const toggleStatus = async () => {
         const newStatus = status === 'active' ? 'inactive' : 'active';
         setIsUpdating(true);
-
         try {
             const token = await user.getIdToken(true);
-            const response = await fetch('https://jio-yatri-driver.onrender.com/api/driver/status', {
+            const res = await fetch('http://localhost:5000/api/driver/status', {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
+                    Authorization: `Bearer ${token}`
                 },
                 body: JSON.stringify({ status: newStatus })
             });
 
-            if (!response.ok) throw new Error('Failed to update status');
-            
+            if (!res.ok) throw new Error('Failed to update status');
             setStatus(newStatus);
             setDriverInfo(prev => ({
                 ...prev,
                 status: newStatus,
                 lastUpdated: new Date().toISOString()
             }));
+            setMessage({ text: 'Status updated', isError: false });
         } catch (err) {
-            setError(err.message);
+            setMessage({ text: err.message, isError: true });
         } finally {
             setIsUpdating(false);
         }
@@ -108,14 +112,13 @@ const DriverDashboard = () => {
         if (!file) return;
         e.target.value = '';
 
-        // Validate file
         if (!file.type.match('image.*')) {
-            setError('Please select an image file (JPEG, PNG, etc.)');
+            setError('Please select an image file');
             return;
         }
 
         if (file.size > 5 * 1024 * 1024) {
-            setError('Image size should be less than 5MB');
+            setError('Image size should be < 5MB');
             return;
         }
 
@@ -123,7 +126,6 @@ const DriverDashboard = () => {
         setError(null);
 
         try {
-            // Create preview URL
             const previewUrl = URL.createObjectURL(file);
             setProfileImage(previewUrl);
 
@@ -131,110 +133,78 @@ const DriverDashboard = () => {
             formData.append('file', file);
 
             const token = await user.getIdToken(true);
-            const response = await fetch('https://jio-yatri-driver.onrender.com/api/upload/profile-image', {
+            await fetch('http://localhost:5000/api/upload/profile-image', {
                 method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}` },
+                headers: { Authorization: `Bearer ${token}` },
                 body: formData
             });
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Upload failed');
-            }
-
-            const data = await response.json();
-            
-            // Update the image with the new URL from server
-            const newImageResponse = await fetch(data.imageUrl, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            
-            if (newImageResponse.ok) {
-                const newImageBlob = await newImageResponse.blob();
-                const newImageUrl = URL.createObjectURL(newImageBlob);
-                setProfileImage(newImageUrl);
-            }
-
-            // Update driver info
             await fetchDriverInfo();
         } catch (err) {
-            console.error('Upload error:', err);
-            setProfileImage(prev => prev || user.photoURL || null);
-            setError(err.message || 'Failed to upload image');
+            setError(err.message);
         } finally {
             setIsUploading(false);
         }
     };
 
-    const handleDeleteImage = async () => {
-        if (!window.confirm('Are you sure you want to delete your profile image?')) return;
-
+    const handleLogout = async () => {
         try {
-            const token = await user.getIdToken(true);
-            const response = await fetch('https://jio-yatri-driver.onrender.com/api/upload/profile-image', {
-                method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-
-            if (!response.ok) throw new Error('Failed to delete image');
-
-            setProfileImage(user.photoURL || null);
-            await fetchDriverInfo();
-        } catch (err) {
-            setError(err.message || 'Failed to delete image');
+            await signOut(auth);
+            setMessage({ text: 'Logged out', isError: false });
+            navigate('/');
+        } catch (error) {
+            setMessage({ text: error.message, isError: true });
         }
     };
 
     const getVehicleIcon = () => {
-        if (!driverInfo?.vehicleType) return <FaCar className="vehicle-icon" />;
-        
-        switch (driverInfo.vehicleType.toLowerCase()) {
-            case 'Twowheeler': return <MdDirectionsBike className="vehicle-icon" />;
-            case 'Threewheeler': return <MdDirectionsCar className="vehicle-icon" />;
-            case 'Truck': return <MdLocalShipping className="vehicle-icon" />;
-            default: return <MdDirectionsCar className="vehicle-icon" />;
+        switch (driverInfo?.vehicleType?.toLowerCase()) {
+            case 'twowheeler':
+                return <span role="img" aria-label="Two Wheeler">🛵</span>;
+            case 'threewheeler':
+                return <span role="img" aria-label="Three Wheeler">🛺</span>;
+            case 'truck':
+                return <span role="img" aria-label="Truck">🚚</span>;
+            default:
+                return <span role="img" aria-label="Car">🚗</span>;
         }
     };
 
-    if (loading) {
+    const renderRatingStars = () => {
+        const rating = driverInfo?.ratings?.average || 0;
         return (
-            <div className="dashboard-loading">
-                <div className="spinner"></div>
-                <p>Loading your driver information...</p>
+            <div className="dd-rating-stars">
+                {[...Array(5)].map((_, i) => (
+                    <FaStar key={i} className={`dd-star ${i < rating ? 'dd-filled' : ''}`} />
+                ))}
+                <span className="dd-rating-text">{rating > 0 ? `${rating.toFixed(1)}/5` : 'Not rated yet'}</span>
             </div>
         );
-    }
+    };
 
-    if (error) {
-        return (
-            <div className="dashboard-error">
-                <p>Error: {error}</p>
-                <button onClick={() => window.location.reload()}>Try Again</button>
+    if (loading) return (
+        <div className="dd-loading">
+            <div className="dd-spinner-container">
+                <div className="dd-beautiful-spinner"></div>
+                <p className="dd-loading-text">Loading Dashboard...</p>
             </div>
-        );
-    }
+        </div>
+    );
 
-    if (!driverInfo) {
-        return (
-            <div className="dashboard-no-info">
-                <p>No driver information found.</p>
-                <button onClick={() => navigate('/driver-register')}>Complete Registration</button>
-            </div>
-        );
-    }
+    if (error) return <div className="dd-error">Error: {error}</div>;
 
     return (
         <>
             <Header />
-            <div className="driver-dashboard">
-                <div className="dashboard-header">
+            <div className="dd-container">
+                <div className="dd-header">
                     <h1>Driver Dashboard</h1>
-                    <div className="status-toggle">
-                        <span>Status: {status === 'active' ? 'Active' : 'Inactive'}</span>
+                    <div className="dd-status-toggle">
+                        <span>Status: {status}</span>
                         <button
                             onClick={toggleStatus}
                             disabled={isUpdating}
-                            className={`toggle-btn ${status === 'active' ? 'active' : 'inactive'}`}
+                            className={`dd-toggle-btn ${status === 'active' ? 'dd-active' : 'dd-inactive'}`}
                         >
                             {status === 'active' ? <FaToggleOn /> : <FaToggleOff />}
                             {isUpdating ? 'Updating...' : status === 'active' ? 'Go Offline' : 'Go Online'}
@@ -242,97 +212,58 @@ const DriverDashboard = () => {
                     </div>
                 </div>
 
-                <div className="driver-profile">
-                    <div className="profile-card">
-                        <div className="profile-header">
-                            <div className="avatar">
+                <div className="dd-profile">
+                    <div className="dd-profile-card">
+                        <div className="dd-profile-header">
+                            <div className="dd-avatar">
                                 {isUploading ? (
-                                    <div className="image-loading">
-                                        <div className="spinner-small"></div>
-                                    </div>
+                                    <div className="dd-spinner"></div>
                                 ) : profileImage ? (
                                     <img
                                         src={profileImage}
-                                        alt="Profile"
-                                        className="profile-image"
-                                        onError={() => setProfileImage(user.photoURL || null)}
+                                        className="dd-profile-image"
+                                        onClick={() => fileInputRef.current.click()}
                                     />
                                 ) : (
-                                    <FaUser className="default-avatar" />
+                                    <FaUser className="dd-default-avatar" />
                                 )}
-                                <div className="upload-overlay">
-                                    <label htmlFor="profile-upload">
-                                        {isUploading ? 'Uploading...' : 'Change Photo'}
-                                    </label>
-                                    <input
-                                        id="profile-upload"
-                                        ref={fileInputRef}
-                                        type="file"
-                                        accept="image/*"
-                                        onChange={handleImageUpload}
-                                        disabled={isUploading}
-                                        style={{ display: 'none' }}
-                                    />
-                                </div>
+                                <input
+                                    ref={fileInputRef}
+                                    type="file"
+                                    accept="image/*"
+                                    style={{ display: 'none' }}
+                                    onChange={handleImageUpload}
+                                    disabled={isUploading}
+                                />
                             </div>
                             <h2>{driverInfo.name}</h2>
+                            {renderRatingStars()}
                         </div>
-
-                        <div className="profile-details">
-                            <div className="detail-item">
-                                <FaPhone className="detail-icon" />
-                                <span>{driverInfo.phone}</span>
-                            </div>
-                              <button onClick={handleLogout} className="logout-button">
-                                    Logout
-                                </button> 
-                            <div className="detail-item">
-                                {getVehicleIcon()}
-                                <div className="vehicle-info">
-                                    <span className="vehicle-type">
-                                        {driverInfo.vehicleType?.charAt(0).toUpperCase() + driverInfo.vehicleType?.slice(1)}
-                                    </span>
-                                    <span className="vehicle-number">{driverInfo.vehicleNumber}</span>
-                                </div>
-                            </div>
-
-                            <div className="detail-item">
-                                <span className="detail-label">Last Updated:</span>
-                                <span>{new Date(driverInfo.lastUpdated).toLocaleString()}</span>
-                            </div>
+                        <div className="dd-profile-details">
+                            <div><FaPhone /> {driverInfo.phone}</div>
+                            <div>{getVehicleIcon()} {driverInfo.vehicleType} - {driverInfo.vehicleNumber}</div>
+                            <button className="dd-logout-btn" onClick={handleLogout}>Logout</button>
                         </div>
                     </div>
 
-                    <div className="dashboard-stats">
-                        <div className="stat-card">
+                    <div className="dd-stats">
+                        <div className="dd-stat-card">
                             <h3>Completed Deliveries</h3>
-                            <p>{driverInfo.completedDeliveries || 0}</p>
+                            <p>{completedDeliveries}</p>
                         </div>
-                        <div className="stat-card">
+                        <div className="dd-stat-card">
                             <h3>Earnings</h3>
                             <p>₹{driverInfo.earnings?.toFixed(2) || '0.00'}</p>
                         </div>
-                        <div className="stat-card">
+                        <div className="dd-stat-card">
                             <h3>Rating</h3>
-                            <p>{driverInfo.rating || 'Not rated yet'}</p>
+                            <p>{driverInfo.ratings?.average?.toFixed(1) || 'Not rated yet'}</p>
                         </div>
-
                     </div>
                 </div>
 
-                <div className="dashboard-actions">
-                    <button
-                        className="action-btn"
-                        onClick={() => navigate('/available-deliveries')}
-                    >
-                        View Available Deliveries
-                    </button>
-                    <button
-                        className="action-btn"
-                        onClick={() => navigate('/delivery-history')}
-                    >
-                        Delivery History
-                    </button>
+                <div className="dd-actions">
+                    <button className="dd-history-btn" onClick={() => navigate('/delivery-history')}>Delivery History</button>
                 </div>
             </div>
             <LocationTracker />
