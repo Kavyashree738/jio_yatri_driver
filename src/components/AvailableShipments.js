@@ -11,38 +11,18 @@ function AvailableShipments() {
   const [shipments, setShipments] = useState([]);
   const [driverStatus, setDriverStatus] = useState('inactive');
   const [loading, setLoading] = useState(true);
-  const [notificationPermission, setNotificationPermission] = useState('default');
+  const [notificationPermission, setNotificationPermission] = useState(Notification.permission);
   const [showInstructions, setShowInstructions] = useState(false);
   const [activeShipment, setActiveShipment] = useState(null);
-  const [isMobile, setIsMobile] = useState(false);
   const notifiedShipmentIdsRef = useRef(new Set());
 
-  // Check if device is mobile
-  useEffect(() => {
-    const checkIfMobile = () => {
-      const userAgent = navigator.userAgent || navigator.vendor || window.opera;
-      return /android|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent.toLowerCase());
-    };
-    setIsMobile(checkIfMobile());
-  }, []);
 
-  // Initialize notifications and data fetching
   useEffect(() => {
     const setupNotificationsAndData = async () => {
       try {
-        // Initialize Firebase Cloud Messaging
         await initializeFCM();
         setupForegroundNotifications();
-        
-        // Check notification permission
-        if ('Notification' in window) {
-          setNotificationPermission(Notification.permission);
-        }
-        
-        // Initial data fetch
         await fetchData();
-        
-        // Set up polling
         const intervalId = setInterval(fetchData, 10000);
         return () => clearInterval(intervalId);
       } catch (error) {
@@ -55,37 +35,23 @@ function AvailableShipments() {
   }, []);
 
   const handleEnableNotifications = async () => {
-    try {
-      if (!('Notification' in window)) {
-        toast.warn("Notifications not supported in this browser");
-        return;
-      }
+    const token = await requestNotificationPermission();
+    setNotificationPermission(Notification.permission);
 
-      const permission = await requestNotificationPermission();
-      setNotificationPermission(permission);
-
-      if (permission === 'granted') {
-        toast.success("Notifications enabled successfully");
-      } else if (permission === 'denied') {
-        setShowInstructions(true);
-      }
-    } catch (error) {
-      console.error("Error enabling notifications:", error);
-      toast.error("Failed to enable notifications");
+    if (token) {
+      toast.success("Notifications enabled successfully");
+    } else {
+      setShowInstructions(true);
     }
   };
 
   const openBrowserSettings = () => {
-    if (isMobile) {
-      toast.info("Please enable notifications in your device settings");
-    } else {
-      if (navigator.userAgent.includes('Chrome')) {
-        window.open('chrome://settings/content/notifications');
-      } else if (navigator.userAgent.includes('Firefox')) {
-        window.open('about:preferences#privacy');
-      } else if (navigator.userAgent.includes('Safari')) {
-        window.open('x-apple.systempreferences:com.apple.preference.notifications');
-      }
+    if (navigator.userAgent.includes('Chrome')) {
+      window.open('chrome://settings/content/notifications');
+    } else if (navigator.userAgent.includes('Firefox')) {
+      window.open('about:preferences#privacy');
+    } else if (navigator.userAgent.includes('Safari')) {
+      window.open('x-apple.systempreferences:com.apple.preference.notifications');
     }
   };
 
@@ -102,8 +68,7 @@ function AvailableShipments() {
 
       const token = await user.getIdToken();
 
-      // Fetch driver status
-      const statusResponse = await axios.get(`https://jio-yatri-driver.onrender.com/api/driver/status`, {
+      const statusResponse = await axios.get(`${process.env.REACT_APP_API_URL}/api/driver/status`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -117,7 +82,7 @@ function AvailableShipments() {
       }
     } catch (error) {
       console.error('Error fetching data:', error);
-      toast.error('Failed to load data. Please try again.');
+      // toast.error('Failed to fetch data');
     } finally {
       setLoading(false);
     }
@@ -125,42 +90,33 @@ function AvailableShipments() {
 
   const fetchAvailableShipments = async (token) => {
     try {
-      const response = await axios.get(`https://jio-yatri-driver.onrender.com/api/shipments/matching`, {
+      const response = await axios.get(`http://localhost:5000/api/shipments/matching`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
       const newShipments = response.data.shipments || [];
       const notifiedSet = notifiedShipmentIdsRef.current;
 
+      // Notify only for new shipments that haven't been notified yet
       newShipments.forEach(shipment => {
         if (!notifiedSet.has(shipment._id)) {
-          // Show notification if permission granted
-          if ('Notification' in window && Notification.permission === 'granted') {
-            try {
-              new Notification('🚚 New Shipment Available!', {
-                body: `From: ${shipment.sender.address.addressLine1} ➡ To: ${shipment.receiver.address.addressLine1}`,
-                icon: '/logo.jpg'
-              });
-            } catch (e) {
-              console.warn("Notification error:", e);
-            }
-          }
+          // 🔔 Show notification only once
+          new Notification('🚚 New Shipment Available!', {
+            body: `From: ${shipment.sender.address.addressLine1} ➡ To: ${shipment.receiver.address.addressLine1}`,
+            icon: '/logo.jpg'
+          });
+          const audio = new Audio('/notification.wav');
 
-          // Play sound notification (works on mobile if not blocked)
-          try {
-            const audio = new Audio('/notification.wav');
-            audio.play().catch(err => {
-              console.warn("Audio playback prevented:", err);
-            });
-          } catch (err) {
-            console.warn("Audio error:", err);
-          }
-
-          notifiedSet.add(shipment._id);
+          audio.play().catch(err => {
+            console.warn('Audio playback blocked or failed:', err);
+          });
+          notifiedSet.add(shipment._id); // ✅ Mark as notified
         }
       });
 
+      // Update state
       setShipments(newShipments);
+
     } catch (error) {
       console.error('Error fetching shipments:', error);
       toast.error('Failed to load shipments');
@@ -177,18 +133,19 @@ function AvailableShipments() {
         return;
       }
 
-      // Get current position with error handling for mobile
       const position = await new Promise((resolve, reject) => {
-        const options = {
-          enableHighAccuracy: true,
-          timeout: 20000,
-          maximumAge: 0
-        };
-
-        navigator.geolocation.getCurrentPosition(resolve, reject, options);
+        navigator.geolocation.getCurrentPosition(
+          resolve,
+          reject,
+          {
+            enableHighAccuracy: true,
+            timeout: 20000,
+            maximumAge: 0
+          }
+        );
       }).catch(error => {
-        console.error("Geolocation error:", error);
-        toast.error("Could not get your location. Please enable location services.");
+        console.error('Geolocation error:', error);
+        toast.error('Could not get your current location');
         throw error;
       });
 
@@ -198,10 +155,11 @@ function AvailableShipments() {
       ];
 
       const token = await user.getIdToken();
+
       const toastId = toast.loading('Accepting shipment...');
 
       const response = await axios.put(
-        `https://jio-yatri-driver.onrender.com/api/shipments/${shipmentId}/accept`,
+        `${process.env.REACT_APP_API_URL}/api/shipments/${shipmentId}/accept`,
         { location },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -234,12 +192,7 @@ function AvailableShipments() {
 
   return (
     <div className="available-shipments">
-      <ToastContainer 
-        position={isMobile ? "top-center" : "top-right"}
-        autoClose={5000}
-        theme="colored"
-        pauseOnFocusLoss={false}
-      />
+      <ToastContainer position="top-right" autoClose={5000} theme="colored" />
 
       <h2>Available Shipments</h2>
 
@@ -260,38 +213,25 @@ function AvailableShipments() {
         <div className="permission-denied notification-section">
           <h3>Notifications Blocked</h3>
           <p>You won't receive shipment updates. To enable:</p>
-          
-          {isMobile ? (
-            <div className="mobile-instructions">
-              <p>Please enable notifications in your device settings:</p>
-              <ol>
-                <li>Open your device Settings</li>
-                <li>Go to Apps/Notifications</li>
-                <li>Find this app and enable notifications</li>
-              </ol>
-            </div>
-          ) : (
-            <>
-              <button onClick={openBrowserSettings} className="settings-btn">
-                Open Browser Settings
-              </button>
 
-              {showInstructions && (
-                <div className="instructions">
-                  <ol>
-                    <li>Find this website in the list</li>
-                    <li>Change from "Block" to "Allow"</li>
-                    <li>Refresh this page</li>
-                  </ol>
-                  <button
-                    onClick={() => window.location.reload()}
-                    className="refresh-btn"
-                  >
-                    I've Enabled Notifications - Refresh
-                  </button>
-                </div>
-              )}
-            </>
+          <button onClick={openBrowserSettings} className="settings-btn">
+            Open Browser Settings
+          </button>
+
+          {showInstructions && (
+            <div className="instructions">
+              <ol>
+                <li>Find this website in the list</li>
+                <li>Change from "Block" to "Allow"</li>
+                <li>Refresh this page</li>
+              </ol>
+              <button
+                onClick={() => window.location.reload()}
+                className="refresh-btn"
+              >
+                I've Enabled Notifications - Refresh
+              </button>
+            </div>
           )}
         </div>
       )}
@@ -304,7 +244,6 @@ function AvailableShipments() {
             key={activeShipment._id}
             shipment={activeShipment}
             onStatusUpdate={handleStatusUpdate}
-            isMobile={isMobile}
           />
         </div>
       ) : driverStatus !== 'active' ? (
@@ -316,7 +255,7 @@ function AvailableShipments() {
           No matching shipments available at this time.
         </div>
       ) : (
-        <ul className={`shipment-list ${isMobile ? 'mobile-view' : ''}`}>
+        <ul className="shipment-list">
           {shipments.map(shipment => (
             <li key={shipment._id} className="shipment-card">
               <div className="shipment-details">
@@ -328,7 +267,15 @@ function AvailableShipments() {
                 <p><strong>Cost:</strong> ₹{shipment.cost.toFixed(2)}</p>
               </div>
               <button
-                onClick={() => handleAccept(shipment._id)}
+                onClick={() => {
+                  // Scroll to top first (optional: smooth scrolling)
+                  window.scrollTo({
+                    top: 30,
+                    behavior: "smooth", // Optional: Adds smooth scrolling
+                  });
+                  // Then handle order acceptance
+                  handleAccept(shipment._id);
+                }}
                 className="accept-button"
               >
                 Accept Order
