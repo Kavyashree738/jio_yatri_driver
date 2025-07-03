@@ -16,12 +16,11 @@ function AvailableShipments() {
   const [activeShipment, setActiveShipment] = useState(null);
   const notifiedShipmentIdsRef = useRef(new Set());
 
-
   useEffect(() => {
     const setupNotificationsAndData = async () => {
       try {
         await initializeFCM();
-        setupForegroundNotifications();
+        setupForegroundNotifications(handleForegroundNotification);
         await fetchData();
         const intervalId = setInterval(fetchData, 10000);
         return () => clearInterval(intervalId);
@@ -34,14 +33,47 @@ function AvailableShipments() {
     setupNotificationsAndData();
   }, []);
 
-  const handleEnableNotifications = async () => {
-    const token = await requestNotificationPermission();
-    setNotificationPermission(Notification.permission);
+  const handleForegroundNotification = (payload) => {
+    // Handle foreground notifications from FCM
+    const { title, body } = payload.notification;
+    toast.info(`${title}: ${body}`);
+    
+    // Play notification sound
+    playNotificationSound();
+    
+    // Refresh data to show new shipments
+    fetchData();
+  };
 
-    if (token) {
-      toast.success("Notifications enabled successfully");
-    } else {
-      setShowInstructions(true);
+  const playNotificationSound = () => {
+    const audio = new Audio('/notification.wav');
+    audio.play().catch(err => {
+      console.warn('Audio playback blocked or failed:', err);
+    });
+  };
+
+  const showLocalNotification = (title, body) => {
+    // For mobile devices, we rely on FCM
+    // For desktop, use the Notification API
+    if (window.Notification && Notification.permission === "granted") {
+      new Notification(title, { body, icon: '/logo.jpg' });
+    }
+    playNotificationSound();
+  };
+
+  const handleEnableNotifications = async () => {
+    try {
+      const token = await requestNotificationPermission();
+      setNotificationPermission(Notification.permission);
+
+      if (token) {
+        toast.success("Notifications enabled successfully");
+      } else {
+        setShowInstructions(true);
+      }
+    } catch (error) {
+      console.error('Error enabling notifications:', error);
+      toast.error("Failed to enable notifications");
     }
   };
 
@@ -52,6 +84,8 @@ function AvailableShipments() {
       window.open('about:preferences#privacy');
     } else if (navigator.userAgent.includes('Safari')) {
       window.open('x-apple.systempreferences:com.apple.preference.notifications');
+    } else {
+      toast.info("Please check your device settings to enable notifications");
     }
   };
 
@@ -82,7 +116,6 @@ function AvailableShipments() {
       }
     } catch (error) {
       console.error('Error fetching data:', error);
-      // toast.error('Failed to fetch data');
     } finally {
       setLoading(false);
     }
@@ -100,23 +133,15 @@ function AvailableShipments() {
       // Notify only for new shipments that haven't been notified yet
       newShipments.forEach(shipment => {
         if (!notifiedSet.has(shipment._id)) {
-          // 🔔 Show notification only once
-          new Notification('🚚 New Shipment Available!', {
-            body: `From: ${shipment.sender.address.addressLine1} ➡ To: ${shipment.receiver.address.addressLine1}`,
-            icon: '/logo.jpg'
-          });
-          const audio = new Audio('/notification.wav');
-
-          audio.play().catch(err => {
-            console.warn('Audio playback blocked or failed:', err);
-          });
-          notifiedSet.add(shipment._id); // ✅ Mark as notified
+          showLocalNotification(
+            '🚚 New Shipment Available!',
+            `From: ${shipment.sender.address.addressLine1} ➡ To: ${shipment.receiver.address.addressLine1}`
+          );
+          notifiedSet.add(shipment._id);
         }
       });
 
-      // Update state
       setShipments(newShipments);
-
     } catch (error) {
       console.error('Error fetching shipments:', error);
       toast.error('Failed to load shipments');
@@ -268,12 +293,10 @@ function AvailableShipments() {
               </div>
               <button
                 onClick={() => {
-                  // Scroll to top first (optional: smooth scrolling)
                   window.scrollTo({
                     top: 30,
-                    behavior: "smooth", // Optional: Adds smooth scrolling
+                    behavior: "smooth",
                   });
-                  // Then handle order acceptance
                   handleAccept(shipment._id);
                 }}
                 className="accept-button"
