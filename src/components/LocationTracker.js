@@ -6,7 +6,7 @@ import axios from 'axios';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-const API_BASE_URL = 'https://jio-yatri-driver.onrender.com';
+const API_BASE_URL = 'http://localhost:5000';
 
 const useGeolocation = (options) => {
   const [position, setPosition] = useState(null);
@@ -102,7 +102,6 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
     }
   }, [shipment]);
 
-  // ✅ FIXED useEffect to avoid infinite loop
   useEffect(() => {
     if (
       !shipment &&
@@ -331,6 +330,11 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
       if (onStatusUpdate) onStatusUpdate('cancelled');
       mapRef.current = null;
       toast.success("Shipment cancelled successfully");
+      
+      // Reload the page after 2 seconds to show updated shipments
+      setTimeout(() => {
+        window.location.reload();
+      }, 2000);
     } catch (error) {
       toast.error(error.response?.data?.message || 'Error cancelling shipment');
     }
@@ -349,6 +353,11 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
       if (onStatusUpdate) onStatusUpdate('delivered');
       mapRef.current = null;
       toast.success("Shipment delivered successfully!");
+      
+      // Reload the page after 2 seconds to show updated shipments
+      setTimeout(() => {
+        window.location.reload();
+      }, 2000);
     } catch (error) {
       toast.error(error.response?.data?.message || 'Error delivering shipment');
     }
@@ -384,8 +393,25 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
       {routeError && <p className="error-message">{routeError}</p>}
 
       <div className="shipment-actions">
-        <button onClick={handleCancelShipment} className="cancel-button">Cancel Shipment</button>
-        <button onClick={handleDeliverShipment} className="deliver-button">Mark as Delivered</button>
+        <button
+          onClick={() => {
+            window.scrollTo({ top: 0, behavior: "smooth" });
+            handleCancelShipment();
+          }}
+          className="cancel-button"
+        >
+          Cancel Shipment
+        </button>
+
+        <button
+          onClick={() => {
+            window.scrollTo({ top: 0, behavior: "smooth" });
+            handleDeliverShipment();
+          }}
+          className="deliver-button"
+        >
+          Mark as Delivered
+        </button>
       </div>
     </div>
   );
