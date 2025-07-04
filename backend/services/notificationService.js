@@ -4,9 +4,12 @@ const admin = require('firebase-admin');
 // Initialize Firebase Admin SDK
 if (!admin.apps.length) {
   admin.initializeApp({
-    credential: admin.credential.cert(require('../config/firebase-service-account.json')),
+    credential: admin.credential.cert(
+      JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)
+    ),
   });
 }
+
 
 /**
  * Send FCM notification to a driver
