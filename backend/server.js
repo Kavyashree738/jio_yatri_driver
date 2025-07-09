@@ -29,11 +29,13 @@ app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Initialize Firebase Admin
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount),
-  storageBucket: 'authentication-e6bd0.appspot.com'
-});
+if (!admin.apps.length) {
+  admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount),
+    storageBucket: 'authentication-e6bd0.appspot.com'
+  });
+}
+
 
 // MongoDB Connection
 mongoose.connect(process.env.MONGO_URI, {
