@@ -287,6 +287,9 @@
   .dd-stats {
     flex-direction: column; /* Stack vertically on small screens */
   }
+  .dd-container {
+    margin-top:0px;
+  }
   
   .dd-stat-card {
     min-width: 100%; /* Full width on small screens */
