@@ -7,12 +7,13 @@ import Home from './components/Home'
 import UserProfile from './components/UserProfile'
 import DeliveryHistory from './components/DeliveryHistory'
 import { Routes, Route } from 'react-router-dom';
-
+import SplashScreen from './components/SplashScreen'; 
 const App = () => {
   return (
     <AuthProvider>
       <Routes>
-        <Route path="/" element={<Home/>} />
+        <Route path="/" element={<SplashScreen />} />
+        <Route path="/home" element={<Home/>} />
         <Route path="/orders" element={<DriverDashboard/>} />
         <Route path="/owner-dashboard" element={<OwnerDashboard/>} />
         <Route path='/my-documents' element={<UserDocumentsViewer/>}/>
