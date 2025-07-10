@@ -516,10 +516,10 @@ const HeroSection = () => {
                         <h1>JIO YATRI</h1>
                         <h2>Delivery</h2>
                     </div>
-                    <h2>Door-to-Door Intercity Courier from Bangalore</h2>
-                    <p>
-                        Connect with 19,000+ destinations across India through our smooth and affordable courier service.
-                    </p>
+                   <h2>Drive, Deliver & Earn with JioYatri</h2>
+<p>
+    Join our trusted driver network and earn by delivering packages across 19,000+ destinations in India. Flexible timings, secure payouts, and a seamless delivery experience.
+</p>
                 </motion.div>
 
                 <motion.div
