@@ -151,7 +151,7 @@ const DriverDashboard = () => {
         try {
             await signOut(auth);
             setMessage({ text: 'Logged out', isError: false });
-            navigate('/');
+            navigate('/home');
         } catch (error) {
             setMessage({ text: error.message, isError: true });
         }
