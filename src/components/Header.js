@@ -1,66 +1,65 @@
+
 import React, { useState } from 'react';
-import { FaBars, FaTimes, FaUserCircle } from 'react-icons/fa';
-import '../styles/Home.css';
-import logo from '../assets/images/logo.jpg';
+import {
+    FaHome,
+    FaChartLine,
+    FaFileAlt,
+    FaShoppingCart ,
+} from 'react-icons/fa';
 import { Link, useNavigate } from 'react-router-dom';
+import logo from '../assets/images/logo.jpg';
 import { useAuth } from '../context/AuthContext';
-import { signOut } from 'firebase/auth';
-import { auth } from '../firebase';
 
 const Header = () => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const { user, setMessage } = useAuth();
+    const { user } = useAuth();
     const navigate = useNavigate();
-    const handleLinkClick = () => setIsMenuOpen(false);
 
-    const handleLogout = async () => {
-        try {
-            await signOut(auth);
-            setMessage({ text: 'Logged out successfully.', isError: false });
-        } catch (error) {
-            setMessage({ text: 'Logout failed: ' + error.message, isError: true });
-        }
+    const handleProfileClick = () => {
+        navigate('/profile');
     };
-      const handleProfileClick = () => {
-    navigate('/profile');
-    setIsMenuOpen(false);
-  };
+    const handleLinkClick = () => setIsMenuOpen(false);
 
     return (
         <>
-            {/* Top Strip Header */}
-            <div className="top-header">
+            {/* Top Strip - Visible on all screens */}
+            <div className="top-strip">
                 <h1>Mokshambani Tech Services PVT LTD</h1>
-
             </div>
 
-            {/* Main Header */}
-            <header className='header'>
-                <div className="nav-container">
+            {/* Desktop Header - Hidden on mobile */}
+            <header className="main-header">
+                <div className="header-container">
                     <div className="logo">
-                        <img src={logo} alt="Company Logo" />
+                        <Link to="/home" onClick={handleLinkClick}>
+                            <img src={logo} alt="Company Logo" />
+                        </Link>
                     </div>
 
-                    <nav className={`nav-links ${isMenuOpen ? 'open' : ''}`}>
-                        <Link to="/" onClick={handleLinkClick}>Home</Link>
 
-                        {user && (
-                            <Link to="/orders" onClick={handleLinkClick}>Orders</Link>
-                        )}
-                        {user && (
-                            <Link to="/my-documents" onClick={handleLinkClick}>Documents</Link>
-                        )}
+                    <nav className="nav-links">
+                        <Link to="/home">Home</Link>
+                        <Link to="/orders">Dashbord</Link>
+                        <Link to="/my-documents">My-documents</Link>
                     </nav>
-
-                    <div
-                        className="hamburger"
-                        onClick={() => setIsMenuOpen(!isMenuOpen)}
-                        aria-label="Toggle navigation menu"
-                    >
-                        {isMenuOpen ? <FaTimes /> : <FaBars />}
-                    </div>
                 </div>
             </header>
+
+            {/* Bottom Nav for Mobile - Only visible on mobile */}
+            <div className="mobile-bottom-nav">
+                <Link to="/home" className="mobile-nav-link">
+                    <FaHome className="mobile-nav-icon" />
+                    <span>Home</span>
+                </Link>
+                <Link to="/orders" className="mobile-nav-link">
+                    <FaChartLine className="mobile-nav-icon" /> {/* or FaTachometerAlt */}
+                    <span>Dashboard</span>
+                </Link>
+                <Link to="/my-documents" className="mobile-nav-link">
+                    <FaFileAlt className="mobile-nav-icon" /> {/* or FaFolder */}
+                    <span>My Documents</span>
+                </Link>
+            </div>
         </>
     );
 };
