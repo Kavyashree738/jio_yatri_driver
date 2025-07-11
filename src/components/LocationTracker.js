@@ -288,7 +288,7 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
             `${API_BASE_URL}/api/shipments/${activeShipment._id}/driver-location`,
             {
               coordinates: coords,
-              status: 'in_transit'
+              // status: 'in_transit'
             },
             {
               headers: {
