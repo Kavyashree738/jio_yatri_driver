@@ -214,7 +214,7 @@ const HeroSection = () => {
             setIsLoading(true);
             setMessage({ text: '', isError: false });
 
-            const data = await handleApiRequest(`${process.env.REACT_APP_API_URL}/api/auth/send-otp`, {
+            const data = await handleApiRequest(`https://jio-yatri-driver.onrender.com/api/auth/send-otp`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ phoneNumber })
@@ -248,7 +248,7 @@ const HeroSection = () => {
 
         try {
             setIsLoading(true);
-            const data = await handleApiRequest(`${process.env.REACT_APP_API_URL}/api/auth/verify-otp`, {
+            const data = await handleApiRequest(`https://jio-yatri-driver.onrender.com/api/auth/verify-otp`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -332,7 +332,7 @@ const HeroSection = () => {
                 }
             });
 
-            const response = await fetch('http://localhost:5000/api/upload/file', {
+            const response = await fetch('https://jio-yatri-driver.onrender.com/api/upload/file', {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`
@@ -422,7 +422,7 @@ const HeroSection = () => {
             if (storedRegistration === 'true') return true;
 
             const token = await user.getIdToken();
-            const response = await fetch(`http://localhost:5000/api/driver/check/${user.uid}`, {
+            const response = await fetch(`https://jio-yatri-driver.onrender.com/api/driver/check/${user.uid}`, {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${token}`
@@ -499,7 +499,7 @@ const HeroSection = () => {
             const token = await auth.currentUser.getIdToken();
             const userId = auth.currentUser.uid;
 
-            const response = await fetch('http://localhost:5000/api/driver/register', {
+            const response = await fetch('https://jio-yatri-driver.onrender.com/api/driver/register', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
