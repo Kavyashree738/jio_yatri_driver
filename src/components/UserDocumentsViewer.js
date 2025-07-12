@@ -16,7 +16,7 @@ const DocumentViewer = () => {
     try {
       const token = await user.getIdToken(true);
       const response = await axios.get(
-        `http://localhost:5000/api/upload/user-documents/${user.uid}`,
+        `https://jio-yatri-driver.onrender.com/api/upload/user-documents/${user.uid}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       const docs = response.data.filter(doc => doc.docType !== 'profile');
@@ -46,7 +46,7 @@ const DocumentViewer = () => {
     try {
       const token = await user.getIdToken(true);
       const response = await axios.get(
-        `http://localhost:5000/api/upload/file/${filename}`,
+        `https://jio-yatri-driver.onrender.com/api/upload/file/${filename}`,
         { headers: { Authorization: `Bearer ${token}` }, responseType: 'blob' }
       );
       const url = URL.createObjectURL(new Blob([response.data], { type: mimetype }));
