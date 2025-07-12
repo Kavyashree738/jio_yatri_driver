@@ -41,14 +41,14 @@
   max-width: 1000px;
   width: 100%;
   gap: 30px;
-  padding-top: 10vh;
+  /* padding-top: 10vh; */
   flex-wrap: wrap;
   padding: 30px;
-  margin-top:140px;
+  /* margin-top:140px; */
 }
 
 .hero-text {
-  flex: 1 1 400px;
+  /* flex: 1 1 400px; */
   text-align: left;
   padding: 20px;
   color: white;
@@ -89,6 +89,7 @@
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   min-width: 280px;
+  margin-top:20px;
 }
 
 .hero-form h3 {
@@ -371,7 +372,7 @@
     flex-direction: column;
     align-items: center;
     margin-top:-45px;
-/*     padding-top: 5vh; */
+    /* padding-top: 5vh; */
   }
 
   .hero-text {
@@ -465,6 +466,7 @@
   background-color: white;
   padding:1.5rem;
   border-radius: 15px;
+  margin-top:40px;
 }
 
 .driver-registration-form h3 {
@@ -503,6 +505,7 @@
 
 .vehicle-btn {
   flex: 1;
+  flex-direction: column;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -757,7 +760,8 @@ progress::-webkit-progress-value {
 @media (max-width: 768px) {
   .hero-content-wrapper {
     grid-template-columns: 1fr;
-    padding: 1rem;
+    margin-top:10px;
+    /* padding: 1rem; */
   }
 
   .hero-text {
@@ -878,19 +882,16 @@ progress::-webkit-progress-value {
   font-size: 0.9rem;
 }
 
-/* Responsive OTP Input Boxes */
+/* OTP Input Boxes */
 .otp-container {
   display: flex;
   justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 8px;
   margin-bottom: 2rem;
+  gap: 8px;
 }
 
 .otp-input {
-  flex: 1;
-  min-width: 45px;
-  max-width: 60px;
+  width: 45px;
   height: 55px;
   text-align: center;
   font-size: 1.5rem;
@@ -977,15 +978,6 @@ progress::-webkit-progress-value {
   margin-bottom: 1rem;
   min-height: 1.2rem;
 }
-
-@media (max-width: 400px) {
-  .otp-input {
-    font-size: 1.2rem;
-    height: 48px;
-    min-width: 40px;
-  }
-}
-
 .welcome-message {
   text-align: center;
   padding: 2rem;
@@ -1025,4 +1017,1399 @@ progress::-webkit-progress-value {
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
+}
+/* Step Indicator Styles */
+.step-indicator {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    position: relative;
+}
+
+.step-indicator::before {
+    content: '';
+    position: absolute;
+    top: 15px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background-color: #e0e0e0;
+    z-index: 1;
+}
+
+.step {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 33.33%;
+}
+
+.step-icon {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background-color: #e0e0e0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 5px;
+    color: #fff;
+}
+
+.step.active .step-icon {
+    background-color: #4CAF50;
+}
+
+.step.completed .step-icon {
+    background-color: #4CAF50;
+}
+
+.step-info {
+    text-align: center;
+    font-size: 12px;
+}
+
+.step-number {
+    font-weight: bold;
+    color: #666;
+}
+
+.step.active .step-number,
+.step.completed .step-number {
+    color: #4CAF50;
+}
+
+.step-title {
+    color: #666;
+}
+
+.step.active .step-title,
+.step.completed .step-title {
+    color: #4CAF50;
+    font-weight: bold;
+}
+/* Floating Input Styles */
+.floating-input {
+  position: relative;
+  margin-bottom: 20px;
+}
+
+.floating-input input {
+  width: 100%;
+  padding: 15px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 16px;
+  background-color: #f9f9f9;
+  transition: all 0.3s ease;
+}
+
+.floating-input input:focus {
+  outline: none;
+  border-color: #4a90e2;
+  box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
+}
+
+.floating-input label {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  color: #999;
+  font-size: 16px;
+  pointer-events: none;
+  transition: all 0.3s ease;
+  background-color: #f9f9f9;
+  padding: 0 5px;
+}
+
+.floating-input input:focus + label,
+.floating-input input:not(:placeholder-shown) + label {
+  top: -10px;
+  left: 10px;
+  font-size: 12px;
+  color: #4a90e2;
+  background-color: white;
+}
+
+/* Document Upload Styles */
+.document-upload-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 15px;
+  padding: 10px;
+  border: 1px solid #eee;
+  border-radius: 8px;
+}
+
+.document-upload-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.document-label {
+  font-weight: 500;
+  color: #333;
+}
+
+.document-upload-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  margin-left:10px;
+  /* background-color: #f0f0f0; */
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+
+
+.upload-icon {
+  color: #4a90e2;
+  font-size: 18px;
+}
+
+.uploaded-indicator {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #4CAF50;
+  font-size: 14px;
+}
+
+.uploaded-icon {
+  font-size: 16px;
+}
+
+/* Progress Indicator */
+progress {
+  width: 100%;
+  height: 5px;
+  margin-top: 5px;
+  border-radius: 5px;
+}
+
+progress::-webkit-progress-bar {
+  background-color: #f0f0f0;
+  border-radius: 5px;
+}
+
+progress::-webkit-progress-value {
+  background-color: #4a90e2;
+  border-radius: 5px;
+}
+
+/* Form Navigation */
+.form-navigation {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 30px;
+}
+
+.next-btn {
+  padding: 12px 25px;
+  background-color: #4a90e2;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.next-btn:hover {
+  background-color: #3d7cc9;
+}
+
+.next-btn:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+/* Hero Text Component - Modern & Responsive */
+.hero-text {
+  color: white;
+  text-align: left;
+  max-width: 600px;
+  padding: 1.5rem;
+  position: relative;
+  z-index: 10;
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.hero-text h1 {
+  font-size: clamp(2.5rem, 7vw, 5rem);
+  font-weight: 900;
+  line-height: 1.1;
+  margin: 0;
+  background: linear-gradient(to right, #fff, #e0e0e0);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  letter-spacing: -0.05em;
+}
+
+.hero-text .text h2 {
+  font-size: clamp(1.5rem, 4vw, 2.2rem);
+  font-weight: 600;
+  color: rgba(255,255,255,0.9);
+  margin: 0;
+  line-height: 1.2;
+}
+
+.hero-text > h2 {
+  font-size: clamp(1.2rem, 3vw, 1.8rem);
+  font-weight: 500;
+  color: rgba(255,255,255,0.85);
+  margin-bottom: 1rem;
+  line-height: 1.3;
+}
+
+.hero-text p {
+  font-size: clamp(1rem, 2vw, 1.2rem);
+  line-height: 1.6;
+  color: rgba(255,255,255,0.8);
+  max-width: 90%;
+  margin: 0;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 1024px) {
+  .hero-text {
+    padding: 1.2rem;
+  }
+  
+  .hero-text h1 {
+    font-size: clamp(2.2rem, 7vw, 4rem);
+  }
+  
+  .hero-text .text h2 {
+    font-size: clamp(1.3rem, 4vw, 2rem);
+  }
+  
+  .hero-text > h2 {
+    font-size: clamp(1.1rem, 3vw, 1.6rem);
+  }
+}
+
+@media (max-width: 768px) {
+  .hero-text {
+    text-align: center;
+    padding: 1rem;
+    margin: 0 auto;
+  }
+  
+  .text {
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+  
+  .hero-text h1 {
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+  }
+  
+  .hero-text p {
+    max-width: 100%;
+    margin: 0 auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero-text {
+    padding: 0.8rem;
+  }
+  
+  .hero-text h1 {
+    font-size: clamp(1.8rem, 8vw, 2.5rem);
+  }
+  
+  .hero-text .text h2 {
+    font-size: clamp(1.1rem, 5vw, 1.5rem);
+  }
+  
+  .hero-text > h2 {
+    font-size: clamp(1rem, 4vw, 1.3rem);
+    margin-bottom: 0.8rem;
+  }
+  
+  .hero-text p {
+    font-size: clamp(0.9rem, 3.5vw, 1.1rem);
+    line-height: 1.5;
+  }
+}
+
+/* Animation Enhancements */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.hero-text {
+  animation: fadeInUp 0.8s ease-out both;
+}
+
+.text h1 {
+  animation: fadeInUp 0.8s ease-out 0.1s both;
+}
+
+.text h2 {
+  animation: fadeInUp 0.8s ease-out 0.2s both;
+}
+
+.hero-text > h2 {
+  animation: fadeInUp 0.8s ease-out 0.3s both;
+}
+
+.hero-text p {
+  animation: fadeInUp 0.8s ease-out 0.4s both;
+}
+/* Base Styles */
+:root {
+  --primary: #0044FF;
+  --primary-dark: #0033CC;
+  --white: #FFFFFF;
+  --black: #000000;
+  --gray-light: #F5F5F5;
+  --gray-medium: #E0E0E0;
+  --gray-dark: #777777;
+  --success: #2E7D32;
+  --error: #E53935;
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.15);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.2);
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* Hero Section */
+.hero-section {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+  background-color: var(--primary);
+  padding: 2rem;
+}
+
+.hero-bg-blur {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  filter: blur(4px);
+  z-index: 1;
+  opacity: 0.8;
+}
+
+.hero-content-wrapper {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 3rem;
+  max-width: 1200px;
+  width: 100%;
+  padding: 2rem;
+}
+
+/* Hero Text */
+.hero-text {
+  flex: 1;
+  min-width: min(100%, 500px);
+  color: var(--white);
+  padding: 1.5rem;
+  animation: fadeInUp 0.8s ease-out both;
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.hero-text h1 {
+  font-size: clamp(2.5rem, 7vw, 4.5rem);
+  font-weight: 900;
+  line-height: 1.1;
+  margin: 0;
+  background: linear-gradient(to right, var(--white), var(--gray-light));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: var(--shadow-sm);
+  letter-spacing: -0.03em;
+  animation: fadeInUp 0.8s ease-out 0.1s both;
+}
+
+.hero-text .text h2 {
+  font-size: clamp(1.5rem, 4vw, 2rem);
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  margin: 0;
+  line-height: 1.3;
+  animation: fadeInUp 0.8s ease-out 0.2s both;
+}
+
+.hero-text > h2 {
+  font-size: clamp(1.2rem, 3vw, 1.6rem);
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.85);
+  margin-bottom: 1.5rem;
+  line-height: 1.4;
+  animation: fadeInUp 0.8s ease-out 0.3s both;
+}
+
+.hero-text p {
+  font-size: clamp(1rem, 2vw, 1.1rem);
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.8);
+  max-width: 90%;
+  margin: 0;
+  animation: fadeInUp 0.8s ease-out 0.4s both;
+}
+
+/* Hero Form */
+.hero-form {
+  flex: 1;
+  min-width: min(100%, 400px);
+  max-width: 450px;
+  background: var(--white);
+  padding: 2.5rem;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  animation: fadeInUp 0.8s ease-out 0.2s both;
+}
+
+.hero-form h3 {
+  text-align: center;
+  margin-bottom: 1.5rem;
+  font-size: clamp(1.5rem, 2.5vw, 1.8rem);
+  color: var(--black);
+  font-weight: 700;
+}
+
+/* Form Elements */
+.phone-input-group {
+  margin-bottom: 1.5rem;
+}
+
+.phone-input-container {
+  width: 100%;
+}
+
+.phone-input {
+  width: 100%;
+  padding: 1rem;
+  border: 2px solid var(--gray-medium);
+  border-radius: var(--radius-sm);
+  font-size: 1rem;
+  transition: var(--transition);
+}
+
+.phone-input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(0, 68, 255, 0.2);
+  outline: none;
+}
+
+.phone-error-message {
+  color: var(--error);
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+  display: block;
+}
+
+/* Buttons */
+.button {
+  width: 100%;
+  padding: 1rem;
+  background-color: var(--black);
+  color: var(--white);
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 1rem;
+  transition: var(--transition);
+}
+
+.button:hover {
+  background-color: rgba(0, 0, 0, 0.9);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.button:active {
+  transform: translateY(0);
+}
+
+.button.disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* Divider */
+.divider {
+  text-align: center;
+  margin: 1.5rem 0;
+  position: relative;
+  font-weight: 500;
+  color: var(--gray-dark);
+}
+
+.divider::before,
+.divider::after {
+  content: "";
+  height: 1px;
+  width: 40%;
+  background: var(--gray-medium);
+  position: absolute;
+  top: 50%;
+}
+
+.divider::before {
+  left: 0;
+}
+
+.divider::after {
+  right: 0;
+}
+
+/* Social Buttons */
+.social-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.social-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border-radius: var(--radius-sm);
+  font-weight: 500;
+  font-size: 0.9375rem;
+  border: 1px solid var(--gray-medium);
+  background: var(--white);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.social-button:hover {
+  background: var(--gray-light);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+}
+
+.social-icon {
+  width: 20px;
+  height: 20px;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 1024px) {
+  .hero-content-wrapper {
+    gap: 2rem;
+    padding: 1.5rem;
+    
+  }
+  
+  .hero-form {
+    padding: 2rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .hero-section {
+    padding: 1.5rem;
+  }
+  
+  .hero-content-wrapper {
+    flex-direction: column;
+    text-align: center;
+    gap: 2rem;
+    padding: 1rem;
+  }
+  
+  .hero-text {
+    text-align: center;
+    align-items: center;
+    padding: 1rem;
+  }
+  
+  .hero-text p {
+    max-width: 100%;
+  }
+  
+  .hero-form {
+    width: 100%;
+    max-width: 500px;
+    padding: 1.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero-section {
+    padding: 1rem;
+  }
+  
+  .hero-content-wrapper {
+    padding: 0.5rem;
+  }
+  
+  .hero-form {
+    padding: 1.5rem;
+  }
+  
+  .divider::before,
+  .divider::after {
+    width: 35%;
+  }
+}
+
+/* Animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+/* Responsive Hero Section CSS */
+:root {
+  --primary: #0044FF;
+  --primary-dark: #0033CC;
+  --white: #FFFFFF;
+  --black: #000000;
+  --gray-light: #F5F5F5;
+  --gray-medium: #E0E0E0;
+  --gray-dark: #777777;
+  --success: #2E7D32;
+  --error: #E53935;
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.15);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.2);
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+.hero-section {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: var(--primary);
+  padding: 2rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-bg-blur {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  filter: blur(4px);
+  z-index: 1;
+  opacity: 0.8;
+}
+
+.hero-content-wrapper {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 3rem;
+  max-width: 1200px;
+  width: 100%;
+  padding: 2rem;
+  margin-top:20px;
+}
+
+/* Hero Text - Optimized for 923×747 */
+.hero-text {
+  flex: 1;
+  min-width: min(100%, 500px);
+  color: var(--white);
+  padding: 1.5rem;
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1.75rem;
+}
+
+.hero-text h1 {
+  font-size: clamp(2.75rem, 6vw, 4rem);
+  font-weight: 900;
+  line-height: 1.1;
+  margin: 0;
+  background: linear-gradient(to right, var(--white), var(--gray-light));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.hero-text .text h2 {
+  font-size: clamp(1.5rem, 3.5vw, 1.8rem);
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.hero-text > h2 {
+  font-size: clamp(1.25rem, 2.8vw, 1.5rem);
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.85);
+  margin-bottom: 1.5rem;
+  line-height: 1.4;
+}
+
+.hero-text p {
+  font-size: clamp(1rem, 2vw, 1.1rem);
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.8);
+  max-width: 90%;
+}
+
+/* Hero Form - Optimized for 923×747 */
+.hero-form {
+  flex: 1;
+  min-width: min(100%, 380px);
+  max-width: 420px;
+  background: var(--white);
+  padding: 2.25rem;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  margin-top:40px;
+}
+
+.hero-form h3 {
+  text-align: center;
+  margin-bottom: 1.75rem;
+  font-size: clamp(1.5rem, 2.5vw, 1.75rem);
+  color: var(--black);
+}
+
+/* Form Elements */
+.phone-input-group {
+  margin-bottom: 1.5rem;
+}
+
+.phone-input {
+  width: 100%;
+  padding: 1rem;
+  border: 2px solid var(--gray-medium);
+  border-radius: var(--radius-sm);
+  font-size: 1rem;
+}
+
+.button {
+  width: 100%;
+  padding: 1rem;
+  background-color: var(--black);
+  color: var(--white);
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+/* Responsive Adjustments for 923×747 */
+@media (min-width: 747px) and (max-width: 1023px) {
+  .hero-content-wrapper {
+    gap: 2.5rem;
+  }
+  
+  .hero-text {
+    min-width: min(100%, 450px);
+  }
+  
+  .hero-form {
+    min-width: min(100%, 360px);
+    padding: 2rem;
+  }
+  
+  .hero-text h1 {
+    font-size: clamp(2.5rem, 5.5vw, 3.5rem);
+  }
+}
+
+/* Tablet View */
+@media (max-width: 768px) {
+  .hero-content-wrapper {
+    flex-direction: column;
+    gap: 2rem;
+    padding: 1.5rem;
+  }
+  
+  .hero-text, .hero-form {
+    width: 100%;
+    max-width: 500px;
+    text-align: center;
+  }
+  
+  .hero-text p {
+    max-width: 100%;
+    margin: 0 auto;
+  }
+}
+
+/* Mobile View */
+@media (max-width: 480px) {
+  .hero-section {
+    padding: 1.5rem;
+  }
+  
+  .hero-content-wrapper {
+    padding: 1rem;
+  }
+  
+  .hero-form {
+    padding: 1.75rem;
+  }
+  
+  .hero-text h1 {
+    font-size: clamp(2.25rem, 7vw, 2.75rem);
+  }
+}
+
+@media (max-width: 375px) {
+  .hero-section {
+    padding: 1rem;
+  }
+  .uploaded-indicator {
+    margin-left: 5px;
+  }
+  .hero-form {
+    padding: 1.5rem;
+  }
+  .document-label {
+    font-size: 12px;
+  }
+  .button,
+  .phone-input {
+    padding: 0.875rem;
+  }
+}
+
+/* Additional styles for very small screens (≤ 310px) */
+@media (max-width: 310px) {
+  .hero-section {
+    padding: 0.75rem;
+  }
+  .hero-form {
+    padding: 1rem;
+  }
+  .document-label {
+    font-size: 10px;
+  }
+  .button,
+  .phone-input {
+    padding: 0.75rem;
+    font-size: 12px;
+  }
+  .uploaded-indicator {
+    font-size: 10px;
+    margin-left: 2px;
+  }
+}
+/* Add these styles to your HeroSection.css or relevant CSS file */
+
+/* Step 3 specific styles */
+.registration-substep-3 {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  width: 100%;
+}
+
+.registration-substep-3 .form-group {
+  margin-bottom: 1.5rem;
+}
+
+.registration-substep-3 label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.registration-substep-3 .phone-input-container {
+  width: 100%;
+  margin-bottom: 1rem;
+}
+
+.registration-substep-3 .phone-input {
+  width: 100%;
+  padding: 0.8rem 1rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+/* Document upload styles for step 3 */
+.registration-substep-3 .document-upload-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.registration-substep-3 .document-upload-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.registration-substep-3 .document-label {
+  font-weight: 500;
+  color: #555;
+}
+
+.registration-substep-3 .document-upload-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1rem;
+  background-color: #f0f0f0;
+  border: 1px dashed #999;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.registration-substep-3 .document-upload-btn:hover {
+  background-color: #e0e0e0;
+}
+
+.registration-substep-3 .upload-icon {
+  margin-right: 0.5rem;
+}
+
+.registration-substep-3 .uploaded-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #4CAF50;
+  font-weight: 500;
+}
+
+.registration-substep-3 .uploaded-icon {
+  font-size: 1.2rem;
+}
+
+/* Progress bar styles */
+.registration-substep-3 progress {
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  margin-top: 0.5rem;
+}
+
+/* Form navigation buttons */
+.registration-substep-3 .form-navigation {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 2rem;
+}
+
+.registration-substep-3 .prev-btn,
+.registration-substep-3 .submit-btn {
+  padding: 0.8rem 1.5rem;
+  border-radius: 4px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.registration-substep-3 .prev-btn {
+  background-color: #f0f0f0;
+  color: #333;
+  border: 1px solid #ddd;
+}
+
+.registration-substep-3 .prev-btn:hover {
+  background-color: #e0e0e0;
+}
+
+.registration-substep-3 .submit-btn {
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+}
+
+.registration-substep-3 .submit-btn:hover {
+  background-color: #3e8e41;
+}
+
+.registration-substep-3 .submit-btn:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .registration-substep-3 {
+    padding: 1rem;
+  }
+  
+  .registration-substep-3 .form-group {
+    margin-bottom: 1rem;
+  }
+  
+  .registration-substep-3 .document-upload-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .registration-substep-3 .form-navigation {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .registration-substep-3 .prev-btn,
+  .registration-substep-3 .submit-btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .registration-substep-3 .phone-input {
+    font-size: 0.9rem;
+    padding: 0.7rem 0.9rem;
+  }
+  
+  .registration-substep-3 label {
+    font-size: 0.9rem;
+  }
+  
+  .registration-substep-3 .document-label {
+    font-size: 0.9rem;
+  }
+}
+
+/* Add this to your existing CSS or replace the relevant sections */
+
+/* Step 3 Specific Styles */
+.registration-substep-3 {
+  width: 100%;
+  max-width: 500px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+.registration-substep-3 .form-group {
+  margin-bottom: 1.5rem;
+}
+
+/* Responsive Phone Input Container */
+.registration-substep-3 .phone-input-container {
+  width: 100%;
+  margin-bottom: 1rem;
+}
+
+.registration-substep-3 .phone-input {
+  width: 100%;
+  padding: 0.8rem 1rem;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+}
+
+.registration-substep-3 .phone-input:focus {
+  border-color: #0044FF;
+  box-shadow: 0 0 0 2px rgba(0, 68, 255, 0.2);
+  outline: none;
+}
+
+/* Document Upload Responsive Styles */
+.registration-substep-3 .document-upload-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.registration-substep-3 .document-upload-group {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.registration-substep-3 .document-label {
+  font-weight: 500;
+  color: #555;
+  font-size: 0.9rem;
+  flex: 1;
+}
+
+.registration-substep-3 .document-upload-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1rem;
+  background-color: #f5f5f5;
+  border: 1px dashed #999;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-width: 120px;
+}
+
+.registration-substep-3 .document-upload-btn:hover {
+  background-color: #e0e0e0;
+}
+
+.registration-substep-3 .upload-icon {
+  margin-right: 0.5rem;
+  color: #0044FF;
+}
+
+.registration-substep-3 .uploaded-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #2E7D32;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+/* Progress Bar */
+.registration-substep-3 progress {
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  margin-top: 0.5rem;
+}
+
+/* Form Navigation Buttons - Responsive */
+.registration-substep-3 .form-navigation {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.registration-substep-3 .prev-btn,
+.registration-substep-3 .submit-btn {
+  padding: 0.8rem;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: 100%;
+  text-align: center;
+}
+
+.registration-substep-3 .prev-btn {
+  background-color: #f5f5f5;
+  color: #333;
+  border: 1px solid #ddd;
+}
+
+.registration-substep-3 .prev-btn:hover {
+  background-color: #e0e0e0;
+}
+
+.registration-substep-3 .submit-btn {
+  background-color: #0044FF;
+  color: white;
+  border: none;
+}
+
+.registration-substep-3 .submit-btn:hover {
+  background-color: #0033CC;
+}
+
+.registration-substep-3 .submit-btn:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+/* Responsive Adjustments */
+@media (min-width: 480px) {
+  .registration-substep-3 {
+    padding: 1.5rem;
+  }
+  
+  .registration-substep-3 .document-upload-row {
+    flex-direction: row;
+    align-items: center;
+  }
+  
+  .registration-substep-3 .form-navigation {
+    flex-direction: row;
+    justify-content: space-between;
+  }
+  
+  .registration-substep-3 .prev-btn,
+  .registration-substep-3 .submit-btn {
+    width: auto;
+    padding: 0.8rem 1.5rem;
+  }
+  
+  .registration-substep-3 .prev-btn {
+    order: 1;
+  }
+  
+  .registration-substep-3 .submit-btn {
+    order: 2;
+  }
+}
+
+@media (min-width: 768px) {
+  .registration-substep-3 {
+    max-width: 600px;
+    padding: 2rem;
+  }
+  
+  .registration-substep-3 .document-label {
+    font-size: 1rem;
+  }
+}
+
+/* Fix for PhoneInput component */
+.react-tel-input .form-control {
+  width: 100% !important;
+  padding-left: 48px !important;
+  padding-top: 12px !important;
+  padding-bottom: 12px !important;
+  font-size: 1rem !important;
+}
+
+.react-tel-input .flag-dropdown {
+  left: 0;
+  top: 0;
+  bottom: 0;
+  border-radius: 8px 0 0 8px !important;
+}
+
+/* Ensure all inputs have consistent styling */
+.registration-substep-3 input[type="text"],
+.registration-substep-3 input[type="tel"],
+.registration-substep-3 input[type="file"] {
+  width: 100%;
+  padding: 0.8rem 1rem;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+}
+
+.registration-substep-3 input[type="text"]:focus,
+.registration-substep-3 input[type="tel"]:focus {
+  border-color: #0044FF;
+  box-shadow: 0 0 0 2px rgba(0, 68, 255, 0.2);
+  outline: none;
+}
+
+/* Mobile-specific fixes */
+@media (max-width: 480px) {
+  .registration-substep-3 .phone-input,
+  .registration-substep-3 input[type="text"],
+  .registration-substep-3 input[type="tel"] {
+    padding: 0.75rem 0.9rem;
+    font-size: 0.9rem;
+  }
+  
+  .react-tel-input .form-control {
+    padding-left: 42px !important;
+    padding-top: 10px !important;
+    padding-bottom: 10px !important;
+  }
+  
+  .registration-substep-3 .document-upload-btn {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.9rem;
+  }
+  
+  .registration-substep-3 .uploaded-indicator {
+    font-size: 0.8rem;
+  }
+}
+
+/* Very small screens */
+@media (max-width: 360px) {
+  .registration-substep-3 {
+    padding: 0.75rem;
+  }
+  
+  .registration-substep-3 .phone-input,
+  .registration-substep-3 input[type="text"],
+  .registration-substep-3 input[type="tel"] {
+    padding: 0.7rem 0.8rem;
+  }
+  
+  .react-tel-input .form-control {
+    padding-left: 38px !important;
+  }
 }
