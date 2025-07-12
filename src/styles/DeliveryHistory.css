@@ -161,7 +161,9 @@
   .dh-shipments-list {
     grid-template-columns: 1fr;
   }
-  
+  .dh-container {
+    margin-top:0px;
+  }
   .dh-title {
     font-size: 2rem;
   }
