@@ -9,11 +9,27 @@ const driverSchema = new mongoose.Schema({
     ref: 'fs.files',
     default: null
   },
-  vehicleType: { type: String, enum: ['TwoWheeler', 'ThreeWheeler', 'Truck'], required: true },
-  vehicleNumber: { type: String, required: true },
+  vehicleType: { 
+    type: String, 
+    enum: ['TwoWheeler', 'ThreeWheeler', 'Truck','Pickup9ft','Tata407'], 
+    required: true 
+  },
+  vehicleNumber: { 
+    type: String, 
+    required: true,
+    validate: {
+      validator: function(v) {
+        return /^[A-Z]{2}[0-9]{1,2}[A-Z]{1,2}[0-9]{4}$/.test(v);
+      },
+      message: props => `${props.value} is not a valid vehicle number!`
+    }
+  },
   documents: {
-    license: { type: mongoose.Schema.Types.ObjectId, ref: 'fs.files' },
-    rc: { type: mongoose.Schema.Types.ObjectId, ref: 'fs.files' }
+    aadhar: { type: mongoose.Schema.Types.ObjectId, ref: 'fs.files', required: true },
+    pan: { type: mongoose.Schema.Types.ObjectId, ref: 'fs.files', required: true },
+    license: { type: mongoose.Schema.Types.ObjectId, ref: 'fs.files', required: true },
+    rc: { type: mongoose.Schema.Types.ObjectId, ref: 'fs.files', required: true },
+    insurance: { type: mongoose.Schema.Types.ObjectId, ref: 'fs.files', required: true }
   },
   status: { type: String, enum: ['active', 'inactive'], default: 'active' },
   ratings: {
