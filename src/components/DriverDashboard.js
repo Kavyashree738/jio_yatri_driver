@@ -226,7 +226,7 @@ const DriverDashboard = () => {
             </div>
         </div>
         <Footer />
-        <>
+                        </>
     );
 }
 
