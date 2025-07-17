@@ -209,6 +209,23 @@ const DriverDashboard = () => {
         </div>
     );
 
+    if (!user) {
+    return (
+        <div className="dd-auth-required">
+            <div className="dd-auth-card">
+                <h2>You are not logged in</h2>
+                <p>Please log in to access your dashboard.</p>
+                <button
+                    className="dd-auth-login-btn"
+                    onClick={() => navigate('/home')}
+                >
+                    Go to Login
+                </button>
+            </div>
+        </div>
+    );
+}
+
     if (loading) return (
         <div className="dd-loading">
             <div className="dd-spinner-container">
