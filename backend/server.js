@@ -19,7 +19,7 @@ const paymentRoutes=require('./routes/paymentRoutes')
 
 // app.use(cors());
 const corsOptions = {
-  origin: ['https://driver.jioyatri.com'], // ✅ Allow your frontend origin
+  origin: ['https://driver.jioyatri.com','https://jioyatri-admin.netlify.app'], // ✅ Allow your frontend origin
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   credentials: true // Optional, only if you use cookies or tokens
 };
