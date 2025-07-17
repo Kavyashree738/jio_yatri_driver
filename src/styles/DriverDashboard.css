@@ -616,3 +616,132 @@
     gap: 6px;
   }
 }
+/* Not Logged In State */
+.dd-auth-required {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  padding-left: max(2rem, env(safe-area-inset-left));
+  padding-right: max(2rem, env(safe-area-inset-right));
+  padding-top: max(2rem, env(safe-area-inset-top));
+  padding-bottom: max(2rem, env(safe-area-inset-bottom));
+  background: linear-gradient(135deg, #f5f7fa 0%, #e4ecf7 100%);
+  box-sizing: border-box;
+}
+
+.dd-auth-card {
+  max-width: 400px;
+  width: 100%;
+  padding: 2.5rem 2rem;
+  background: #ffffff;
+  border-radius: 1.25rem;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+  text-align: center;
+  animation: dd-auth-fade-in 0.35s ease both;
+}
+
+/* Fluid type using clamp(min, preferred, max) */
+.dd-auth-card h2 {
+  margin: 0 0 0.75rem;
+  font-size: clamp(1.35rem, 2.5vw, 1.5rem);
+  color: #1d3557;
+  font-weight: 600;
+}
+
+.dd-auth-card p {
+  margin: 0 0 1.75rem;
+  font-size: clamp(0.95rem, 2vw, 1rem);
+  color: #56637a;
+  line-height: 1.4;
+}
+
+.dd-auth-login-btn {
+  padding: 0.75rem 2rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+  background: #1d4ed8; /* primary blue */
+  color: #ffffff;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.dd-auth-login-btn:hover,
+.dd-auth-login-btn:focus {
+  background: #1e40af;
+  transform: translateY(-1px) scale(1.01);
+  box-shadow: 0 6px 16px rgba(29,78,216,0.25);
+}
+
+/* Visible focus for keyboard users */
+.dd-auth-login-btn:focus-visible {
+  outline: 2px solid #1d4ed8;
+  outline-offset: 3px;
+}
+
+.dd-auth-login-btn:active {
+  transform: translateY(0) scale(0.97);
+  box-shadow: 0 3px 10px rgba(29,78,216,0.2);
+}
+
+/* Tablet: slightly larger card */
+@media (min-width: 600px) {
+  .dd-auth-card {
+    max-width: 480px;
+    padding: 3rem 2.5rem;
+  }
+}
+
+/* Small screen tweaks */
+@media (max-width: 480px) {
+  .dd-auth-card {
+    padding: 2rem 1.5rem;
+  }
+  .dd-auth-login-btn {
+    width: 100%;
+  }
+}
+
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+  .dd-auth-required {
+    background: linear-gradient(135deg, #1e1e24 0%, #2a2f3a 100%);
+  }
+  .dd-auth-card {
+    background: #2f3341;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.6);
+  }
+  .dd-auth-card h2 {
+    color: #e2e8f0;
+  }
+  .dd-auth-card p {
+    color: #cbd5e1;
+  }
+}
+
+/* Reduce motion */
+@media (prefers-reduced-motion: reduce) {
+  .dd-auth-card {
+    animation: none;
+  }
+  .dd-auth-login-btn {
+    transition: none;
+  }
+}
+
+/* Simple fade/slide animation */
+@keyframes dd-auth-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
