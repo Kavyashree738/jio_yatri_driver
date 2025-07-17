@@ -211,6 +211,8 @@ const DriverDashboard = () => {
 
     if (!user) {
     return (
+        <>
+         <Header />
         <div className="dd-auth-required">
             <div className="dd-auth-card">
                 <h2>You are not logged in</h2>
@@ -223,6 +225,8 @@ const DriverDashboard = () => {
                 </button>
             </div>
         </div>
+        <Footer />
+        <>
     );
 }
 
