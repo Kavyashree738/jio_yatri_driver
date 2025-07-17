@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { registerDriver,checkDriverExists, getDriver, updateDriverStatus,getDriverStatus ,updateDriverLocation,getDriverLocation,getAvailableShipments,registerFCMToken,incrementCompletedDeliveries} = require('../controllers/driverController');
+const { registerDriver, checkDriverExists, getDriver, updateDriverStatus, getDriverStatus, updateDriverLocation, getDriverLocation, getAvailableShipments, registerFCMToken, incrementCompletedDeliveries, getAllDriversWithDocuments, verifyDriver,getDocumentStatus } = require('../controllers/driverController');
 const verifyFirebaseToken = require('../middleware/verifyFirebaseToken');
 
 router.get('/check/:userId', verifyFirebaseToken, checkDriverExists);
@@ -18,5 +18,9 @@ router.put('/completed-deliveries', verifyFirebaseToken, incrementCompletedDeliv
 // backend/routes/driverRoutes.js
 router.post('/fcm-token', verifyFirebaseToken, registerFCMToken);
 
-
+router.put('/drivers/:driverId/verify',
+    verifyFirebaseToken,
+    verifyDriver
+);
+router.get('/:userId/documents-status', verifyFirebaseToken, getDocumentStatus);
 module.exports = router;
