@@ -19,87 +19,89 @@ exports.checkDriverExists = async (req, res) => {
     });
   }
 };
-// Register driver with proper validation
+// // Register driver with proper validation
+// exports.registerDriver = async (req, res) => {
+//   try {
+//     const { 
+//       userId, 
+//       name, 
+//       phone, 
+//       aadharFileId, 
+//       panFileId,
+//       vehicleType, 
+//       vehicleNumber, 
+//       licenseFileId, 
+//       rcFileId,
+//       insuranceFileId
+//     } = req.body;
+    
+//     // Validate required fields
+//     if (!userId || !name || !phone || !aadharFileId || !panFileId || 
+//         !vehicleType || !vehicleNumber || !licenseFileId || !rcFileId || !insuranceFileId) {
+//       return res.status(400).json({
+//         success: false,
+//         error: 'All fields and documents are required'
+//       });
+//     }
+
+//     // Validate vehicle number (format: KA01AB1234)
+//     if (!/^[A-Z]{2}[0-9]{1,2}[A-Z]{1,2}[0-9]{4}$/.test(vehicleNumber)) {
+//       return res.status(400).json({
+//         success: false,
+//         error: 'Invalid vehicle number (format: KA01AB1234)'
+//       });
+//     }
+
+//     // Check if driver already exists
+//     const existingDriver = await Driver.findOne({ userId });
+//     if (existingDriver) {
+//       return res.status(400).json({
+//         success: false,
+//         error: 'Driver already registered',
+//         driver: existingDriver
+//       });
+//     }
+
+//     // Create new driver
+//     const driver = new Driver({
+//       userId,
+//       name,
+//       phone,
+//       documents: {
+//         aadhar: aadharFileId,
+//         pan: panFileId,
+//         license: licenseFileId,
+//         rc: rcFileId,
+//         insurance: insuranceFileId
+//       },
+//       vehicleType,
+//       vehicleNumber,
+//       status: 'active'
+//     });
+
+//     await driver.save();
+    
+//     res.status(201).json({ 
+//       success: true, 
+//       data: driver 
+//     });
+//   } catch (err) {
+//     if (err.code === 11000) {
+//       const existingDriver = await Driver.findOne({ userId: req.body.userId });
+//       return res.status(400).json({
+//         success: false,
+//         error: 'Driver registration failed - already exists',
+//         driver: existingDriver
+//       });
+//     }
+//     res.status(500).json({ 
+//       success: false, 
+//       error: err.message 
+//     });
+//   }
+// };
+// 
 exports.registerDriver = async (req, res) => {
-  try {
-    const { 
-      userId, 
-      name, 
-      phone, 
-      aadharFileId, 
-      panFileId,
-      vehicleType, 
-      vehicleNumber, 
-      licenseFileId, 
-      rcFileId,
-      insuranceFileId
-    } = req.body;
-    
-    // Validate required fields
-    if (!userId || !name || !phone || !aadharFileId || !panFileId || 
-        !vehicleType || !vehicleNumber || !licenseFileId || !rcFileId || !insuranceFileId) {
-      return res.status(400).json({
-        success: false,
-        error: 'All fields and documents are required'
-      });
-    }
-
-    // Validate vehicle number (format: KA01AB1234)
-    if (!/^[A-Z]{2}[0-9]{1,2}[A-Z]{1,2}[0-9]{4}$/.test(vehicleNumber)) {
-      return res.status(400).json({
-        success: false,
-        error: 'Invalid vehicle number (format: KA01AB1234)'
-      });
-    }
-
-    // Check if driver already exists
-    const existingDriver = await Driver.findOne({ userId });
-    if (existingDriver) {
-      return res.status(400).json({
-        success: false,
-        error: 'Driver already registered',
-        driver: existingDriver
-      });
-    }
-
-    // Create new driver
-    const driver = new Driver({
-      userId,
-      name,
-      phone,
-      documents: {
-        aadhar: aadharFileId,
-        pan: panFileId,
-        license: licenseFileId,
-        rc: rcFileId,
-        insurance: insuranceFileId
-      },
-      vehicleType,
-      vehicleNumber,
-      status: 'active'
-    });
-
-    await driver.save();
-    
-    res.status(201).json({ 
-      success: true, 
-      data: driver 
-    });
-  } catch (err) {
-    if (err.code === 11000) {
-      const existingDriver = await Driver.findOne({ userId: req.body.userId });
-      return res.status(400).json({
-        success: false,
-        error: 'Driver registration failed - already exists',
-        driver: existingDriver
-      });
-    }
-    res.status(500).json({ 
-      success: false, 
-      error: err.message 
-    });
-  }
-};exports.registerDriver = async (req, res) => {
   try {
     const { 
       userId, 
@@ -433,6 +435,99 @@ exports.incrementCompletedDeliveries = async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Failed to update completed deliveries'
+    });
+  }
+};
+
+
+exports.verifyDriver = async (req, res) => {
+  try {
+    const { driverId } = req.params;
+    const { status, notes, docType } = req.body; // Add docType to body
+    const adminId = req.user.uid;
+
+    // Validate inputs
+    if (!driverId || !docType) {
+      return res.status(400).json({
+        success: false,
+        error: 'Driver ID and document type are required'
+      });
+    }
+
+    if (!['verified', 'rejected'].includes(status)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid verification status'
+      });
+    }
+
+    // Validate document type
+    const validDocTypes = ['aadhar', 'pan', 'license', 'rc', 'insurance'];
+    if (!validDocTypes.includes(docType)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid document type'
+      });
+    }
+
+    const updateData = {
+      $set: {
+        [`documentVerification.${docType}`]: status,
+        verificationNotes: notes || '',
+        verifiedAt: new Date(),
+        verifiedBy: adminId
+      }
+    };
+
+    const driver = await Driver.findOneAndUpdate(
+      { userId: driverId },
+      updateData,
+      { new: true, runValidators: true }
+    );
+
+    if (!driver) {
+      return res.status(404).json({
+        success: false,
+        error: 'Driver not found'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: driver
+    });
+
+  } catch (error) {
+    console.error('Verification error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to verify driver document'
+    });
+  }
+};
+
+// Get driver documents with verification statuses
+exports.getDocumentStatus = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const driver = await Driver.findOne({ userId }).select('documentVerification');
+
+    if (!driver) {
+      return res.status(404).json({
+        success: false,
+        error: 'Driver not found'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: driver.documentVerification
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      success: false,
+      error: 'Server error while fetching document status'
     });
   }
 };
