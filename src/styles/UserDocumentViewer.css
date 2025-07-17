@@ -1,34 +1,35 @@
 /* Main Container */
 .document-container {
-  max-width: 100%;
-  margin: 20px;
-  margin-top:100px;
-  padding: 15px;
+  max-width: 900px;
+  margin: 100px auto 40px;
+  padding: 20px;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
+/* Title */
 .document-title {
   color: #2c3e50;
-  margin-bottom: 20px;
-  font-size: 1.5rem;
-  font-weight: 600;
+  margin-bottom: 25px;
+  font-size: 1.8rem;
+  font-weight: bold;
+  text-align: center;
 }
 
 /* Status Messages */
 .loading, .error, .empty {
   padding: 15px;
   text-align: center;
-  border-radius: 6px;
-  margin: 20px 0;
+  border-radius: 8px;
+  margin: 15px 0;
 }
 
 .loading {
-  background: #f8f9fa;
+  background: #f1f1f1;
   color: #7f8c8d;
 }
 
 .error {
-  background: #fde8e8;
+  background: #fdecea;
   color: #e74c3c;
 }
 
@@ -41,125 +42,270 @@
 .document-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 15px;
 }
 
+/* Each Row */
 .document-row {
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  background: white;
-  padding: 12px 15px;
-  border-radius: 8px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-  transition: all 0.2s ease;
+  background: #fff;
+  padding: 15px 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.06);
+  transition: transform 0.2s, box-shadow 0.2s;
 }
 
 .document-row:hover {
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  transform: translateY(-3px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
 }
 
 /* Document Type */
 .document-type {
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-weight: 500;
-  color: #34495e;
+  gap: 12px;
   flex: 1;
+  overflow: hidden;
 }
 
 .file-icon {
-  font-size: 18px;
+  font-size: 22px;
   color: #3498db;
 }
 
-/* View Button */
-.view-btn {
+/* Document Name */
+.document-type span {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #34495e;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0; /* IMPORTANT for flex layouts */
+}
+
+/* Actions */
+.document-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.view-btn,
+.update-btn {
   display: flex;
   align-items: center;
   justify-content: center;
   width: 40px;
   height: 40px;
-  background: #3498db;
-  color: white;
+  border-radius: 10px;
   border: none;
-  border-radius: 50%;
   cursor: pointer;
-  transition: background 0.2s;
-  margin: 0 15px;
+  transition: all 0.3s ease;
+}
+
+.view-btn {
+  background: #3498db;
+  color: #fff;
 }
 
 .view-btn:hover {
   background: #2980b9;
 }
 
+.update-btn {
+  background: #f1f1f1;
+}
+
+.update-btn:hover {
+  background: #e2e2e2;
+}
+
+.upload-icon,
 .eye-icon {
-  font-size: 16px;
+  font-size: 18px;
 }
 
-/* Upload Status */
-.upload-status {
+/* Upload Preview */
+.upload-preview {
+  margin-top: 25px;
+  padding: 15px;
+  background: #f9f9f9;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.upload-buttons {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  color: #7f8c8d;
-  font-size: 0.9rem;
+  justify-content: center;
+  gap: 15px;
+  margin-top: 10px;
 }
 
-.upload-icon {
-  color: #95a5a6;
-  font-size: 16px;
+.upload-confirm-btn {
+  background: #27ae60;
+  color: white;
+  padding: 10px 18px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
 }
 
-/* Responsive Design */
+.upload-confirm-btn:hover {
+  background: #219150;
+}
+
+.upload-cancel-btn {
+  background: #e74c3c;
+  color: white;
+  padding: 10px 18px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.upload-cancel-btn:hover {
+  background: #c0392b;
+}
+
+/* Responsive */
 @media (max-width: 768px) {
-  .document-container {
-    margin: 15px;
-    padding: 10px;
-  }
-  
-  .document-title {
-    font-size: 1.3rem;
-  }
-  
   .document-row {
-    padding: 10px 12px;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 15px;
+    gap: 10px;
   }
-  
-  .file-icon {
-    font-size: 16px;
+
+  .document-actions {
+    justify-content: flex-start;
   }
-  
-  .view-btn {
-    width: 36px;
-    height: 36px;
-    margin: 0 10px;
-  }
-  
-  .upload-status {
-    font-size: 0.8rem;
-  }
-  
-  .upload-icon {
-    font-size: 14px;
+
+  .document-type span {
+    font-size: 0.95rem;
+    white-space: normal; /* Wrap text on smaller screens */
   }
 }
 
 @media (max-width: 480px) {
+  .document-title {
+    font-size: 1.5rem;
+  }
+
+  .view-btn,
+  .update-btn {
+    width: 36px;
+    height: 36px;
+  }
+}
+/* Document Type - Update these styles */
+.document-type {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0; /* Crucial for text truncation in flex children */
+}
+
+.document-type span {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #34495e;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0; /* Allows the span to shrink properly */
+}
+
+/* Update the mobile media query */
+@media (max-width: 768px) {
   .document-row {
-    padding: 8px 10px;
+    flex-direction: row; /* Keep it as row if that's your preference */
+    align-items: center;
+    padding: 12px 15px;
+    gap: 10px;
   }
-  
+
   .document-type {
+    flex: 1 1 60%; /* Allow the text container to take more space */
+    min-width: 0;
+  }
+
+  .document-type span {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%; /* Ensure it doesn't overflow container */
+  }
+
+  .document-actions {
+    flex: 0 0 auto; /* Don't let actions grow */
+    justify-content: flex-end;
+  }
+}
+
+@media (max-width: 480px) {
+  .document-type span {
     font-size: 0.9rem;
+    white-space: normal; /* Allow wrapping on very small screens */
+    overflow: visible;
+    text-overflow: clip;
   }
-  
-  .view-btn {
-    width: 32px;
-    height: 32px;
+}
+@media (max-width: 768px) {
+  .document-row {
+    flex-direction: column;
+    align-items: flex-start;
   }
-  
-  .eye-icon {
-    font-size: 14px;
+.document-container{
+  margin-top:0px;
+}
+  .document-type {
+    width: 100%;
   }
+
+  .document-type span {
+    white-space: normal;
+    overflow: visible;
+  }
+
+  .document-actions {
+    align-self: flex-end;
+    margin-top: 8px;
+  }
+}
+/* Base badge */
+.status-badge {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: capitalize;
+  display: inline-block;
+  min-width: 80px;
+  text-align: center;
+  border: 1px solid transparent;
+}
+
+/* Status variants */
+.status-badge.pending {
+  background: #fff4e0;   /* light orange background */
+  color: #d97706;         /* orange text */
+  border-color: #fbbf24;  /* optional border */
+}
+
+.status-badge.verified {
+  background: #e7fbe7;    /* light green */
+  color: #15803d;         /* green text */
+  border-color: #34d399;
+}
+
+.status-badge.rejected {
+  background: #ffe4e4;    /* light red/pink */
+  color: #b91c1c;         /* red text */
+  border-color: #f87171;
 }
