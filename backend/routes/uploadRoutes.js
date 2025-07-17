@@ -7,7 +7,9 @@ const {
   uploadProfileImage, 
   getProfileImage,
   getUserDocuments,
-  getAllDriversWithDocuments
+  getAllDriversWithDocuments,
+  getFileInfo,
+  getFileAsAdmin
   
 } = require('../controllers/uploadController');
 const verifyFirebaseToken = require('../middleware/verifyFirebaseToken');
@@ -63,7 +65,11 @@ router.get('/user-documents/:userId', verifyFirebaseToken, (req, res, next) => {
   next();
 }, getUserDocuments);
 
-router.get('/all', verifyFirebaseToken,  getAllDriversWithDocuments);
+router.get('/all',  getAllDriversWithDocuments);
 // Add this to your existing routes
+// Add to uploadRoutes.js
+router.get('/file-info/:fileId', verifyFirebaseToken, getFileInfo);
+// Route: GET /api/admin/file/:filename
+router.get('/admin/file/:filename', verifyFirebaseToken, getFileAsAdmin);
 
 module.exports = router;
