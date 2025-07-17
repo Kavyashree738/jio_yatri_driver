@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { FaUser, FaPhone, FaToggleOn, FaToggleOff, FaCar, FaStar } from 'react-icons/fa';
+import { FaUser, FaPhone, FaToggleOn, FaToggleOff, FaCar, FaStar, FaCheck, FaTimes } from 'react-icons/fa';
 import { MdDirectionsCar, MdDirectionsBike, MdLocalShipping } from 'react-icons/md';
 import Header from './Header';
 import Footer from './Footer';
@@ -11,7 +11,6 @@ import '../styles/DriverDashboard.css';
 import { signOut } from 'firebase/auth';
 import { auth } from '../firebase';
 import axios from 'axios';
-
 const DriverDashboard = () => {
     const { user, setMessage } = useAuth();
     const navigate = useNavigate();
@@ -73,6 +72,12 @@ const DriverDashboard = () => {
 
         fetchShipments();
     }, [user, fetchDriverInfo]);
+    const allDocumentsVerified = useMemo(() => {
+        if (!driverInfo?.documentVerification) return false;
+        return Object.values(driverInfo.documentVerification).every(
+            status => status === 'verified'
+        );
+    }, [driverInfo]);
 
     const completedDeliveries = useMemo(() => {
         return shipments.filter(s => s.status?.toLowerCase() === 'delivered').length;
@@ -151,7 +156,7 @@ const DriverDashboard = () => {
         try {
             await signOut(auth);
             setMessage({ text: 'Logged out', isError: false });
-            navigate('/home');
+            navigate('/');
         } catch (error) {
             setMessage({ text: error.message, isError: true });
         }
@@ -165,6 +170,10 @@ const DriverDashboard = () => {
                 return <span role="img" aria-label="Three Wheeler">🛺</span>;
             case 'truck':
                 return <span role="img" aria-label="Truck">🚚</span>;
+            case 'Pickup9ft':
+                return <span role="img" aria-label="Pickup9ft">🛻</span>;
+            case 'Tata407':
+                return <span role="img" aria-label="Tata407">🚛</span>;
             default:
                 return <span role="img" aria-label="Car">🚗</span>;
         }
@@ -181,6 +190,24 @@ const DriverDashboard = () => {
             </div>
         );
     };
+    const renderDocumentStatus = () => (
+        <div className="dd-document-status">
+            <h3>Document Verification Status</h3>
+            {Object.entries(driverInfo.documentVerification || {}).map(([docType, status]) => (
+                <div key={docType} className={`dd-doc-item ${status}`}>
+                    <span>{docType}:</span>
+                    <span>
+                        {status === 'verified' ? (
+                            <FaCheck className="dd-verified" />
+                        ) : (
+                            <FaTimes className="dd-pending" />
+                        )}
+                        {status.charAt(0).toUpperCase() + status.slice(1)}
+                    </span>
+                </div>
+            ))}
+        </div>
+    );
 
     if (loading) return (
         <div className="dd-loading">
@@ -192,6 +219,50 @@ const DriverDashboard = () => {
     );
 
     if (error) return <div className="dd-error">Error: {error}</div>;
+    if (!allDocumentsVerified) return (
+        <>
+            <Header />
+            <div className="verify-container">
+                <div className="verify-card">
+                    <h2 className="verify-title">Documents Verification Required</h2>
+                    <p className="verify-message">
+                        Your documents are under review. You'll get full access once all documents are verified by our team.
+                    </p>
+
+                    <div className="verify-status-box">
+                        <h3 className="verify-status-title">Document Verification Status</h3>
+                        {Object.entries(driverInfo.documentVerification || {}).map(([docType, status]) => (
+                            <div key={docType} className={`verify-status-item ${status}`}>
+                                <span className="verify-doc-type">
+                                    {docType.replace(/([A-Z])/g, ' $1').trim()}:
+                                </span>
+                                <span className="verify-doc-status">
+                                    {status === 'verified' ? (
+                                        <>
+                                            <FaCheck className="verify-icon verified" />
+                                            Verified
+                                        </>
+                                    ) : (
+                                        <>
+                                            <FaTimes className="verify-icon pending" />
+                                            Pending
+                                        </>
+                                    )}
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+
+                    <button className="verify-logout-btn" onClick={handleLogout}>
+                        Logout
+                    </button>
+                </div>
+            </div>
+            <Footer />
+        </>
+
+    );
+
 
     return (
         <>
