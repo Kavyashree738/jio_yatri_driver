@@ -1,6 +1,7 @@
 const { GridFSBucket } = require('mongodb');
 const mongoose = require('mongoose');
 const Driver = require('../models/Driver');
+require('../models/File'); // this ensures the schema is registered
 
 let gfs;
 const initGridFS = () => {
@@ -25,7 +26,6 @@ const initGridFS = () => {
 
 const gfsPromise = initGridFS();
 
-// Upload a document
 exports.uploadFile = async (req, res) => {
   try {
     if (!req.file) {
@@ -46,12 +46,30 @@ exports.uploadFile = async (req, res) => {
 
     writeStream.end(req.file.buffer);
 
-    writeStream.on('finish', () => {
-      res.status(201).json({
-        fileId: writeStream.id,
-        filename: writeStream.filename,
-        metadata: writeStream.options.metadata
-      });
+    writeStream.on('finish', async () => {
+      const fileId = writeStream.id;
+
+      try {
+        await Driver.updateOne(
+          { userId: req.user.uid },
+          {
+            $set: {
+              [`documents.${req.body.docType}`]: fileId, // ✅ only ObjectId
+              [`documentVerification.${req.body.docType}`]: 'pending'
+            }
+          }
+        );
+
+        res.status(201).json({
+          success: true,
+          fileId,
+          filename: writeStream.filename,
+          metadata: writeStream.options.metadata
+        });
+      } catch (updateError) {
+        console.error('Error updating driver document:', updateError);
+        res.status(500).json({ error: 'File uploaded, but failed to update driver document.' });
+      }
     });
 
     writeStream.on('error', (err) => {
@@ -64,6 +82,7 @@ exports.uploadFile = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
 
 // Secure file fetch
 exports.getFile = async (req, res) => {
@@ -129,7 +148,7 @@ exports.uploadProfileImage = async (req, res) => {
     // 2. Upload new image
     const sanitizedFilename = req.file.originalname.replace(/[^a-zA-Z0-9.-]/g, '');
     const filename = `profile_${userId}_${Date.now()}_${sanitizedFilename}`;
-    
+
     const uploadStream = gfs.openUploadStream(filename, {
       metadata: {
         userId,
@@ -162,7 +181,7 @@ exports.uploadProfileImage = async (req, res) => {
     );
 
     await session.commitTransaction();
-    
+
     // 5. Return both the file info and the image URL
     res.status(201).json({
       success: true,
@@ -250,40 +269,60 @@ exports.getUserDocuments = async (req, res) => {
   }
 };
 
-// Get all drivers with their documents
+const { Types } = require('mongoose');
+
 exports.getAllDriversWithDocuments = async (req, res) => {
   try {
-    const drivers = await Driver.find({})
-      .populate('profileImage')
-      .populate('documents.license')
-      .populate('documents.rc')
-      .lean();
+    const gfs = await gfsPromise;
 
-    const formattedDrivers = drivers.map(driver => ({
-      id: driver.userId,
-      name: driver.name,
-      phone: driver.phone,
-      vehicleType: driver.vehicleType,
-      vehicleNumber: driver.vehicleNumber,
-      status: driver.status,
-      profileImage: driver.profileImage ? {
-        id: driver.profileImage._id,
-        mimetype: driver.profileImage.metadata?.mimetype
-      } : null,
-      documents: {
-        license: driver.documents.license ? {
-          id: driver.documents.license._id,
+    const drivers = await Driver.find({}).lean();
+
+    const formattedDrivers = await Promise.all(drivers.map(async (driver) => {
+      const docs = driver.documents || {};
+
+      const fetchFileMeta = async (fileId) => {
+        if (!fileId || !Types.ObjectId.isValid(fileId)) return { uploaded: false };
+
+        const files = await gfs.find({ _id: new Types.ObjectId(fileId) }).toArray();
+        if (!files || files.length === 0) return { uploaded: false };
+
+        return {
+          id: files[0]._id,
           uploaded: true,
-          mimetype: driver.documents.license.metadata?.mimetype
-        } : { uploaded: false },
-        rc: driver.documents.rc ? {
-          id: driver.documents.rc._id,
-          uploaded: true,
-          mimetype: driver.documents.rc.metadata?.mimetype
-        } : { uploaded: false }
-      },
-      locationActive: driver.isLocationActive,
-      lastUpdated: driver.lastUpdated
+          mimetype: files[0].metadata?.mimetype || null
+        };
+      };
+
+      const profileImageMeta = await fetchFileMeta(driver.profileImage);
+
+      const aadharMeta = await fetchFileMeta(docs.aadhar);
+      const panMeta = await fetchFileMeta(docs.pan);
+      const licenseMeta = await fetchFileMeta(docs.license);
+      const rcMeta = await fetchFileMeta(docs.rc);
+      const insuranceMeta = await fetchFileMeta(docs.insurance);
+
+      return {
+        id: driver.userId,
+        name: driver.name,
+        phone: driver.phone,
+        vehicleType: driver.vehicleType,
+        vehicleNumber: driver.vehicleNumber,
+        status: driver.status,
+        profileImage: profileImageMeta,
+        documents: {
+          aadhar: aadharMeta,
+          pan: panMeta,
+          license: licenseMeta,
+          rc: rcMeta,
+          insurance: insuranceMeta
+        },
+        documentVerification: driver.documentVerification || {},
+        locationActive: driver.isLocationActive,
+        lastUpdated: driver.lastUpdated,
+        completedDeliveries: driver.completedDeliveries || 0,
+        earnings: driver.earnings || 0,
+        fcmToken: driver.fcmToken || null
+      };
     }));
 
     res.status(200).json({
@@ -291,9 +330,72 @@ exports.getAllDriversWithDocuments = async (req, res) => {
       data: formattedDrivers
     });
   } catch (err) {
+    console.error('Error in getAllDriversWithDocuments:', err);
     res.status(500).json({
       success: false,
       error: 'Failed to fetch drivers data'
     });
+  }
+};
+// Add to uploadController.js
+// uploadController.js
+
+// In your uploadController.js
+exports.getFileInfo = async (req, res) => {
+  try {
+    // console.log('getFileInfo called with fileId:', req.params.fileId);
+
+    const gfs = await gfsPromise;
+    const { fileId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(fileId)) {
+      // console.error('Invalid file ID format:', fileId);
+      return res.status(400).json({ error: 'Invalid file ID format' });
+    }
+
+    const files = await gfs.find({ _id: new mongoose.Types.ObjectId(fileId) }).toArray();
+    // console.log('Files found:', files.length);
+
+    if (!files || files.length === 0) {
+      // console.error('No files found for ID:', fileId);
+      return res.status(404).json({ error: 'File not found in GridFS' });
+    }
+
+    // console.log('Returning file info for:', files[0].filename);
+    res.status(200).json({
+      id: files[0]._id,
+      filename: files[0].filename,
+      metadata: files[0].metadata,
+      uploadDate: files[0].uploadDate,
+      length: files[0].length,
+      contentType: files[0].metadata?.mimetype || files[0].contentType || 'unknown'
+    });
+
+  } catch (err) {
+    console.error('Error in getFileInfo:', {
+      error: err.message,
+      stack: err.stack
+    });
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.getFileAsAdmin = async (req, res) => {
+  try {
+    const gfs = await gfsPromise;
+    const filename = req.params.filename;
+
+    const files = await gfs.find({ filename }).toArray();
+    if (!files || files.length === 0) {
+      return res.status(404).json({ error: 'File not found' });
+    }
+
+    // ✅ Skip ownership check for admins
+    res.set('Content-Type', files[0].metadata?.mimetype || 'application/octet-stream');
+    gfs.openDownloadStreamByName(filename).pipe(res);
+
+  } catch (err) {
+    console.error('Admin file fetch error:', err);
+    res.status(500).json({ error: err.message });
   }
 };
