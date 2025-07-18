@@ -5,6 +5,7 @@ import { FaFileAlt, FaFilePdf, FaFileWord, FaFileExcel, FaFileImage, FaEye, FaUp
 import '../styles/UserDocumentViewer.css';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
+import { useNavigate } from 'react-router-dom';
 
 const DocumentViewer = () => {
   const { user } = useAuth();
@@ -15,6 +16,7 @@ const DocumentViewer = () => {
   const [uploading, setUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [currentDocType, setCurrentDocType] = useState('');
+  const navigate = useNavigate();
 
   // Generate a unique key for each document
   const generateDocumentKey = (doc) => {
@@ -64,7 +66,14 @@ const DocumentViewer = () => {
 
         setStatusMap(statusResponse.data?.data || {});
       } catch (err) {
-        setError(err.message || 'Failed to fetch documents or status');
+        const status = err.response?.status;
+        if (status === 404) {
+          setError('incomplete-registration');  // custom code for UI
+        } else if (status === 401) {
+          setError('unauthorized');
+        } else {
+          setError('general-error');
+        }
       } finally {
         setLoading(false);
       }
@@ -181,10 +190,32 @@ const DocumentViewer = () => {
 
         {loading ? (
           <div className="loading">Loading documents...</div>
-        ) : error ? (
-          <div className="error">{error}</div>
+        ) : error === 'incomplete-registration' ? (
+          <div className="error-ui">
+            <h3>Registration Incomplete</h3>
+            <p>Please complete your registration to upload and view documents.</p>
+            <button onClick={() => navigate('/home')} className="register-btn">
+              Complete Registration
+            </button>
+          </div>
+        ) : error === 'unauthorized' ? (
+          <div className="error-ui">
+            <h3>Session Expired</h3>
+            <p>Please log in again.</p>
+            <button onClick={() => navigate('/login')} className="login-btn">
+              Go to Login
+            </button>
+          </div>
+        ) : error === 'general-error' ? (
+          <div className="error-ui">
+            <h3>Something went wrong</h3>
+            <p>Try again later.</p>
+          </div>
         ) : documents.length === 0 ? (
-          <div className="empty">No documents found</div>
+          <div className="empty-ui">
+            <h3>No Documents Found</h3>
+            <p>Upload your first document to get started.</p>
+          </div>
         ) : (
           <div className="document-list">
             {documents.map((doc) => (
