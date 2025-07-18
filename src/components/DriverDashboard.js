@@ -37,10 +37,11 @@ const DriverDashboard = () => {
                 })
             ]);
 
-             if (driverRes.status === 404) {
+                         if (driverRes.status === 404) {
             setIsRegistered(false);
             setLoading(false);
-            return;
+            return; 
+        }
 
             if (!driverRes.ok) throw new Error('Failed to fetch driver info');
 
