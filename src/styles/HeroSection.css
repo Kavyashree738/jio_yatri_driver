@@ -2552,3 +2552,64 @@ progress::-webkit-progress-value {
     font-size: 0.8rem;
   }
 }
+/* OTP Container */
+.otp-container {
+  display: flex;
+  justify-content: space-between;
+  margin: 1.5rem 0;
+  gap: 0.5rem;
+}
+
+/* OTP Input Boxes - Fixed visibility */
+.otp-input {
+  flex: 1;
+  min-width: 0;
+  height: 3.5rem;
+  text-align: center;
+  font-size: 1.5rem;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  outline: none;
+  transition: all 0.3s;
+  /* Fixes for visibility */
+  color: #000; /* Ensures text is black */
+  background-color: #fff; /* White background */
+  padding: 0.5rem; /* Proper padding */
+  line-height: 1; /* Prevents vertical overflow */
+  caret-color: #4a90e2; /* Visible cursor */
+}
+
+.otp-input::placeholder {
+  color: #ccc; /* Light gray placeholder */
+}
+
+.otp-input:focus {
+  border-color: #4a90e2;
+  box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.2);
+}
+
+.otp-input.filled {
+  border-color: #4CAF50;
+}
+
+/* Mobile adjustments with visibility fixes */
+@media (max-width: 480px) {
+  .otp-container {
+    gap: 0.3rem;
+    margin: 1rem 0;
+  }
+  
+  .otp-input {
+    height: 2.8rem;
+    font-size: 1.2rem;
+    padding: 0.4rem; /* Adjusted padding for mobile */
+  }
+}
+
+@media (max-width: 360px) {
+  .otp-input {
+    height: 2.5rem;
+    font-size: 1rem;
+    padding: 0.3rem; /* Tighter padding for very small screens */
+  }
+}
