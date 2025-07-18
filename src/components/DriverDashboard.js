@@ -23,6 +23,7 @@ const DriverDashboard = () => {
     const [profileImage, setProfileImage] = useState(null);
     const [isUploading, setIsUploading] = useState(false);
     const fileInputRef = useRef(null);
+    const [isRegistered, setIsRegistered] = useState(true);
 
     const fetchDriverInfo = useCallback(async () => {
         try {
@@ -35,6 +36,11 @@ const DriverDashboard = () => {
                     headers: { Authorization: `Bearer ${token}` }
                 })
             ]);
+
+             if (driverRes.status === 404) {
+            setIsRegistered(false);
+            setLoading(false);
+            return;
 
             if (!driverRes.ok) throw new Error('Failed to fetch driver info');
 
@@ -156,7 +162,7 @@ const DriverDashboard = () => {
         try {
             await signOut(auth);
             setMessage({ text: 'Logged out', isError: false });
-            navigate('/');
+            navigate('/home');
         } catch (error) {
             setMessage({ text: error.message, isError: true });
         }
@@ -238,6 +244,22 @@ const DriverDashboard = () => {
             </div>
         </div>
     );
+
+    
+    if (!isRegistered) return (
+    <>
+        <Header />
+        <div className="registration-required">
+            <h2>Complete Your Registration</h2>
+            <p>You need to complete the registration process before accessing the dashboard.</p>
+            <button onClick={() => navigate('/home')}>
+                Complete Registration
+            </button>
+            <button onClick={handleLogout}>Logout</button>
+        </div>
+        <Footer />
+    </>
+);
 
     if (error) return <div className="dd-error">Error: {error}</div>;
     if (!allDocumentsVerified) return (
