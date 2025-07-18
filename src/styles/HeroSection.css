@@ -2413,3 +2413,142 @@ progress::-webkit-progress-value {
     padding-left: 38px !important;
   }
 }
+
+/* OTP Container - Responsive */
+.otp-container {
+  display: flex;
+  justify-content: space-between;
+  margin: 1.5rem 0;
+  gap: 0.5rem;
+}
+
+/* OTP Input Boxes - Responsive */
+.otp-input {
+  flex: 1;
+  min-width: 0;
+  height: 3.5rem;
+  text-align: center;
+  font-size: 1.5rem;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  outline: none;
+  transition: all 0.3s;
+}
+
+.otp-input:focus {
+  border-color: #4a90e2;
+  box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.2);
+}
+
+.otp-input.filled {
+  border-color: #4CAF50;
+}
+
+/* OTP Button - Responsive */
+.otp-button {
+  width: 100%;
+  padding: 1rem;
+  background-color: #4a90e2;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  margin: 1rem 0;
+  transition: background-color 0.3s;
+}
+
+.otp-button:hover {
+  background-color: #3a7bc8;
+}
+
+.otp-button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+/* Mobile-specific adjustments */
+@media (max-width: 480px) {
+  .otp-container {
+    gap: 0.3rem;
+    margin: 1rem 0;
+  }
+  
+  .otp-input {
+    height: 2.8rem;
+    font-size: 1.2rem;
+  }
+  
+  .otp-button {
+    padding: 0.8rem;
+    font-size: 0.9rem;
+  }
+}
+
+/* Very small screens */
+@media (max-width: 360px) {
+  .otp-input {
+    height: 2.5rem;
+    font-size: 1rem;
+  }
+  
+  .otp-button {
+    padding: 0.7rem;
+    font-size: 0.85rem;
+  }
+}
+
+/* Text styles for OTP instructions */
+.otp-instructions {
+  color: #666;
+  font-size: 0.9rem;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+@media (max-width: 480px) {
+  .otp-instructions {
+    font-size: 0.8rem;
+    margin-bottom: 1rem;
+  }
+}
+
+/* Error message styling */
+.otp-error {
+  color: #e74c3c;
+  font-size: 0.9rem;
+  margin-top: -1rem;
+  margin-bottom: 1rem;
+  min-height: 1.2rem;
+  text-align: center;
+}
+
+@media (max-width: 480px) {
+  .otp-error {
+    font-size: 0.8rem;
+  }
+}
+
+/* Resend button styling */
+.resend-button {
+  background: none;
+  border: none;
+  color: #4a90e2;
+  font-size: 0.9rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 6px;
+  transition: all 0.3s;
+  margin-top: 0.5rem;
+}
+
+.resend-button:hover {
+  background-color: #f0f7ff;
+}
+
+@media (max-width: 480px) {
+  .resend-button {
+    font-size: 0.8rem;
+  }
+}
