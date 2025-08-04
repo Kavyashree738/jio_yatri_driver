@@ -1,7 +1,7 @@
 import React from 'react';
 import '../styles/PrivacyPolicy.css';
-import Header from './pages/Header';
-import Footer from './pages/Footer';
+import Header from './Header';
+import Footer from './Footer';
 const PrivacyPolicy = () => {
   return (
     <>
@@ -129,6 +129,7 @@ const PrivacyPolicy = () => {
     </>
   );
 };
+
 
 
 export default PrivacyPolicy;
