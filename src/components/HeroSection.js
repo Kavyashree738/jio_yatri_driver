@@ -609,10 +609,10 @@ const HeroSection = () => {
                     transition={{ duration: 0.8 }}
                 >
                     <div className="text">
-                        <h1>JIO YATRI</h1>
+                        <h1>JIOYATRI</h1>
                         <h2>Delivery</h2>
                     </div>
-                    <h2>Drive, Deliver & Earn with JioYatri</h2>
+                    <h2>Drive, Deliver & Earn with Jioyatri</h2>
                     <p>
                         Join our trusted driver network and earn by delivering packages across 19,000+ destinations in India. Flexible timings, secure payouts, and a seamless delivery experience.
                     </p>
