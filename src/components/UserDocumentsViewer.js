@@ -23,6 +23,12 @@ const DocumentViewer = () => {
     return `${doc.docType}-${doc.id || doc.filename || doc.uploadDate || Date.now()}`;
   };
 
+
+  useEffect(() => {
+    if (!user) {
+      navigate('/home');
+    }
+  }, [user, navigate]);
   useEffect(() => {
     const fetchDocumentsAndStatus = async () => {
       try {
