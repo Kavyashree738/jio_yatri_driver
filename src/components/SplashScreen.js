@@ -82,7 +82,7 @@ const SplashScreen = () => {
           >
             Welcome
           </motion.span>
-          &nbsp;to Jio Yatri
+          &nbsp;to Jioyatri
         </motion.h1>
         <motion.p
           initial={{ y: 20, opacity: 0 }}
@@ -104,5 +104,6 @@ const SplashScreen = () => {
     </div>
   );
 };
+
 
 export default SplashScreen;
