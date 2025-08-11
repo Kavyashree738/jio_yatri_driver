@@ -76,7 +76,8 @@ const HeroSection = () => {
     const [showWelcomeMessage, setShowWelcomeMessage] = useState(
         localStorage.getItem('welcomeMessageShown') !== 'true'
     );
-
+    const TEST_PHONE = "+911234567890";
+    const TEST_OTP = "123456";
     useEffect(() => {
         if (isInView) {
             controls.start('visible');
@@ -210,6 +211,14 @@ const HeroSection = () => {
             return;
         }
 
+         if (phoneNumber === TEST_PHONE) {
+    setMessage({ text: `OTP sent to ${phoneNumber} (Test Mode)`, isError: false });
+    setShowOtpComponent(true);
+    startResendTimer();
+    return;
+  }
+
+
         try {
             setIsLoading(true);
             setMessage({ text: '', isError: false });
@@ -253,7 +262,7 @@ const HeroSection = () => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     phoneNumber,
-                    otp
+                    otp: phoneNumber === TEST_PHONE ? TEST_OTP : otp 
                 })
             });
 
