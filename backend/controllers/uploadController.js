@@ -202,19 +202,51 @@ exports.uploadProfileImage = async (req, res) => {
 
 // Get profile image
 exports.getProfileImage = async (req, res) => {
+  console.log('--- getProfileImage called ---');
+  console.log('Request params:', req.params);
+
   try {
     const gfs = await gfsPromise;
-    const driver = await Driver.findOne({ userId: req.params.userId });
+    console.log('GridFS initialized:', !!gfs);
 
-    if (!driver?.profileImage) {
+    const driver = await Driver.findOne({ userId: req.params.userId });
+    console.log('Driver found:', driver);
+
+    if (!driver) {
+      console.warn('Driver not found for userId:', req.params.userId);
+      return res.status(404).json({ error: 'Driver not found' });
+    }
+
+    if (!driver.profileImage) {
+      console.warn('Driver has no profileImage:', driver._id);
       return res.status(404).json({ error: 'Profile image not found' });
     }
 
-    const file = await gfs.find({ _id: driver.profileImage }).toArray();
-    if (!file.length) return res.status(404).json({ error: 'File not found' });
+    console.log('Fetching file from GridFS with _id:', driver.profileImage);
+    const files = await gfs.find({ _id: driver.profileImage }).toArray();
+    console.log('Files found:', files);
 
-    res.set('Content-Type', file[0].metadata?.mimetype || 'image/jpeg');
+    if (!files.length) {
+      console.warn('No file found in GridFS with _id:', driver.profileImage);
+      return res.status(404).json({ error: 'File not found' });
+    }
+
+    const file = files[0];
+    console.log('File metadata:', file.metadata);
+
+    res.set('Content-Type', file.metadata?.mimetype || 'image/jpeg');
+    console.log('Streaming file to response...');
     const readStream = gfs.openDownloadStream(driver.profileImage);
+
+    readStream.on('error', (err) => {
+      console.error('Error while streaming file:', err);
+      res.status(500).json({ error: 'Error streaming file' });
+    });
+
+    readStream.on('end', () => {
+      console.log('File streaming finished.');
+    });
+
     readStream.pipe(res);
 
   } catch (err) {
@@ -222,6 +254,7 @@ exports.getProfileImage = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
 
 exports.deleteAllProfileImages = async (userId) => {
   const gfs = await gfsPromise;
