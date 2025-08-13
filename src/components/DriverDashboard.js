@@ -119,45 +119,67 @@ const DriverDashboard = () => {
         }
     };
 
-    const handleImageUpload = async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        e.target.value = '';
+ const handleImageUpload = async (e) => {
+    console.log('--- handleImageUpload called ---');
+    
+    const file = e.target.files[0];
+    console.log('Selected file:', file);
 
-        if (!file.type.match('image.*')) {
-            setError('Please select an image file');
-            return;
-        }
+    if (!file) {
+        console.warn('No file selected');
+        return;
+    }
+    e.target.value = '';
 
-        if (file.size > 5 * 1024 * 1024) {
-            setError('Image size should be < 5MB');
-            return;
-        }
+    if (!file.type.match('image.*')) {
+        console.warn('File type not allowed:', file.type);
+        setError('Please select an image file');
+        return;
+    }
 
-        setIsUploading(true);
-        setError(null);
+    if (file.size > 5 * 1024 * 1024) {
+        console.warn('File size too large:', file.size);
+        setError('Image size should be < 5MB');
+        return;
+    }
 
-        try {
-            const previewUrl = URL.createObjectURL(file);
-            setProfileImage(previewUrl);
+    setIsUploading(true);
+    setError(null);
+    console.log('File passed validation, starting upload...');
 
-            const formData = new FormData();
-            formData.append('file', file);
+    try {
+        const previewUrl = URL.createObjectURL(file);
+        setProfileImage(previewUrl);
+        console.log('Preview URL set:', previewUrl);
 
-            const token = await user.getIdToken(true);
-            await fetch('https://jio-yatri-driver.onrender.com/api/upload/profile-image', {
-                method: 'POST',
-                headers: { Authorization: `Bearer ${token}` },
-                body: formData
-            });
+        const formData = new FormData();
+        formData.append('file', file);
+        console.log('FormData prepared:', formData.get('file'));
 
-            await fetchDriverInfo();
-        } catch (err) {
-            setError(err.message);
-        } finally {
-            setIsUploading(false);
-        }
-    };
+        const token = await user.getIdToken(true);
+        console.log('Firebase token retrieved:', token);
+
+        const response = await fetch('https://jio-yatri-driver.onrender.com/api/upload/profile-image', {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}` },
+            body: formData
+        });
+        console.log('Upload request sent, status:', response.status);
+
+        const result = await response.json();
+        console.log('Upload response JSON:', result);
+
+        await fetchDriverInfo();
+        console.log('Driver info refreshed after upload');
+    } catch (err) {
+        console.error('Upload error:', err);
+        setError(err.message);
+    } finally {
+        setIsUploading(false);
+        console.log('Upload process finished');
+    }
+};
+
 
     const handleLogout = async () => {
         try {
