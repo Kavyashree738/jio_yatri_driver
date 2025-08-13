@@ -119,35 +119,52 @@ exports.getFile = async (req, res) => {
 };
 
 exports.uploadProfileImage = async (req, res) => {
+  console.log('--- uploadProfileImage called ---');
+  
   if (!req.file) {
+    console.warn('No file uploaded');
     return res.status(400).json({ error: 'No file uploaded' });
   }
+  console.log('File received:', req.file.originalname, req.file.mimetype, req.file.size, 'bytes');
 
   const session = await mongoose.startSession();
   session.startTransaction();
+  console.log('MongoDB session started');
 
   try {
     const gfs = await gfsPromise;
-    const userId = req.user.uid;
+    console.log('GridFS initialized:', !!gfs);
 
-    // 1. Find and delete all existing profile images
+    const userId = req.user.uid;
+    console.log('User ID:', userId);
+
+    // 1. Find existing profile images
     const existingFiles = await gfs.find({
       'metadata.userId': userId,
       'metadata.docType': 'profile'
     }).toArray();
+    console.log('Existing profile images found:', existingFiles.length);
+
+    if (existingFiles.length) {
+      console.log('Deleting existing files:', existingFiles.map(f => f._id));
+    }
 
     await Promise.all([
-      ...existingFiles.map(file => gfs.delete(file._id)),
+      ...existingFiles.map(file => {
+        console.log('Deleting file:', file._id);
+        return gfs.delete(file._id);
+      }),
       Driver.updateOne(
         { userId },
         { $unset: { profileImage: 1 } },
         { session }
-      )
+      ).then(() => console.log('Driver profileImage unset'))
     ]);
 
     // 2. Upload new image
     const sanitizedFilename = req.file.originalname.replace(/[^a-zA-Z0-9.-]/g, '');
     const filename = `profile_${userId}_${Date.now()}_${sanitizedFilename}`;
+    console.log('Sanitized filename:', filename);
 
     const uploadStream = gfs.openUploadStream(filename, {
       metadata: {
@@ -158,31 +175,42 @@ exports.uploadProfileImage = async (req, res) => {
         uploadDate: new Date()
       }
     });
+    console.log('Upload stream created');
 
     uploadStream.end(req.file.buffer);
+    console.log('File buffer written to upload stream');
 
     // Wait for upload to complete
     const fileId = await new Promise((resolve, reject) => {
-      uploadStream.on('finish', () => resolve(uploadStream.id));
-      uploadStream.on('error', reject);
+      uploadStream.on('finish', () => {
+        console.log('Upload finished, file ID:', uploadStream.id);
+        resolve(uploadStream.id);
+      });
+      uploadStream.on('error', (err) => {
+        console.error('Upload stream error:', err);
+        reject(err);
+      });
     });
 
-    // 3. Get the uploaded file to include in response
+    // 3. Get the uploaded file to confirm
     const fileData = await gfs.find({ _id: fileId }).toArray();
+    console.log('Uploaded file retrieved:', fileData.length ? fileData[0]._id : 'None');
     if (!fileData.length) {
       throw new Error('Failed to retrieve uploaded file');
     }
 
     // 4. Update driver with new image reference
-    await Driver.findOneAndUpdate(
+    const updatedDriver = await Driver.findOneAndUpdate(
       { userId },
       { profileImage: fileId },
       { session, upsert: true, new: true }
     );
+    console.log('Driver updated with new profileImage:', updatedDriver.profileImage);
 
     await session.commitTransaction();
+    console.log('Transaction committed');
 
-    // 5. Return both the file info and the image URL
+    // 5. Return success
     res.status(201).json({
       success: true,
       fileId,
@@ -190,6 +218,7 @@ exports.uploadProfileImage = async (req, res) => {
       mimetype: req.file.mimetype,
       imageUrl: `https://jio-yatri-driver.onrender.com/api/upload/profile-image/${userId}?ts=${Date.now()}`
     });
+    console.log('Response sent successfully');
 
   } catch (err) {
     await session.abortTransaction();
@@ -197,6 +226,7 @@ exports.uploadProfileImage = async (req, res) => {
     res.status(500).json({ error: 'Failed to update profile image' });
   } finally {
     session.endSession();
+    console.log('MongoDB session ended');
   }
 };
 
