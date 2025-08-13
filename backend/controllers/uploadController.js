@@ -188,7 +188,7 @@ exports.uploadProfileImage = async (req, res) => {
       fileId,
       filename,
       mimetype: req.file.mimetype,
-      imageUrl: `/api/upload/profile-image/${userId}?ts=${Date.now()}`
+      imageUrl: `https://jio-yatri-driver.onrender.com/api/upload/profile-image/${userId}?ts=${Date.now()}`
     });
 
   } catch (err) {
