@@ -352,27 +352,40 @@ const DriverDashboard = () => {
                 <div className="dd-profile">
                     <div className="dd-profile-card">
                         <div className="dd-profile-header">
-                            <div className="dd-avatar">
-                                {isUploading ? (
-                                    <div className="dd-spinner"></div>
-                                ) : profileImage ? (
-                                    <img
-                                        src={profileImage}
-                                        className="dd-profile-image"
-                                        onClick={() => fileInputRef.current.click()}
-                                    />
-                                ) : (
-                                    <FaUser className="dd-default-avatar" />
-                                )}
-                                <input
-                                    ref={fileInputRef}
-                                    type="file"
-                                    accept="image/*"
-                                    style={{ display: 'none' }}
-                                    onChange={handleImageUpload}
-                                    disabled={isUploading}
-                                />
-                            </div>
+                        <div className="dd-avatar">
+  {isUploading ? (
+    <div className="dd-spinner"></div>
+  ) : profileImage ? (
+    <img
+      src={profileImage}
+      className="dd-profile-image"
+      alt="Profile"
+      onClick={() => fileInputRef.current.click()} // Make avatar clickable
+      style={{ cursor: 'pointer' }} // Shows pointer on hover
+    />
+  ) : (
+    <FaUser
+      className="dd-default-avatar"
+      onClick={() => fileInputRef.current.click()} // Make default avatar clickable
+      style={{ cursor: 'pointer' }}
+    />
+  )}
+
+  <input
+    ref={(ref) => {
+      fileInputRef.current = ref;
+      console.log('File input ref set:', ref);
+    }}
+    type="file"
+    accept="image/*"
+    style={{ display: 'none' }}
+    onChange={(e) => {
+      handleImageUpload(e);
+    }}
+    disabled={isUploading}
+  />
+</div>
+
                             <h2>{driverInfo.name}</h2>
                             {renderRatingStars()}
                         </div>
