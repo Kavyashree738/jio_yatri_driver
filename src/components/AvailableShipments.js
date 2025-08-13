@@ -88,7 +88,7 @@ function AvailableShipments() {
       const user = auth.currentUser;
 
       if (!user) {
-        toast.warning("Please log in to view shipments");
+    
         setLoading(false);
         return;
       }
@@ -109,7 +109,7 @@ function AvailableShipments() {
       }
     } catch (error) {
       console.error('Error fetching data:', error);
-      toast.error('Failed to load data. Please try again.');
+    
     } finally {
       setLoading(false);
     }
@@ -172,7 +172,7 @@ function AvailableShipments() {
         navigator.geolocation.getCurrentPosition(resolve, reject, options);
       }).catch(error => {
         console.error("Geolocation error:", error);
-        toast.error("Could not get your location. Please enable location services.");
+       
         throw error;
       });
 
@@ -201,7 +201,7 @@ function AvailableShipments() {
       fetchData();
     } catch (error) {
       console.error('Error accepting shipment:', error);
-      toast.error(error.response?.data?.message || 'Error accepting shipment');
+   
     }
   };
 
@@ -317,3 +317,4 @@ function AvailableShipments() {
 }
 
 export default AvailableShipments;
+
