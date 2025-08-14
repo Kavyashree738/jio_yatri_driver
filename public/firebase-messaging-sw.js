@@ -19,7 +19,7 @@ messaging.onBackgroundMessage((payload) => {
   const { title, body } = payload.notification;
   const notificationOptions = {
     body,
-    icon: '/logo192.png'
+    icon: '/newlogo.png'
   };
   self.registration.showNotification(title, notificationOptions);
 });
@@ -37,8 +37,9 @@ self.addEventListener('notificationclick', (event) => {
         }
       }
       if (clients.openWindow) {
-        return clients.openWindow('/shipments');
+        return clients.openWindow('/orders');
       }
     })
   );
+
 });
