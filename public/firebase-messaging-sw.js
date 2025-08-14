@@ -19,7 +19,7 @@ messaging.onBackgroundMessage((payload) => {
   const { title, body } = payload.notification;
   const notificationOptions = {
     body,
-    icon: '/newlogo.png'
+    icon: '/newlogo.jpg'
   };
   self.registration.showNotification(title, notificationOptions);
 });
@@ -43,3 +43,4 @@ self.addEventListener('notificationclick', (event) => {
   );
 
 });
+
