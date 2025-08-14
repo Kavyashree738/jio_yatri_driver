@@ -68,16 +68,24 @@ const sendTokenToBackend = async (token) => {
     console.error("Failed to send FCM token:", error);
   }
 };
-
-
-export const setupForegroundNotifications = () => {
-  if (!messaging) return;
+export const setupForegroundNotifications = async () => {
+  if (!messaging) {
+    messaging = await initMessaging();
+    if (!messaging) return;
+  }
 
   onMessage(messaging, (payload) => {
-    console.log("Foreground message:", payload);
-    const { title, body } = payload.notification;
-    
-    // You can use a notification library here
-    new Notification(title, { body });
+    console.log("📩 Foreground FCM Message:", payload);
+    const { title, body } = payload.notification || {};
+
+    if (title && body) {
+      new Notification(title, {
+        body,
+        icon: '/logo.jpg'
+      });
+
+      const audio = new Audio('/notification.wav');
+      audio.play().catch(err => console.warn("Sound blocked:", err));
+    }
   });
 };
