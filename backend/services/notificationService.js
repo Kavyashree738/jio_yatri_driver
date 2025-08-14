@@ -79,6 +79,7 @@ const notifyNewShipment = async (driverId, shipment) => {
     const result = await sendNotificationToDriver(driverId, title, body, {
       shipmentId: shipment._id.toString(),
       type: 'NEW_SHIPMENT',
+      icon: '/logo.jpg', 
     });
 
     console.log('[NOTIFY] Notification result:', result);
@@ -93,5 +94,6 @@ module.exports = {
   sendNotificationToDriver,
   notifyNewShipment
 };
+
 
 
