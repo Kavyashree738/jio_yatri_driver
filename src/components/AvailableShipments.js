@@ -25,46 +25,34 @@ function AvailableShipments() {
     setIsMobile(checkIfMobile());
   }, []);
 
-  useEffect(() => {
-    const setupNotificationsAndData = async () => {
-      try {
-        await initializeFCM();
-        setupForegroundNotifications();
-
-        if ('Notification' in window) {
-          setNotificationPermission(Notification.permission);
-        }
-
-        await fetchData();
-        const intervalId = setInterval(fetchData, 10000);
-        return () => clearInterval(intervalId);
-      } catch (error) {
-        console.error('Initialization error:', error);
-        setLoading(false);
+useEffect(() => {
+  const setupNotificationsAndData = async () => {
+    try {
+      await initializeFCM();
+      if (Notification.permission === 'granted') {
+        await setupForegroundNotifications();
       }
-    };
+      await fetchData();
+      const intervalId = setInterval(fetchData, 10000);
+      return () => clearInterval(intervalId);
+    } catch (error) {
+      console.error('Initialization error:', error);
+      setLoading(false);
+    }
+  };
 
-    setupNotificationsAndData();
-  }, []);
+  setupNotificationsAndData();
+}, []);
+
 
   const handleEnableNotifications = async () => {
-    try {
-      if (!('Notification' in window)) {
-        toast.warn("Notifications not supported in this browser");
-        return;
-      }
+    const token = await requestNotificationPermission();
+    setNotificationPermission(Notification.permission);
 
-      const permission = await requestNotificationPermission();
-      setNotificationPermission(permission);
-
-      if (permission === 'granted') {
-        toast.success("Notifications enabled successfully");
-      } else if (permission === 'denied') {
-        setShowInstructions(true);
-      }
-    } catch (error) {
-      console.error("Error enabling notifications:", error);
-      toast.error("Failed to enable notifications");
+    if (token) {
+      toast.success("Notifications enabled successfully");
+    } else {
+      setShowInstructions(true);
     }
   };
 
@@ -317,4 +305,5 @@ function AvailableShipments() {
 }
 
 export default AvailableShipments;
+
 
