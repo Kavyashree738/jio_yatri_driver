@@ -98,6 +98,7 @@
 const admin = require('firebase-admin');
 const Driver = require('../models/Driver');
 const Shop=require('../models/CategoryModel')
+const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
 // Initialize Firebase Admin SDK
 if (!admin.apps.length) {
   console.log('[INIT] Initializing Firebase Admin SDK...');
