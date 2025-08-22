@@ -35,25 +35,25 @@ export default function BusinessOrders({ shopId }) {
             let url;
             if (resolvedShopId) {
                 url = `${apiBase}/api/orders/shop/${resolvedShopId}`;
-                console.log('[BusinessOrders] Loading orders for shop:', resolvedShopId);
+                // console.log('[BusinessOrders] Loading orders for shop:', resolvedShopId);
             } else {
                 if (!user?.uid) {
-                    console.error('[BusinessOrders] Missing owner id for aggregate orders');
+                    // console.error('[BusinessOrders] Missing owner id for aggregate orders');
                     throw new Error('Missing owner id');
                 }
                 url = `${apiBase}/api/orders/owner/${user.uid}`;
-                console.log('[BusinessOrders] Loading orders for owner:', user.uid);
+                // console.log('[BusinessOrders] Loading orders for owner:', user.uid);
             }
 
-            console.log('[BusinessOrders] Making GET request to:', url);
+            // console.log('[BusinessOrders] Making GET request to:', url);
             const res = await axios.get(url);
-            console.log('[BusinessOrders] Response received:', {
-                status: res.status,
-                dataCount: res.data?.data?.length || 0
-            });
+            // console.log('[BusinessOrders] Response received:', {
+            //     status: res.status,
+            //     dataCount: res.data?.data?.length || 0
+            // });
 
             setOrders(res.data.data || []);
-            console.log('[BusinessOrders] Orders state updated with', res.data.data?.length || 0, 'orders');
+            // console.log('[BusinessOrders] Orders state updated with', res.data.data?.length || 0, 'orders');
         } catch (e) {
             console.error('[BusinessOrders] Error loading orders:', {
                 status: e?.response?.status,
@@ -69,37 +69,37 @@ export default function BusinessOrders({ shopId }) {
 
     // Load when we have either a shopId or (for aggregate) the user id
     useEffect(() => {
-        console.log('[BusinessOrders] useEffect triggered for load', {
-            resolvedShopId,
-            userId: user?.uid
-        });
+        // console.log('[BusinessOrders] useEffect triggered for load', {
+        //     resolvedShopId,
+        //     userId: user?.uid
+        // });
 
         if (resolvedShopId || user?.uid) {
-            console.log('[BusinessOrders] Conditions met, calling load()');
+            // console.log('[BusinessOrders] Conditions met, calling load()');
             load();
         } else {
-            console.log('[BusinessOrders] Conditions not met, not loading orders');
+            // console.log('[BusinessOrders] Conditions not met, not loading orders');
         }
     }, [resolvedShopId, user?.uid]);
 
     // FCM useEffect - Fixed version
     useEffect(() => {
-        console.log('[BusinessOrders] FCM useEffect triggered', { resolvedShopId });
+        // console.log('[BusinessOrders] FCM useEffect triggered', { resolvedShopId });
 
         const initializeFCMForAllShops = async () => {
             try {
                 if (resolvedShopId) {
                     // Single shop view - initialize for this specific shop
-                    console.log('[BusinessOrders] Initializing FCM for shopId:', resolvedShopId);
+                    // console.log('[BusinessOrders] Initializing FCM for shopId:', resolvedShopId);
                     await initializeOwnerFCM(resolvedShopId);
                 } else if (user?.uid) {
                     // Aggregate view - initialize for ALL shops owned by this user
-                    console.log('[BusinessOrders] Loading shops for user:', user.uid);
+                    // console.log('[BusinessOrders] Loading shops for user:', user.uid);
 
                     const shopsResponse = await axios.get(`${apiBase}/api/shops/owner/${user.uid}`);
                     const shops = shopsResponse.data?.data || []; // FIX: Access the data property
 
-                    console.log('[BusinessOrders] Found shops for user:', shops.length, shops);
+                    // console.log('[BusinessOrders] Found shops for user:', shops.length, shops);
 
                     // Check if shops is actually an array before iterating
                     if (Array.isArray(shops) && shops.length > 0) {
@@ -109,11 +109,11 @@ export default function BusinessOrders({ shopId }) {
                             await initializeOwnerFCM(shop._id);
                         }
                     } else {
-                        console.log('[BusinessOrders] No shops found or shops is not an array');
+                        // console.log('[BusinessOrders] No shops found or shops is not an array');
                     }
                 }
             } catch (error) {
-                console.error('[BusinessOrders] FCM initialization error:', error);
+                // console.error('[BusinessOrders] FCM initialization error:', error);
             }
         };
 
@@ -122,44 +122,44 @@ export default function BusinessOrders({ shopId }) {
     // Debug first order
     useEffect(() => {
         if (Array.isArray(orders) && orders.length) {
-            console.log('[BusinessOrders] Orders updated. First order:', {
-                orderId: orders[0]?._id,
-                shopId: orders[0]?.shop?._id,
-                status: orders[0]?.status,
-                paymentStatus: orders[0]?.payment?.status
-            });
+            // console.log('[BusinessOrders] Orders updated. First order:', {
+            //     orderId: orders[0]?._id,
+            //     shopId: orders[0]?.shop?._id,
+            //     status: orders[0]?.status,
+            //     paymentStatus: orders[0]?.payment?.status
+            // });
         } else {
-            console.log('[BusinessOrders] Orders updated. No orders or empty array');
+            // console.log('[BusinessOrders] Orders updated. No orders or empty array');
         }
     }, [orders]);
 
     // Actions
     const acceptOrder = async (id) => {
         try {
-            console.log('[BusinessOrders] Accepting order:', id);
+            // console.log('[BusinessOrders] Accepting order:', id);
             setBusy(id);
             const url = `${apiBase}/api/orders/${id}/status`;
             const payload = { status: 'accepted' };
-            console.log('[BusinessOrders] Making PATCH request to:', url, 'with payload:', payload);
+            // console.log('[BusinessOrders] Making PATCH request to:', url, 'with payload:', payload);
 
             const res = await axios.patch(url, payload);
-            console.log('[BusinessOrders] Order accepted successfully:', {
-                status: res.status,
-                data: res.data?.data
-            });
+            // console.log('[BusinessOrders] Order accepted successfully:', {
+            //     status: res.status,
+            //     data: res.data?.data
+            // });
 
             // Optimistic local update
             setOrders((prev) => {
                 const updatedOrders = prev.map((o) => (o._id === id ? { ...o, status: 'accepted' } : o));
-                console.log('[BusinessOrders] Orders after optimistic update:', updatedOrders);
+                // console.log('[BusinessOrders] Orders after optimistic update:', updatedOrders);
                 return updatedOrders;
             });
         } catch (e) {
-            console.error('[BusinessOrders] Error accepting order:', {
-                status: e?.response?.status,
-                data: e?.response?.data,
-                message: e.message
-            });
+            // console.error('[BusinessOrders] Error accepting order:', {
+            //     status: e?.response?.status,
+            //     data: e?.response?.data,
+            //     message: e.message
+            // });
             alert(e.response?.data?.error || 'Failed to accept order');
         } finally {
             setBusy(null);
@@ -169,46 +169,46 @@ export default function BusinessOrders({ shopId }) {
 
     const markPaymentDone = async (id) => {
         try {
-            console.log('[BusinessOrders] Marking payment done for order:', id);
+            // console.log('[BusinessOrders] Marking payment done for order:', id);
             setBusy(id);
             const url = `${apiBase}/api/orders/${id}/payment`;
             const payload = { status: 'paid', method: 'cod' };
-            console.log('[BusinessOrders] Making PATCH request to:', url, 'with payload:', payload);
+            // console.log('[BusinessOrders] Making PATCH request to:', url, 'with payload:', payload);
 
             const res = await axios.patch(url, payload);
-            console.log('[BusinessOrders] Payment marked successfully:', {
-                status: res.status,
-                data: res.data?.data
-            });
+            // console.log('[BusinessOrders] Payment marked successfully:', {
+            //     status: res.status,
+            //     data: res.data?.data
+            // });
 
             const updated = res.data?.data;
             if (updated) {
-                console.log('[BusinessOrders] Updating orders with complete response data');
+                // console.log('[BusinessOrders] Updating orders with complete response data');
                 setOrders((prev) => {
                     const updatedOrders = prev.map((o) => (o._id === id ? updated : o));
-                    console.log('[BusinessOrders] Orders after update:', updatedOrders);
+                    // console.log('[BusinessOrders] Orders after update:', updatedOrders);
                     return updatedOrders;
                 });
             } else {
-                console.log('[BusinessOrders] Updating orders with partial payment data');
+                // console.log('[BusinessOrders] Updating orders with partial payment data');
                 setOrders((prev) => {
                     const updatedOrders = prev.map((o) =>
                         o._id === id ? { ...o, payment: { ...(o.payment || {}), status: 'paid' } } : o
                     );
-                    console.log('[BusinessOrders] Orders after partial update:', updatedOrders);
+                    // console.log('[BusinessOrders] Orders after partial update:', updatedOrders);
                     return updatedOrders;
                 });
             }
         } catch (e) {
-            console.error('[BusinessOrders] Error marking payment done:', {
-                status: e?.response?.status,
-                data: e?.response?.data,
-                message: e.message
-            });
+            // console.error('[BusinessOrders] Error marking payment done:', {
+            //     status: e?.response?.status,
+            //     data: e?.response?.data,
+            //     message: e.message
+            // });
             alert(e.response?.data?.error || 'Failed to update payment');
         } finally {
             setBusy(null);
-            console.log('[BusinessOrders] Mark payment done process completed');
+            // console.log('[BusinessOrders] Mark payment done process completed');
         }
     };
 
@@ -226,19 +226,19 @@ export default function BusinessOrders({ shopId }) {
 
 
     const title = resolvedShopId ? 'Incoming Orders' : 'All Incoming Orders';
-    console.log('[BusinessOrders] Rendering with title:', title);
+    // console.log('[BusinessOrders] Rendering with title:', title);
 
     if (!resolvedShopId && !user?.uid) {
-        console.log('[BusinessOrders] Rendering: Please sign in to view your orders.');
+        // console.log('[BusinessOrders] Rendering: Please sign in to view your orders.');
         return <div className="bo">Please sign in to view your orders.</div>;
     }
 
     if (loading) {
-        console.log('[BusinessOrders] Rendering: Loading state');
+        // console.log('[BusinessOrders] Rendering: Loading state');
         return <div className="bo">Loading…</div>;
     }
 
-    console.log('[BusinessOrders] Rendering main component with', visibleOrders.length, 'visible orders');
+    // console.log('[BusinessOrders] Rendering main component with', visibleOrders.length, 'visible orders');
 
     return (
         <>
