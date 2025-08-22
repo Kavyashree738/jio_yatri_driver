@@ -1,6 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const { registerDriver, checkDriverExists, getDriver, updateDriverStatus, getDriverStatus, updateDriverLocation, getDriverLocation, getAvailableShipments, registerFCMToken, incrementCompletedDeliveries, getAllDriversWithDocuments, verifyDriver,getDocumentStatus } = require('../controllers/driverController');
+const { registerDriver, checkDriverExists, getDriver, updateDriverStatus, getDriverStatus, updateDriverLocation, getDriverLocation, getAvailableShipments, registerFCMToken, incrementCompletedDeliveries, getAllDriversWithDocuments, verifyDriver,getDocumentStatus,getOwnerDashboard,getDailySummary ,settlePayment,bulkSettlePayments, applyReferral,
+  getReferralCode,
+  getReferralStats,updateDriverLocationRegular,getLocationStatus,
+  getReferralLeaderboard} = require('../controllers/driverController');
 const verifyFirebaseToken = require('../middleware/verifyFirebaseToken');
 
 router.get('/check/:userId', verifyFirebaseToken, checkDriverExists);
