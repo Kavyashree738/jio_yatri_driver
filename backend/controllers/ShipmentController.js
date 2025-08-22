@@ -582,4 +582,60 @@ exports.getDriverHistory = async (req, res) => {
 };
 
 
+// exports.getShipmentById = async (req, res) => {
+//   try {
+//     const shipment = await Shipment.findById(req.params.id);
+//     if (!shipment) {
+//       return res.status(404).json({ message: 'Shipment not found' });
+//     }
+//     res.status(200).json(shipment);
+//   } catch (error) {
+//     console.error('Error fetching shipment:', error);
+//     res.status(500).json({ message: 'Server error' });
+//   }
+// };
+
+
+exports.getShipmentById = async (req, res) => {
+  const id = req.params.id;
+
+  // Validate MongoDB ObjectId before querying
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(400).json({ message: 'Invalid shipment ID format' });
+  }
+
+  try {
+    const shipment = await Shipment.findById(id)
+      .select({
+        _id: 1,
+        status: 1,
+        'driverLocation.coordinates': 1,
+        'sender.address.coordinates': 1,
+        'receiver.address.coordinates': 1,
+      })
+      .lean();
+
+    if (!shipment) {
+      return res.status(404).json({ message: 'Shipment not found' });
+    }
+
+    res.status(200).json(shipment);
+  } catch (error) {
+    console.error('Error fetching shipment:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+exports.getShopShipments = async (req, res) => {
+  try {
+    const { shopId } = req.params;
+    const shipments = await Shipment.find({ shopId })
+      .populate('shopId', 'name phone address')
+      .sort({ createdAt: -1 });
+
+    res.json(shipments);
+  } catch (error) {
+    console.error('Error fetching shop shipments:', error);
+    res.status(500).json({ message: 'Failed to fetch shop shipments' });
+  }
+};
 
