@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { debounce } from 'lodash';
+import debounce from 'lodash/debounce';
 import '../styles/LocationTracker.css';
 import axios from 'axios';
 import { toast } from 'react-toastify';
