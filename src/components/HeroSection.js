@@ -1,5 +1,3 @@
-// 
-
 import React, { useState, useEffect } from 'react';
 import { motion, useAnimation } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
@@ -611,7 +609,7 @@ const HeroSection = () => {
             // OPTIONAL: if you want to prefill driver fields after a positive check:
             if (isRegistered && role === 'driver') {
                 const res2 = await fetch(
-                    `https://jio-yatri-driver.onrender.com/api/driver/profile/${u.uid}`, // or your existing driver GET endpoint
+                    `http://localhost:5000/api/driver/profile/${u.uid}`, // or your existing driver GET endpoint
                     { headers: { Authorization: `Bearer ${token}` } }
                 );
                 if (res2.ok) {
