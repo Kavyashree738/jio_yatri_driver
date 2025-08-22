@@ -102,7 +102,7 @@ const Shop=require('../models/CategoryModel')
 if (!admin.apps.length) {
   console.log('[INIT] Initializing Firebase Admin SDK...');
   admin.initializeApp({
-    credential: admin.credential.cert(require('../config/firebase-service-account.json')),
+    credential: admin.credential.cert(serviceAccount),
   });
   console.log('[INIT] Firebase Admin initialized');
 } else {
