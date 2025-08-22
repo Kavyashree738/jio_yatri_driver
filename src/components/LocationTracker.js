@@ -149,6 +149,17 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
     lng: activeShipment?.receiver?.address?.coordinates?.lng,
   }), [activeShipment]);
 
+    const handleViewFullMap = () => {
+    navigate('/full-map', {
+      state: {
+        currentLocation: location,
+        heading,
+        senderLatLng,
+        receiverLatLng
+      }
+    });
+  };
+
   const initMap = useCallback(() => {
     if (!activeShipment || !mapContainerRef.current || mapRef.current) return;
 
@@ -330,7 +341,7 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
       if (onStatusUpdate) onStatusUpdate('cancelled');
       mapRef.current = null;
       toast.success("Shipment cancelled successfully");
-      
+
       // Reload the page after 2 seconds to show updated shipments
       setTimeout(() => {
         window.location.reload();
@@ -353,7 +364,7 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
       if (onStatusUpdate) onStatusUpdate('delivered');
       mapRef.current = null;
       toast.success("Shipment delivered successfully!");
-      
+
       // Reload the page after 2 seconds to show updated shipments
       setTimeout(() => {
         window.location.reload();
@@ -384,6 +395,13 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
         <button onClick={handleRecenter} className="recenter-button">📍</button>
       </div>
 
+      <button
+        onClick={handleViewFullMap}
+        className="fullscreen-button"
+        aria-label="View full screen map"
+      >
+        <span className="button-icon">🗺️</span> View Full Map
+      </button>
       <EtaDisplay
         etaToSender={etaToSender}
         etaToReceiver={etaToReceiver}

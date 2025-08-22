@@ -48,7 +48,7 @@
 }
 
 .hero-text {
-  /* flex: 1 1 400px; */
+  flex: 1 1 400px;
   text-align: left;
   padding: 20px;
   color: white;
@@ -1980,636 +1980,84 @@ progress::-webkit-progress-value {
     margin-left: 2px;
   }
 }
-/* Add these styles to your HeroSection.css or relevant CSS file */
+/* ===== Role Selection (Light Theme) ===== */
+.role-selection-container {
+  background: #ffffff;
+  color: #111111;
+  border-radius: 16px;
+  padding: 24px;
+  border: 1px solid #e5e7eb; /* subtle gray */
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  text-align: center;
+}
 
-/* Step 3 specific styles */
-.registration-substep-3 {
+.role-selection-container h3 {
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin-bottom: 20px;
+  color: #111111;
+}
+
+/* Options layout */
+.role-options {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 640px) {
+  .role-options {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Each card button */
+.role-option {
+  background: #ffffff;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 20px;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.25s ease;
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
-  width: 100%;
+  align-items: center;
 }
 
-.registration-substep-3 .form-group {
-  margin-bottom: 1.5rem;
+.role-option .role-icon {
+  font-size: 32px;
+  margin-bottom: 12px;
+  color: #2563eb; /* blue accent for icons */
 }
 
-.registration-substep-3 label {
-  display: block;
-  margin-bottom: 0.5rem;
+.role-option span {
+  font-size: 1rem;
   font-weight: 600;
-  color: #333;
+  margin-bottom: 6px;
+  color: #111111;
 }
 
-.registration-substep-3 .phone-input-container {
-  width: 100%;
-  margin-bottom: 1rem;
+.role-option p {
+  font-size: 0.9rem;
+  color: #555555;
+  line-height: 1.4;
 }
 
-.registration-substep-3 .phone-input {
-  width: 100%;
-  padding: 0.8rem 1rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 1rem;
+/* Hover / Active states */
+.role-option:hover {
+  border-color: #2563eb;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+  transform: translateY(-2px);
 }
 
-/* Document upload styles for step 3 */
-.registration-substep-3 .document-upload-row {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  margin-bottom: 1rem;
-  flex-wrap: wrap;
+.role-option:active {
+  transform: translateY(0);
+  box-shadow: 0 3px 8px rgba(0,0,0,0.1);
 }
 
-.registration-substep-3 .document-upload-group {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.registration-substep-3 .document-label {
-  font-weight: 500;
-  color: #555;
-}
-
-.registration-substep-3 .document-upload-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.5rem 1rem;
-  background-color: #f0f0f0;
-  border: 1px dashed #999;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.registration-substep-3 .document-upload-btn:hover {
-  background-color: #e0e0e0;
-}
-
-.registration-substep-3 .upload-icon {
-  margin-right: 0.5rem;
-}
-
-.registration-substep-3 .uploaded-indicator {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  color: #4CAF50;
-  font-weight: 500;
-}
-
-.registration-substep-3 .uploaded-icon {
-  font-size: 1.2rem;
-}
-
-/* Progress bar styles */
-.registration-substep-3 progress {
-  width: 100%;
-  height: 6px;
-  border-radius: 3px;
-  margin-top: 0.5rem;
-}
-
-/* Form navigation buttons */
-.registration-substep-3 .form-navigation {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 2rem;
-}
-
-.registration-substep-3 .prev-btn,
-.registration-substep-3 .submit-btn {
-  padding: 0.8rem 1.5rem;
-  border-radius: 4px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.registration-substep-3 .prev-btn {
-  background-color: #f0f0f0;
-  color: #333;
-  border: 1px solid #ddd;
-}
-
-.registration-substep-3 .prev-btn:hover {
-  background-color: #e0e0e0;
-}
-
-.registration-substep-3 .submit-btn {
-  background-color: #4CAF50;
-  color: white;
-  border: none;
-}
-
-.registration-substep-3 .submit-btn:hover {
-  background-color: #3e8e41;
-}
-
-.registration-substep-3 .submit-btn:disabled {
-  background-color: #cccccc;
-  cursor: not-allowed;
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .registration-substep-3 {
-    padding: 1rem;
-  }
-  
-  .registration-substep-3 .form-group {
-    margin-bottom: 1rem;
-  }
-  
-  .registration-substep-3 .document-upload-row {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  
-  .registration-substep-3 .form-navigation {
-    flex-direction: column;
-    gap: 1rem;
-  }
-  
-  .registration-substep-3 .prev-btn,
-  .registration-substep-3 .submit-btn {
-    width: 100%;
-  }
-}
-
-@media (max-width: 480px) {
-  .registration-substep-3 .phone-input {
-    font-size: 0.9rem;
-    padding: 0.7rem 0.9rem;
-  }
-  
-  .registration-substep-3 label {
-    font-size: 0.9rem;
-  }
-  
-  .registration-substep-3 .document-label {
-    font-size: 0.9rem;
-  }
-}
-
-/* Add this to your existing CSS or replace the relevant sections */
-
-/* Step 3 Specific Styles */
-.registration-substep-3 {
-  width: 100%;
-  max-width: 500px;
-  margin: 0 auto;
-  padding: 1rem;
-}
-
-.registration-substep-3 .form-group {
-  margin-bottom: 1.5rem;
-}
-
-/* Responsive Phone Input Container */
-.registration-substep-3 .phone-input-container {
-  width: 100%;
-  margin-bottom: 1rem;
-}
-
-.registration-substep-3 .phone-input {
-  width: 100%;
-  padding: 0.8rem 1rem;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  font-size: 1rem;
-  transition: all 0.3s ease;
-}
-
-.registration-substep-3 .phone-input:focus {
-  border-color: #0044FF;
-  box-shadow: 0 0 0 2px rgba(0, 68, 255, 0.2);
+.role-option:focus-visible {
   outline: none;
-}
-
-/* Document Upload Responsive Styles */
-.registration-substep-3 .document-upload-row {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-}
-
-.registration-substep-3 .document-upload-group {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.registration-substep-3 .document-label {
-  font-weight: 500;
-  color: #555;
-  font-size: 0.9rem;
-  flex: 1;
-}
-
-.registration-substep-3 .document-upload-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.5rem 1rem;
-  background-color: #f5f5f5;
-  border: 1px dashed #999;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  min-width: 120px;
-}
-
-.registration-substep-3 .document-upload-btn:hover {
-  background-color: #e0e0e0;
-}
-
-.registration-substep-3 .upload-icon {
-  margin-right: 0.5rem;
-  color: #0044FF;
-}
-
-.registration-substep-3 .uploaded-indicator {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  color: #2E7D32;
-  font-weight: 500;
-  font-size: 0.9rem;
-}
-
-/* Progress Bar */
-.registration-substep-3 progress {
-  width: 100%;
-  height: 6px;
-  border-radius: 3px;
-  margin-top: 0.5rem;
-}
-
-/* Form Navigation Buttons - Responsive */
-.registration-substep-3 .form-navigation {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  margin-top: 1.5rem;
-}
-
-.registration-substep-3 .prev-btn,
-.registration-substep-3 .submit-btn {
-  padding: 0.8rem;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  width: 100%;
-  text-align: center;
-}
-
-.registration-substep-3 .prev-btn {
-  background-color: #f5f5f5;
-  color: #333;
-  border: 1px solid #ddd;
-}
-
-.registration-substep-3 .prev-btn:hover {
-  background-color: #e0e0e0;
-}
-
-.registration-substep-3 .submit-btn {
-  background-color: #0044FF;
-  color: white;
-  border: none;
-}
-
-.registration-substep-3 .submit-btn:hover {
-  background-color: #0033CC;
-}
-
-.registration-substep-3 .submit-btn:disabled {
-  background-color: #cccccc;
-  cursor: not-allowed;
-}
-
-/* Responsive Adjustments */
-@media (min-width: 480px) {
-  .registration-substep-3 {
-    padding: 1.5rem;
-  }
-  
-  .registration-substep-3 .document-upload-row {
-    flex-direction: row;
-    align-items: center;
-  }
-  
-  .registration-substep-3 .form-navigation {
-    flex-direction: row;
-    justify-content: space-between;
-  }
-  
-  .registration-substep-3 .prev-btn,
-  .registration-substep-3 .submit-btn {
-    width: auto;
-    padding: 0.8rem 1.5rem;
-  }
-  
-  .registration-substep-3 .prev-btn {
-    order: 1;
-  }
-  
-  .registration-substep-3 .submit-btn {
-    order: 2;
-  }
-}
-
-@media (min-width: 768px) {
-  .registration-substep-3 {
-    max-width: 600px;
-    padding: 2rem;
-  }
-  
-  .registration-substep-3 .document-label {
-    font-size: 1rem;
-  }
-}
-
-/* Fix for PhoneInput component */
-.react-tel-input .form-control {
-  width: 100% !important;
-  padding-left: 48px !important;
-  padding-top: 12px !important;
-  padding-bottom: 12px !important;
-  font-size: 1rem !important;
-}
-
-.react-tel-input .flag-dropdown {
-  left: 0;
-  top: 0;
-  bottom: 0;
-  border-radius: 8px 0 0 8px !important;
-}
-
-/* Ensure all inputs have consistent styling */
-.registration-substep-3 input[type="text"],
-.registration-substep-3 input[type="tel"],
-.registration-substep-3 input[type="file"] {
-  width: 100%;
-  padding: 0.8rem 1rem;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  font-size: 1rem;
-  transition: all 0.3s ease;
-}
-
-.registration-substep-3 input[type="text"]:focus,
-.registration-substep-3 input[type="tel"]:focus {
-  border-color: #0044FF;
-  box-shadow: 0 0 0 2px rgba(0, 68, 255, 0.2);
-  outline: none;
-}
-
-/* Mobile-specific fixes */
-@media (max-width: 480px) {
-  .registration-substep-3 .phone-input,
-  .registration-substep-3 input[type="text"],
-  .registration-substep-3 input[type="tel"] {
-    padding: 0.75rem 0.9rem;
-    font-size: 0.9rem;
-  }
-  
-  .react-tel-input .form-control {
-    padding-left: 42px !important;
-    padding-top: 10px !important;
-    padding-bottom: 10px !important;
-  }
-  
-  .registration-substep-3 .document-upload-btn {
-    padding: 0.4rem 0.8rem;
-    font-size: 0.9rem;
-  }
-  
-  .registration-substep-3 .uploaded-indicator {
-    font-size: 0.8rem;
-  }
-}
-
-/* Very small screens */
-@media (max-width: 360px) {
-  .registration-substep-3 {
-    padding: 0.75rem;
-  }
-  
-  .registration-substep-3 .phone-input,
-  .registration-substep-3 input[type="text"],
-  .registration-substep-3 input[type="tel"] {
-    padding: 0.7rem 0.8rem;
-  }
-  
-  .react-tel-input .form-control {
-    padding-left: 38px !important;
-  }
-}
-
-/* OTP Container - Responsive */
-.otp-container {
-  display: flex;
-  justify-content: space-between;
-  margin: 1.5rem 0;
-  gap: 0.5rem;
-}
-
-/* OTP Input Boxes - Responsive */
-.otp-input {
-  flex: 1;
-  min-width: 0;
-  height: 3.5rem;
-  text-align: center;
-  font-size: 1.5rem;
-  border: 2px solid #ddd;
-  border-radius: 8px;
-  outline: none;
-  transition: all 0.3s;
-}
-
-.otp-input:focus {
-  border-color: #4a90e2;
-  box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.2);
-}
-
-.otp-input.filled {
-  border-color: #4CAF50;
-}
-
-/* OTP Button - Responsive */
-.otp-button {
-  width: 100%;
-  padding: 1rem;
-  background-color: #4a90e2;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 1rem;
-  font-weight: 500;
-  cursor: pointer;
-  margin: 1rem 0;
-  transition: background-color 0.3s;
-}
-
-.otp-button:hover {
-  background-color: #3a7bc8;
-}
-
-.otp-button:disabled {
-  background-color: #cccccc;
-  cursor: not-allowed;
-}
-
-/* Mobile-specific adjustments */
-@media (max-width: 480px) {
-  .otp-container {
-    gap: 0.3rem;
-    margin: 1rem 0;
-  }
-  
-  .otp-input {
-    height: 2.8rem;
-    font-size: 1.2rem;
-  }
-  
-  .otp-button {
-    padding: 0.8rem;
-    font-size: 0.9rem;
-  }
-}
-
-/* Very small screens */
-@media (max-width: 360px) {
-  .otp-input {
-    height: 2.5rem;
-    font-size: 1rem;
-  }
-  
-  .otp-button {
-    padding: 0.7rem;
-    font-size: 0.85rem;
-  }
-}
-
-/* Text styles for OTP instructions */
-.otp-instructions {
-  color: #666;
-  font-size: 0.9rem;
-  margin-bottom: 1.5rem;
-  text-align: center;
-}
-
-@media (max-width: 480px) {
-  .otp-instructions {
-    font-size: 0.8rem;
-    margin-bottom: 1rem;
-  }
-}
-
-/* Error message styling */
-.otp-error {
-  color: #e74c3c;
-  font-size: 0.9rem;
-  margin-top: -1rem;
-  margin-bottom: 1rem;
-  min-height: 1.2rem;
-  text-align: center;
-}
-
-@media (max-width: 480px) {
-  .otp-error {
-    font-size: 0.8rem;
-  }
-}
-
-/* Resend button styling */
-.resend-button {
-  background: none;
-  border: none;
-  color: #4a90e2;
-  font-size: 0.9rem;
-  cursor: pointer;
-  padding: 0.5rem;
-  border-radius: 6px;
-  transition: all 0.3s;
-  margin-top: 0.5rem;
-}
-
-.resend-button:hover {
-  background-color: #f0f7ff;
-}
-
-@media (max-width: 480px) {
-  .resend-button {
-    font-size: 0.8rem;
-  }
-}
-/* OTP Container */
-.otp-container {
-  display: flex;
-  justify-content: space-between;
-  margin: 1.5rem 0;
-  gap: 0.5rem;
-}
-
-/* OTP Input Boxes - Fixed visibility */
-.otp-input {
-  flex: 1;
-  min-width: 0;
-  height: 3.5rem;
-  text-align: center;
-  font-size: 1.5rem;
-  border: 2px solid #ddd;
-  border-radius: 8px;
-  outline: none;
-  transition: all 0.3s;
-  /* Fixes for visibility */
-  color: #000; /* Ensures text is black */
-  background-color: #fff; /* White background */
-  padding: 0.5rem; /* Proper padding */
-  line-height: 1; /* Prevents vertical overflow */
-  caret-color: #4a90e2; /* Visible cursor */
-}
-
-.otp-input::placeholder {
-  color: #ccc; /* Light gray placeholder */
-}
-
-.otp-input:focus {
-  border-color: #4a90e2;
-  box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.2);
-}
-
-.otp-input.filled {
-  border-color: #4CAF50;
-}
-
-/* Mobile adjustments with visibility fixes */
-@media (max-width: 480px) {
-  .otp-container {
-    gap: 0.3rem;
-    margin: 1rem 0;
-  }
-  
-  .otp-input {
-    height: 2.8rem;
-    font-size: 1.2rem;
-    padding: 0.4rem; /* Adjusted padding for mobile */
-  }
-}
-
-@media (max-width: 360px) {
-  .otp-input {
-    height: 2.5rem;
-    font-size: 1rem;
-    padding: 0.3rem; /* Tighter padding for very small screens */
-  }
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.4);
 }

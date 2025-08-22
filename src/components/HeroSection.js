@@ -1,3 +1,5 @@
+// 
+
 import React, { useState, useEffect } from 'react';
 import { motion, useAnimation } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
@@ -17,7 +19,7 @@ import {
 } from 'react-icons/md';
 import { GiPickupTruck } from 'react-icons/gi';
 import { IoCloudDone } from "react-icons/io5";
-import { FaTruckPickup, FaTruckMoving } from 'react-icons/fa';
+import { FaTruckPickup, FaTruckMoving, FaStore } from 'react-icons/fa';
 import {
     RecaptchaVerifier,
     signInWithPhoneNumber,
@@ -33,7 +35,7 @@ import '../styles/HeroSection.css';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import delivery from '../assets/images/delivery-service.png';
-
+import { useLocation, useSearchParams } from 'react-router-dom';
 const HeroSection = () => {
     const controls = useAnimation();
     const [phoneNumber, setPhoneNumber] = useState('');
@@ -42,10 +44,11 @@ const HeroSection = () => {
     const [otpResendTime, setOtpResendTime] = useState(0);
     const [showOtpComponent, setShowOtpComponent] = useState(false);
     const [otp, setOtp] = useState('');
-    const { user, message, setMessage } = useAuth();
-    const [registrationStep, setRegistrationStep] = useState(1);
+    const { user, message, setMessage, softSignedOut, endSoftLogout, refreshUserMeta } = useAuth();
+    const [registrationStep, setRegistrationStep] = useState(0); // Start with 0 for role selection
     const [registrationSubStep, setRegistrationSubStep] = useState(1);
     const [isValidPhone, setIsValidPhone] = useState(false);
+    const [userRole, setUserRole] = useState(null); // 'driver' or 'business'
     const [driverData, setDriverData] = useState({
         name: '',
         aadharFile: null,
@@ -71,11 +74,16 @@ const HeroSection = () => {
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isRegistered, setIsRegistered] = useState(false);
+    const [referralCode, setReferralCode] = useState('');
+    const [showReferralField, setShowReferralField] = useState(false);
     const navigate = useNavigate();
     const { ref, inView: isInView } = useInView({ triggerOnce: true });
     const [showWelcomeMessage, setShowWelcomeMessage] = useState(
         localStorage.getItem('welcomeMessageShown') !== 'true'
     );
+    const location = useLocation();
+    const [sp] = useSearchParams();
+
     const TEST_PHONE = "+911234567890";
     const TEST_OTP = "123456";
     useEffect(() => {
@@ -102,7 +110,37 @@ const HeroSection = () => {
         return () => {
             if (timer) clearTimeout(timer);
         };
-    }, [user]);
+    }, [user]); useEffect(() => {
+        const key = userRole === 'business' ? 'shop_ref' : 'driver_ref'; const fromUrl = (sp.get(key) || '').toUpperCase();
+        if (fromUrl) setReferralCode(fromUrl);
+    }, [sp, userRole]);
+    useEffect(() => {
+        const run = async () => {
+            if (softSignedOut || !auth.currentUser) {
+                setIsRegistered(false);
+                setRegistrationStep(0); // Force role selection
+                return;
+            }
+
+            const { isRegistered, role } = await checkRegistrationStatus();
+            setIsRegistered(!!isRegistered);
+
+            if (isRegistered) {
+                setRegistrationStep(4); // Go to dashboard
+            } else if (role) {
+                // If role exists but not fully registered
+                setUserRole(role);
+                setRegistrationStep(role === 'driver' ? 2 : 1);
+            } else {
+                // No role selected yet
+                setRegistrationStep(0); // Show role selection
+            }
+        };
+
+        const unsub = auth.onAuthStateChanged(run);
+        return () => unsub();
+    }, [softSignedOut]);
+
 
     const variants = {
         hidden: { opacity: 0, y: 30 },
@@ -114,7 +152,21 @@ const HeroSection = () => {
         setIsValidPhone(isValid);
         return isValid;
     };
-
+    const persistRole = async (role) => {
+        const idToken = await auth.currentUser.getIdToken();
+        await fetch('https://jio-yatri-driver.onrender.com/api/user/set-role', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${idToken}`
+            },
+            body: JSON.stringify({
+                userId: auth.currentUser.uid,
+                role,
+                phone: phoneNumber
+            })
+        });
+    };
     const handlePhoneChange = (value, country) => {
         const formattedValue = value.startsWith('+') ? value : `+${value}`;
         setPhoneNumber(formattedValue);
@@ -169,6 +221,40 @@ const HeroSection = () => {
         initializeRecaptcha();
     };
 
+    // useEffect(() => {
+    //     const run = async () => {
+
+    //         if (softSignedOut || !auth.currentUser) {
+    //             setIsRegistered(false);
+    //             setRegistrationStep(0);
+    //             return;
+    //         }
+
+    //         const { isRegistered } = await checkRegistrationStatus();
+    //         setIsRegistered(!!isRegistered);
+    //         setRegistrationStep(isRegistered ? 4 : 1);
+
+    //     };
+
+    //     run();
+
+    //     const unsub = auth.onAuthStateChanged(async (u) => {
+    //         if (softSignedOut || !u) {
+    //             setIsRegistered(false);
+    //             setRegistrationStep(0);
+    //             return;
+    //         }
+
+    //         const { isRegistered, role } = await checkRegistrationStatus();
+    //         setIsRegistered(!!isRegistered);
+    //         setRegistrationStep(isRegistered ? 4 : (role === 'driver' ? 2 : 1));
+    //     });
+
+    //     return () => unsub();
+    // }, [softSignedOut]);
+
+
+
     useEffect(() => {
         initializeRecaptcha();
         return () => {
@@ -202,7 +288,12 @@ const HeroSection = () => {
         return response.json();
     };
 
+
     const sendCode = async () => {
+        if (!userRole) {
+            setMessage({ text: 'Please select a role first.', isError: true });
+            return;
+        }
         if (!validatePhoneNumber(phoneNumber)) {
             setMessage({
                 text: 'Please enter a valid international phone number (e.g., +91XXXXXXXXXX)',
@@ -211,13 +302,12 @@ const HeroSection = () => {
             return;
         }
 
-         if (phoneNumber === TEST_PHONE) {
-    setMessage({ text: `OTP sent to ${phoneNumber} (Test Mode)`, isError: false });
-    setShowOtpComponent(true);
-    startResendTimer();
-    return;
-  }
-
+        if (phoneNumber === TEST_PHONE) {
+            setMessage({ text: `OTP sent to ${phoneNumber} (Test Mode)`, isError: false });
+            setShowOtpComponent(true);
+            startResendTimer();
+            return;
+        }
 
         try {
             setIsLoading(true);
@@ -249,7 +339,14 @@ const HeroSection = () => {
         }
     };
 
+
+
+
     const verifyOtp = async () => {
+        if (!userRole) {
+            setMessage({ text: 'Please select a role first.', isError: true });
+            return;
+        }
         if (!otp || otp.length !== 6) {
             setMessage({ text: 'Please enter a 6-digit code', isError: true });
             return;
@@ -262,13 +359,40 @@ const HeroSection = () => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     phoneNumber,
-                    otp: phoneNumber === TEST_PHONE ? TEST_OTP : otp 
+                    otp: phoneNumber === TEST_PHONE ? TEST_OTP : otp,
+                    referralCode: referralCode || undefined,
+                    role: userRole,// Include the user role in the verification
+
                 })
             });
 
             const userCredential = await signInWithCustomToken(auth, data.token);
             setMessage({ text: 'Verification successful!', isError: false });
             setShowOtpComponent(false);
+
+            // Redirect business partners to their registration
+            // Persist the role we selected on the server
+            await persistRole(userRole);
+
+            // Reload role + registration into context+   await refreshUserMeta(auth.currentUser);
+            const meta = await refreshUserMeta(auth.currentUser);
+
+            endSoftLogout();
+
+            // Navigate based on role/registration
+            if (meta.role === 'business') {
+                if (referralCode) {
+                    localStorage.setItem('shopReferralCode', referralCode.toUpperCase());
+                }
+                navigate(meta.isRegistered ? '/business-dashboard' : '/register', { replace: true });
+                return;
+            } else {
+                setUserRole('driver');
+                setShowOtpComponent(false);
+                setIsRegistered(!!meta.isRegistered);
+                setRegistrationStep(meta.isRegistered ? 4 : 2); // 2 shows your wizard
+                setDriverData(prev => ({ ...prev, phone: phoneNumber }));
+            } // optional prefill
         } catch (error) {
             setMessage({
                 text: error.message || 'OTP verification failed',
@@ -278,6 +402,10 @@ const HeroSection = () => {
             setIsLoading(false);
         }
     };
+
+    // after verifyOtp()
+
+
 
     const resendOtp = async () => {
         if (otpResendTime > 0) return;
@@ -422,83 +550,131 @@ const HeroSection = () => {
         setRegistrationSubStep(registrationSubStep - 1);
     };
 
+    // const checkRegistrationStatus = async () => {
+    //     try {
+    //         const user = auth.currentUser;
+    //         if (!user) return false;
+
+    //         const storedRegistration = localStorage.getItem(`driverRegistered_${user.uid}`);
+    //         if (storedRegistration === 'true') return true;
+
+    //         const token = await user.getIdToken();
+    //         const response = await fetch(`http://localhost:5000/api/driver/check/${user.uid}`, {
+    //             method: 'GET',
+    //             headers: {
+    //                 'Authorization': `Bearer ${token}`
+    //             }
+    //         });
+
+    //         if (response.ok) {
+    //             const data = await response.json();
+    //             if (data.exists) {
+    //                 localStorage.setItem(`driverRegistered_${user.uid}`, 'true');
+    //                 setDriverData(prev => ({
+    //                     ...prev,
+    //                     name: data.driver?.name || user.displayName || '',
+    //                     phone: data.driver?.phone || user.phoneNumber || '',
+    //                     vehicleType: data.driver?.vehicleType || '',
+    //                     vehicleNumber: data.driver?.vehicleNumber || ''
+    //                 }));
+    //                 return true;
+    //             }
+    //         }
+    //         return false;
+    //     } catch (error) {
+    //         console.error('Error checking registration:', error);
+    //         return false;
+    //     }
+    // };
     const checkRegistrationStatus = async () => {
         try {
-            const user = auth.currentUser;
-            if (!user) return false;
+            const u = auth.currentUser;
+            if (!u) return { isRegistered: false, role: null };
 
-            const storedRegistration = localStorage.getItem(`driverRegistered_${user.uid}`);
-            if (storedRegistration === 'true') return true;
+            const token = await u.getIdToken();
+            const res = await fetch(
+                `https://jio-yatri-driver.onrender.com/api/user/check-registration/${u.uid}`,
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
 
-            const token = await user.getIdToken();
-            const response = await fetch(`https://jio-yatri-driver.onrender.com/api/driver/check/${user.uid}`, {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
+            if (!res.ok) return { isRegistered: false, role: null };
+            const json = await res.json();
+            if (!json.success) return { isRegistered: false, role: null };
 
-            if (response.ok) {
-                const data = await response.json();
-                if (data.exists) {
-                    localStorage.setItem(`driverRegistered_${user.uid}`, 'true');
+            const { isRegistered, role } = json.data;
+
+            // Persist unified flags
+            setIsRegistered(!!isRegistered);
+            localStorage.setItem('isRegistered', isRegistered ? '1' : '0');
+            localStorage.setItem('userRole', role || '');
+
+            // OPTIONAL: if you want to prefill driver fields after a positive check:
+            if (isRegistered && role === 'driver') {
+                const res2 = await fetch(
+                    `https://jio-yatri-driver.onrender.com/api/driver/profile/${u.uid}`, // or your existing driver GET endpoint
+                    { headers: { Authorization: `Bearer ${token}` } }
+                );
+                if (res2.ok) {
+                    const d = await res2.json();
                     setDriverData(prev => ({
                         ...prev,
-                        name: data.driver?.name || user.displayName || '',
-                        phone: data.driver?.phone || user.phoneNumber || '',
-                        vehicleType: data.driver?.vehicleType || '',
-                        vehicleNumber: data.driver?.vehicleNumber || ''
+                        name: d.driver?.name || u.displayName || '',
+                        phone: d.driver?.phone || u.phoneNumber || '',
+                        vehicleType: d.driver?.vehicleType || '',
+                        vehicleNumber: d.driver?.vehicleNumber || ''
                     }));
-                    return true;
                 }
             }
-            return false;
+
+            return { isRegistered, role };
         } catch (error) {
             console.error('Error checking registration:', error);
-            return false;
+            return { isRegistered: false, role: null };
         }
     };
 
-    useEffect(() => {
-        const checkAuthAndRegistration = async () => {
-            try {
-                const user = auth.currentUser;
-                if (user) {
-                    const token = await user.getIdToken();
-                    localStorage.setItem('token', token);
 
-                    const isRegistered = await checkRegistrationStatus();
-                    setIsRegistered(isRegistered);
-                    if (isRegistered) {
-                        setRegistrationStep(4);
-                    } else {
-                        setRegistrationStep(2);
-                    }
-                }
-            } catch (error) {
-                console.error('Initial check error:', error);
-            }
-        };
 
-        checkAuthAndRegistration();
+    // useEffect(() => {
+    //     const checkAuthAndRegistration = async () => {
+    //         try {
+    //             const user = auth.currentUser;
+    //             if (user) {
+    //                 const token = await user.getIdToken();
+    //                 localStorage.setItem('token', token);
 
-        const unsubscribe = auth.onAuthStateChanged(async (user) => {
-            if (user) {
-                const isRegistered = await checkRegistrationStatus();
-                setIsRegistered(isRegistered);
-                if (isRegistered) {
-                    setRegistrationStep(4);
-                } else {
-                    setRegistrationStep(2);
-                }
-            } else {
-                setIsRegistered(false);
-                setRegistrationStep(1);
-            }
-        });
+    //                 const isRegistered = await checkRegistrationStatus();
+    //                 setIsRegistered(isRegistered);
+    //                 if (isRegistered) {
+    //                     setRegistrationStep(4);
+    //                 } else {
+    //                     setRegistrationStep(1);
+    //                 }
+    //             }
+    //         } catch (error) {
+    //             console.error('Initial check error:', error);
+    //         }
+    //     };
 
-        return () => unsubscribe();
-    }, []);
+    //     checkAuthAndRegistration();
+
+    //     const unsubscribe = auth.onAuthStateChanged(async (user) => {
+    //         if (user) {
+    //             const isRegistered = await checkRegistrationStatus();
+    //             setIsRegistered(isRegistered);
+    //             if (isRegistered) {
+    //                 setRegistrationStep(4);
+    //             } else {
+    //                 setRegistrationStep(1);
+    //             }
+    //         } else {
+    //             setIsRegistered(false);
+    //             setRegistrationStep(0); // Reset to role selection
+    //         }
+    //     });
+
+    //     return () => unsubscribe();
+    // }, []);
 
     const submitDriverRegistration = async () => {
         try {
@@ -524,7 +700,8 @@ const HeroSection = () => {
                     vehicleNumber: driverData.vehicleNumber,
                     licenseFileId: driverData.licenseFileId,
                     rcFileId: driverData.rcFileId,
-                    insuranceFileId: driverData.insuranceFileId
+                    insuranceFileId: driverData.insuranceFileId,
+                    referralCode: referralCode || undefined
                 })
             });
 
@@ -556,7 +733,9 @@ const HeroSection = () => {
             await signOut(auth);
             localStorage.removeItem('token');
             localStorage.removeItem(`driverRegistered_${auth.currentUser?.uid}`);
-            setRegistrationStep(1);
+            localStorage.removeItem('userRole');
+            localStorage.removeItem('isRegistered');
+            setRegistrationStep(0); // Reset to role selection
             setRegistrationSubStep(1);
             setIsRegistered(false);
             setDriverData({
@@ -576,10 +755,12 @@ const HeroSection = () => {
                 panFileId: null
             });
             setMessage({ text: 'Logged out successfully', isError: false });
+            navigate('/home', { replace: true });
         } catch (error) {
             setMessage({ text: 'Logout failed: ' + error.message, isError: true });
         }
     };
+
     const StepIndicator = ({ currentStep }) => {
         const steps = [
             { number: 1, title: 'Owner', icon: <MdPerson /> },
@@ -605,6 +786,35 @@ const HeroSection = () => {
         );
     };
 
+    const RoleSelection = () => (
+        <div className="role-selection-container">
+            <h3>Join as</h3>
+            <div className="role-options">
+                <button
+                    className="role-option driver"
+                    onClick={() => {
+                        setUserRole('driver');
+                        setRegistrationStep(1);
+                    }}
+                >
+                    <MdDirectionsCar className="role-icon" />
+                    <span>Driver</span>
+                    <p>Deliver packages and earn money</p>
+                </button>
+                <button
+                    className="role-option business"
+                    onClick={() => {
+                        setUserRole('business');
+                        setRegistrationStep(1);
+                    }}
+                >
+                    <FaStore className="role-icon" />
+                    <span>Business Partner</span>
+                    <p>List your business and reach more customers</p>
+                </button>
+            </div>
+        </div>
+    );
 
     return (
         <section className="hero-section" id="hero">
@@ -633,7 +843,9 @@ const HeroSection = () => {
                     variants={variants}
                     transition={{ duration: 0.8, delay: 0.3 }}
                 >
-                    {registrationStep === 1 ? (
+                    {registrationStep === 0 ? (
+                        <RoleSelection />
+                    ) : registrationStep === 1 ? (
                         <form className="registration-form hero-form" onSubmit={(e) => e.preventDefault()}>
                             <h3>Register Now</h3>
 
@@ -661,6 +873,22 @@ const HeroSection = () => {
                             >
                                 {isLoading ? 'Sending...' : 'Send Verification Code'}
                             </button>
+
+                            <div className="referral-toggle" onClick={() => setShowReferralField(!showReferralField)}>
+                                {showReferralField ? 'Hide referral code' : 'Have a referral code?'}
+                            </div>
+                            {showReferralField && (
+                                <div className="form-group">
+                                    <input
+                                        type="text"
+                                        placeholder="Enter referral code (optional)"
+                                        value={referralCode}
+                                        onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+                                        className="referral-input"
+                                        maxLength="10"
+                                    />
+                                </div>
+                            )}
                         </form>
                     ) : registrationStep === 2 ? (
                         <div className="driver-registration-form">
@@ -691,7 +919,6 @@ const HeroSection = () => {
                                                     accept="image/*,.pdf"
                                                     onChange={(e) => handleFileUpload(e.target.files[0], 'aadhar')}
                                                     hidden
-
                                                 />
                                             </label>
                                         </div>
@@ -825,8 +1052,6 @@ const HeroSection = () => {
                                                 <progress value={fileUploadProgress.rc} max="100" />
                                             )}
                                         </div>
-
-                                        {/* <small className="hint">Upload a clear photo/scan of your vehicle RC (JPEG, PNG, PDF)</small> */}
                                     </div>
 
                                     <div className="form-group">
@@ -858,7 +1083,6 @@ const HeroSection = () => {
                                                 <progress value={fileUploadProgress.insurance} max="100" />
                                             )}
                                         </div>
-                                        {/* <small className="hint">Upload a clear photo/scan of your vehicle insurance (JPEG, PNG, PDF)</small> */}
                                     </div>
 
                                     <div className="form-navigation">
@@ -889,7 +1113,6 @@ const HeroSection = () => {
                             {registrationSubStep === 3 && (
                                 <>
                                     <div className="form-group">
-                                        {/* <label>Phone Number*</label> */}
                                         <PhoneInput
                                             country={'in'}
                                             value={driverData.phone}
@@ -904,8 +1127,6 @@ const HeroSection = () => {
                                     </div>
 
                                     <div className="form-group">
-                                        {/* <label>Driver License</label> */}
-
                                         <div className="document-upload-row">
                                             <div className="document-upload-group">
                                                 <span className="document-label">Driver License</span>
@@ -930,8 +1151,6 @@ const HeroSection = () => {
                                                 <progress value={fileUploadProgress.license} max="100" />
                                             )}
                                         </div>
-
-                                        {/* <small className="hint">Upload a clear photo/scan of your driver's license (JPEG, PNG, PDF)</small> */}
                                     </div>
 
                                     <div className="form-navigation">
@@ -1029,7 +1248,6 @@ const HeroSection = () => {
                                     'Verify Code'
                                 )}
                             </button>
-
                             <button
                                 onClick={resendOtp}
                                 disabled={otpResendTime > 0}

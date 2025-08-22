@@ -292,6 +292,36 @@ useEffect(() => {
                 <p><strong>Vehicle Type:</strong> {shipment.vehicleType}</p>
                 <p><strong>Distance:</strong> {shipment.distance.toFixed(2)} km</p>
                 <p><strong>Cost:</strong> ₹{shipment.cost.toFixed(2)}</p>
+                {shipment?.parcel?.description && (
+                  <p><strong>Description:</strong> {shipment.parcel.description}</p>
+                )}
+
+                                {shipment?.parcel?.images?.length > 0 && (
+                  <div className="parcel-images">
+                    <strong>Images:</strong>
+                    <div className="image-gallery">
+                      {shipment.parcel.images.map((id) => {
+                        const imgUrl = `https://jio-yatri-driver.onrender.com/api/shipment-images/image/${id}`;
+                        // console.log("Image URL:", imgUrl);
+                        return (
+                          <img
+                            key={id}
+                            src={imgUrl}
+                            alt="Parcel"
+                            style={{
+                              width: "100px",
+                              height: "100px",
+                              objectFit: "cover",
+                              margin: "5px",
+                            }}
+                          />
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                
               </div>
               <button onClick={() => handleAccept(shipment._id)} className="accept-button">
                 Accept Order

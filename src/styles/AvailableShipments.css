@@ -361,3 +361,25 @@
 .shipment-card {
   animation: fadeIn 0.5s ease-out forwards;
 }
+
+.shipment-card {
+  animation: fadeIn 0.5s ease-out forwards;
+}
+.parcel-images {
+  margin-top: 10px;
+}
+
+.image-gallery {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 5px;
+}
+
+.parcel-image {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 4px;
+  border: 1px solid #ddd;
+}

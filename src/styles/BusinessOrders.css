@@ -1,0 +1,270 @@
+/* src/styles/BusinessOrders.css */
+.bo {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 12px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: #4a5568;
+}
+
+.bo-header {
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 15px;
+  animation: fadeIn 0.5s ease-out;
+}
+
+.cart-topbar {
+  display: flex;
+  align-items: center;
+}
+
+.back-btn {
+  background: linear-gradient(135deg, #93c5fd 0%, #60a5fa 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 5px rgba(66, 153, 225, 0.3);
+}
+
+.back-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(66, 153, 225, 0.4);
+}
+
+.bo-header h2 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 600;
+  color: #374151;
+  flex-grow: 1;
+}
+
+.bo-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.bo-toggle:hover {
+  color: #3b82f6;
+}
+
+.bo-toggle input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #3b82f6;
+  cursor: pointer;
+}
+
+.bo-card {
+  background: white;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+  transition: all 0.3s ease;
+  border: 1px solid #e5e7eb;
+  animation: slideIn 0.4s ease-out;
+}
+
+.bo-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.08);
+}
+
+.bo-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  font-size: 13px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.bo-top div:first-child {
+  font-weight: 500;
+  color: #1f2937;
+}
+
+.bo-top b {
+  color: #3b82f6;
+  font-weight: 600;
+}
+
+.bo-customer {
+  background-color: #f9fafb;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 12px;
+  font-size: 13px;
+  line-height: 1.4;
+  border-left: 3px solid #93c5fd;
+}
+
+.bo-customer div {
+  margin-bottom: 4px;
+}
+
+.bo-customer div:last-child {
+  margin-bottom: 0;
+}
+
+.bo-items {
+  margin-bottom: 12px;
+}
+
+.bo-item {
+  display: flex;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #f3f4f6;
+  font-size: 13px;
+}
+
+.bo-item:last-child {
+  border-bottom: none;
+}
+
+.bo-item img {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: 6px;
+  margin-right: 10px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease;
+}
+
+.bo-item img:hover {
+  transform: scale(1.05);
+}
+
+.bo-item div:nth-child(2) {
+  flex-grow: 1;
+  margin: 0 8px;
+}
+
+.bo-total {
+  text-align: right;
+  font-weight: 600;
+  font-size: 14px;
+  color: #1f2937;
+  margin-bottom: 12px;
+  padding-top: 8px;
+  border-top: 1px dashed #e5e7eb;
+}
+
+.bo-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.bo-btn {
+  border: none;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.bo-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.bo-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.bo-btn.accept {
+  background: linear-gradient(135deg, #86efac 0%, #4ade80 100%);
+  color: white;
+}
+
+.bo-btn.paid {
+  background: linear-gradient(135deg, #93c5fd 0%, #3b82f6 100%);
+  color: white;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .bo-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  
+  .bo-top {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .bo-actions {
+    flex-direction: column;
+  }
+  
+  .bo-btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .bo {
+    padding: 8px;
+  }
+  
+  .bo-card {
+    padding: 12px;
+  }
+  
+  .bo-item {
+    flex-wrap: wrap;
+  }
+  
+  .bo-item img {
+    margin-bottom: 5px;
+  }
+}
