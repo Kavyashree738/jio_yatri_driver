@@ -109,7 +109,7 @@ export function AuthProvider({ children }) {
   // in AuthProvider
   const refreshUserMeta = async (firebaseUser) => {
     const idToken = await firebaseUser.getIdToken();
-    const res = await fetch(`http://localhost:5000/api/user/check-registration/${firebaseUser.uid}`, {
+    const res = await fetch(`https://jio-yatri-driver.onrender.com/api/user/check-registration/${firebaseUser.uid}`, {
       headers: { Authorization: `Bearer ${idToken}` }
     });
     const json = await res.json();
