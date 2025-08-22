@@ -5,7 +5,7 @@ import '../styles/LocationTracker.css';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-
+import { useNavigate } from "react-router-dom";
 const API_BASE_URL = 'https://jio-yatri-driver.onrender.com';
 
 const useGeolocation = (options) => {
@@ -81,6 +81,7 @@ const ShipmentDetailsCard = ({ shipment }) => {
 
 const LocationTracker = ({ shipment, onStatusUpdate }) => {
   const { user } = useAuth();
+   const navigate = useNavigate();
   const { position: geoPosition } = useGeolocation({
     enableHighAccuracy: true,
     timeout: 10000,
