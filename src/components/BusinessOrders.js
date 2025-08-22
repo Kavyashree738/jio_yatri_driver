@@ -20,15 +20,15 @@ export default function BusinessOrders({ shopId }) {
     const resolvedShopId = shopId || shopIdFromParams; // undefined on /business-orders
     const navigate = useNavigate();
 
-    console.log('[BusinessOrders] Component rendered', {
-        resolvedShopId,
-        hasUser: !!user,
-        userId: user?.uid
-    });
+    // console.log('[BusinessOrders] Component rendered', {
+    //     resolvedShopId,
+    //     hasUser: !!user,
+    //     userId: user?.uid
+    // });
 
     const load = async () => {
         try {
-            console.log('[BusinessOrders] Loading orders...');
+            // console.log('[BusinessOrders] Loading orders...');
             setLoading(true);
             setErr(null);
 
@@ -63,7 +63,7 @@ export default function BusinessOrders({ shopId }) {
             setErr(e.response?.data?.error || e.message || 'Failed to load orders');
         } finally {
             setLoading(false);
-            console.log('[BusinessOrders] Loading completed');
+            // console.log('[BusinessOrders] Loading completed');
         }
     };
 
@@ -273,7 +273,7 @@ export default function BusinessOrders({ shopId }) {
                 )}
 
                 {visibleOrders.map((o) => {
-                    console.log('[BusinessOrders] Rendering order:', o._id);
+                    // console.log('[BusinessOrders] Rendering order:', o._id);
                     return (
                         <div key={o._id} className="bo-card">
                             <div className="bo-top">
