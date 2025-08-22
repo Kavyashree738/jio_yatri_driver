@@ -6,6 +6,7 @@ const User = require('../models/UserRole');
 // Check if driver exists before registration
 exports.checkDriverExists = async (req, res) => {
   try {
+    
     const { userId } = req.params;
     const driver = await Driver.findOne({ userId });
     
