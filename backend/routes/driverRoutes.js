@@ -23,4 +23,32 @@ router.put('/drivers/:driverId/verify',
     verifyDriver
 );
 router.get('/:userId/documents-status', verifyFirebaseToken, getDocumentStatus);
+
+router.get('/owner-dashboard', getOwnerDashboard);
+
+router.get('/daily-summary',getDailySummary);
+
+router.post('/settle-payment/:driverId', verifyFirebaseToken,settlePayment);
+
+
+router.post('/:driverId/bulk-settle-payments', verifyFirebaseToken, bulkSettlePayments);
+
+router.post('/apply-referral', verifyFirebaseToken, applyReferral);
+
+// Get a drive
+// r's referral code and share link
+router.get('/:driverId/referral-code', verifyFirebaseToken, getReferralCode);
+
+// Get referral statistics for a driver
+router.get('/:driverId/referral-stats', verifyFirebaseToken, getReferralStats);
+
+// Get referral leaderboard (top referrers)
+router.get('/referrals/leaderboard', verifyFirebaseToken, getReferralLeaderboard);
+
+
+// In your driverRoutes.js
+router.put('/location/regular', verifyFirebaseToken, updateDriverLocationRegular);
+
+// In your driverRoutes.js - ADD THESE ROUTE
+router.get('/location/status', verifyFirebaseToken,getLocationStatus);
 module.exports = router;
