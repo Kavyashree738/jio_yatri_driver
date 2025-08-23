@@ -163,7 +163,7 @@ exports.updateProfile = async (req, res) => {
       await user.save();
     }
 
-    const base = process.env.API_BASE_URL || 'http://localhost:5000';
+    const base = 'https://jio-yatri-driver.onrender.com';
     return res.json({
       success: true,
       data: {
