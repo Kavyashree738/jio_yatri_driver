@@ -392,7 +392,7 @@ exports.updateShop = async (req, res) => {
 
     const saved = await shop.save();
 
-    const baseUrl = process.env.API_BASE_URL || 'http://localhost:5000';
+    const baseUrl = 'https://jio-yatri-driver.onrender.com';
     const data = {
       ...saved.toObject(),
       shopImageUrls: (saved.shopImages || []).map(id => `${baseUrl}/api/shops/images/${id}`),
