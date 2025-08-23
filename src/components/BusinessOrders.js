@@ -297,7 +297,25 @@ export default function BusinessOrders({ shopId }) {
                             <div className="bo-items">
                                 {(o.items || []).map((it, i) => (
                                     <div key={i} className="bo-item">
-                                        <img src={it.imageUrl || '/placeholder-food.jpg'} alt={it.name} />
+                                       <img
+  alt={it.name}
+  src={
+    it.imageUrl
+      ? (
+          it.imageUrl.startsWith('http://localhost:5000')
+            ? it.imageUrl.replace('http://localhost:5000', 'https://jio-yatri-driver.onrender.com')
+            : (/^[a-fA-F0-9]{24}$/.test(it.imageUrl)  // raw ObjectId
+                ? `${apiBase}/api/shops/images/${it.imageUrl}`
+                : it.imageUrl
+              )
+        )
+      : (it.image
+          ? `${apiBase}/api/shops/images/${it.image}`
+          : '/placeholder-food.jpg'
+        )
+  }
+/>
+
                                         <div>{it.name} × {it.quantity}</div>
                                         <div>₹{(Number(it.price) * Number(it.quantity)).toFixed(2)}</div>
                                     </div>
