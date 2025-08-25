@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, useAnimation } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
 import { FcGoogle } from 'react-icons/fc';
@@ -81,6 +81,8 @@ const HeroSection = () => {
     );
     const location = useLocation();
     const [sp] = useSearchParams();
+    const hasRoutedRef = useRef(false);
+
 
     const TEST_PHONE = "+911234567890";
     const TEST_OTP = "123456";
@@ -116,29 +118,46 @@ const HeroSection = () => {
         const run = async () => {
             if (softSignedOut || !auth.currentUser) {
                 setIsRegistered(false);
-                setRegistrationStep(0); // Force role selection
+                setRegistrationStep(0);
                 return;
             }
 
             const { isRegistered, role } = await checkRegistrationStatus();
             setIsRegistered(!!isRegistered);
 
+            // ✅ Do not redirect when user is already on Home
+            const onHome = location.pathname === '/' || location.pathname === '/home';
+
+            if (isRegistered && role === 'business' && !onHome) {
+                if (!hasRoutedRef.current) {
+                    hasRoutedRef.current = true;
+                    navigate('/business-dashboard', { replace: true });
+                }
+                return;
+            }
+
+            if (isRegistered && role === 'driver' && !onHome) {
+                if (!hasRoutedRef.current) {
+                    hasRoutedRef.current = true;
+                    navigate('/orders', { replace: true });
+                }
+                return;
+            }
+
+            // If we're on Home, show the post-login UI instead of redirecting
             if (isRegistered) {
-                setRegistrationStep(4); // Go to dashboard
+                setRegistrationStep(4);
             } else if (role) {
-                // If role exists but not fully registered
                 setUserRole(role);
                 setRegistrationStep(role === 'driver' ? 2 : 1);
             } else {
-                // No role selected yet
-                setRegistrationStep(0); // Show role selection
+                setRegistrationStep(0);
             }
         };
 
         const unsub = auth.onAuthStateChanged(run);
         return () => unsub();
-    }, [softSignedOut]);
-
+    }, [softSignedOut, location.pathname]); // include pathname so it re-evaluates on Home clicks
 
     const variants = {
         hidden: { opacity: 0, y: 30 },
@@ -386,6 +405,11 @@ const HeroSection = () => {
                 return;
             } else {
                 setUserRole('driver');
+                if (meta.isRegistered) {
+                    if (!hasRoutedRef.current) hasRoutedRef.current = true;
+                    navigate('/orders', { replace: true });
+                    return;
+                }
                 setShowOtpComponent(false);
                 setIsRegistered(!!meta.isRegistered);
                 setRegistrationStep(meta.isRegistered ? 4 : 2); // 2 shows your wizard
@@ -609,7 +633,7 @@ const HeroSection = () => {
             // OPTIONAL: if you want to prefill driver fields after a positive check:
             if (isRegistered && role === 'driver') {
                 const res2 = await fetch(
-                    `http://localhost:5000/api/driver/profile/${u.uid}`, // or your existing driver GET endpoint
+                    `https://jio-yatri-driver.onrender.com/api/driver/profile/${u.uid}`, // or your existing driver GET endpoint
                     { headers: { Authorization: `Bearer ${token}` } }
                 );
                 if (res2.ok) {
@@ -711,6 +735,8 @@ const HeroSection = () => {
             localStorage.setItem(`driverRegistered_${userId}`, 'true');
             setIsRegistered(true);
             setMessage({ text: 'Registration successful!', isError: false });
+            if (!hasRoutedRef.current) hasRoutedRef.current = true;     // optional guard
+            navigate('/orders', { replace: true });
             setRegistrationStep(4);
         } catch (error) {
             if (error.message.includes('duplicate key')) {
