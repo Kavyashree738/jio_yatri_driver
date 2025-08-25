@@ -67,7 +67,7 @@ import BusinessOrders from './components/BusinessOrders';
 function LandingRedirect() {
   const { user, userRole, isRegistered, loading } = useAuth();
   if (loading) return null;
-  // if (!user) return <SplashScreen />;
+  if (!user) return <SplashScreen />;
 
   if (userRole === 'business') {
     return <Navigate to={isRegistered ? '/business-dashboard' : '/register'} replace />;
@@ -91,8 +91,8 @@ const App = () => {
         <OwnerFCMInit />
         <ScrollToTop />
         <Routes>
-          <Route path="/" element={<SplashScreen />} />
-          <Route path="/home" element={<LandingRedirect />} />
+          // <Route path="/" element={<SplashScreen />} />
+          <Route path="/" element={<LandingRedirect />} />
           <Route path="/home" element={<Home />} />
 
           {/* DRIVER-ONLY */}
