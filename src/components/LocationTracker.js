@@ -60,7 +60,7 @@ const ShipmentDetailsCard = ({ shipment }) => {
         <span className={`status-badge ${shipment.status}`}>{shipment.status}</span>
       </div>
       <div className="shipment-body">
-        <div className="address-section">
+        <div className="address-sections">
           <div className="address-card sender">
             <h4>Sender</h4>
             <p><strong>Name:</strong> {shipment.sender?.name}</p>
@@ -387,7 +387,7 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
     <div className="location-tracker-container">
       <ShipmentDetailsCard shipment={activeShipment} />
 
-      <div className="map-section">
+      <div className="map-sections">
         <div
           ref={mapContainerRef}
           className="map-container"
@@ -417,7 +417,7 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
             window.scrollTo({ top: 0, behavior: "smooth" });
             handleCancelShipment();
           }}
-          className="cancel-button"
+          className="cancel-buttons"
         >
           Cancel Shipment
         </button>
