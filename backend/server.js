@@ -19,6 +19,7 @@ const userRoutes=require('./routes/userRoutes')
 const shopRoutes=require('./routes/shopRoutes')
 const orderRoutes = require('./routes/orders');
 const shipmentImages=require('./routes/shipmentImageRoutes')
+const adminRoutes = require('./routes/admin');
 // app.use(cors());
 const corsOptions = {
   origin: ['https://driver.jioyatri.com','https://jioyatri-admin.netlify.app'], // ✅ Allow your frontend origin
@@ -61,7 +62,7 @@ app.use('/api/user',userRoutes)
 app.use('/api/shops',shopRoutes)
 app.use('/api/orders', orderRoutes);
 app.use('/api/shipment-images', shipmentImages);
-
+app.use('/api/admin', adminRoutes);
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({ success: false, error: 'Internal Server Error' });
