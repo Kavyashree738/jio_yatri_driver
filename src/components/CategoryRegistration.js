@@ -692,7 +692,6 @@ if (needKyc) {
                     placeholder="e.g., 9876543210@ybl or shop@okhdfcbank"
                     className="hr-input"
                     required
-                    pattern="[a-zA-Z0-9._-]+@[a-zA-Z]+"
                   />
                   <small className="hr-hint">This is your UPI ID (like <code>name@bank</code>), not your phone number.</small>
                 </div>
