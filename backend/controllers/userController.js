@@ -277,7 +277,7 @@ exports.reuploadKycDocs = async (req, res) => {
     // await user.save();
     await User.updateOne({ _id: user._id }, { $set: updates });
 
-    const base = process.env.API_BASE_URL || 'http://localhost:5000';
+    const base = 'https://jio-yatri-driver.onrender.com';
     return res.json({
       success: true,
       data: {
