@@ -356,7 +356,7 @@ async function uploadKycDocs({ token, aadhaarFile, panFile }) {
   if (panFile) kycFd.append('pan', panFile);
 
   // Do NOT set Content-Type manually; axios will set proper multipart boundary
-  const res = await axios.put(`${apiBase}/api/users/me/kyc-docs`, kycFd, {
+  const res = await axios.put(`${apiBase}/api/user/me/kyc-docs`, kycFd, {
     headers: { Authorization: `Bearer ${token}` },
   });
 
