@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const User = require('../models/UserRole');
 const multer = require('multer');
 const userController = require('../controllers/userController');
 const verifyFirebaseToken = require('../middleware/verifyFirebaseToken');
