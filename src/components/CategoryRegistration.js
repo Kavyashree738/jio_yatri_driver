@@ -107,7 +107,7 @@ const CategoryRegistration = () => {
         const token = await user.getIdToken();
         let status = 'none';
         try {
-          const kycRes = await axios.get(`${apiBase}/api/users/me/kyc`, {
+          const kycRes = await axios.get(`${apiBase}/api/user/me/kyc`, {
             headers: { Authorization: `Bearer ${token}` },
           });
           status = kycRes?.data?.data?.status || 'none';
