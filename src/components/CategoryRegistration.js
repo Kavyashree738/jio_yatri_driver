@@ -347,102 +347,117 @@ const CategoryRegistration = () => {
     return true;
   };
 
+  // Upload Aadhaar/PAN to /api/users/me/kyc-docs
+async function uploadKycDocs({ token, aadhaarFile, panFile }) {
+  const apiBase = 'https://jio-yatri-driver.onrender.com';
+  const kycFd = new FormData();
+
+  if (aadhaarFile) kycFd.append('aadhaar', aadhaarFile);
+  if (panFile) kycFd.append('pan', panFile);
+
+  // Do NOT set Content-Type manually; axios will set proper multipart boundary
+  const res = await axios.put(`${apiBase}/api/users/me/kyc-docs`, kycFd, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  if (!res?.data?.success) {
+    throw new Error(res?.data?.error || 'Failed to upload KYC documents');
+  }
+  return res.data;
+}
+
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
-    setSuccess('');
+  e.preventDefault();
+  setError('');
+  setSuccess('');
 
-    if (!validateForm()) return;
-    if (!user) {
-      setError('You must be logged in to register');
-      return;
+  if (!validateForm()) return;
+  if (!user) {
+    setError('You must be logged in to register');
+    return;
+  }
+
+  setIsSubmitting(true);
+  try {
+    const token = await user.getIdToken();
+    const apiBase = 'https://jio-yatri-driver.onrender.com';
+
+    // 1) If KYC is required for the first shop, upload Aadhaar/PAN first
+    let kycWasSubmittedNow = false;
+    if (needKyc) {
+      if (!aadhaarFile || !panFile) {
+        throw new Error('Please upload both Aadhaar and PAN (PDF or image)');
+      }
+      await uploadKycDocs({ token, aadhaarFile, panFile });
+      kycWasSubmittedNow = true;
     }
 
+    // 2) Register the shop (no KYC files here)
+    const fd = new FormData();
+    fd.append('userId', user.uid);
+    fd.append('category', selectedCategory);
+    fd.append('shopName', formData.shopName);
+    fd.append('phone', formData.phone);
+    fd.append('upiId', (formData.upiId || '').trim().toLowerCase());
+    fd.append('phonePeNumber', formData.phonePeNumber);
+    fd.append('email', formData.email || '');
+    fd.append('address', JSON.stringify(formData.address));
+    fd.append('openingTime', formData.openingTime);
+    fd.append('closingTime', formData.closingTime);
 
-
-    setIsSubmitting(true);
-    try {
-      const fd = new FormData();
-      fd.append('userId', user.uid);
-      fd.append('category', selectedCategory);
-      fd.append('shopName', formData.shopName);
-      fd.append('phone', formData.phone);
-      fd.append('upiId', (formData.upiId || '').trim().toLowerCase()); // ⬅️ NEW
-      fd.append('phonePeNumber', formData.phonePeNumber);
-      fd.append('email', formData.email || '');
-      fd.append('address', JSON.stringify(formData.address));
-      fd.append('openingTime', formData.openingTime);
-      fd.append('closingTime', formData.closingTime);
-
-      // Only keep item props relevant to the selected category
-      const allowedKeys = new Set(['name', 'price', ...(catCfg?.itemFields?.map((f) => f.key) || [])]);
-      const itemsForApi = formData.items.map((it) => {
-        const out = {};
-        allowedKeys.forEach((k) => {
-          if (it[k] !== undefined && it[k] !== null && it[k] !== '') out[k] = it[k];
-        });
-        // On registration, hotel requires image — file will be appended to itemImages below
-        return out;
+    // Keep only allowed item keys for the selected category
+    const allowedKeys = new Set(['name', 'price', ...(catCfg?.itemFields?.map((f) => f.key) || [])]);
+    const itemsForApi = formData.items.map((it) => {
+      const out = {};
+      allowedKeys.forEach((k) => {
+        if (it[k] !== undefined && it[k] !== null && it[k] !== '') out[k] = it[k];
       });
+      return out;
+    });
+    fd.append('items', JSON.stringify(itemsForApi));
 
-      fd.append('items', JSON.stringify(itemsForApi));
+    if (referralCode) fd.append('referralCode', referralCode);
 
-      // referral code (optional)
-      if (referralCode) fd.append('referralCode', referralCode);
+    // shop gallery
+    shopImages.forEach((file) => fd.append('shopImages', file));
 
-      // shop gallery
-      shopImages.forEach((file) => fd.append('shopImages', file));
+    // per-item images (only if chosen)
+    formData.items.forEach((it) => {
+      if (it.image instanceof File) fd.append('itemImages', it.image);
+    });
 
-      // item images (append only if file chosen)
-      formData.items.forEach((it) => {
-        if (it.image instanceof File) fd.append('itemImages', it.image);
-      });
+    const res = await axios.post(`${apiBase}/api/shops/register`, fd, {
+      headers: {
+        // Don't set Content-Type manually; let axios set the boundary
+        Authorization: `Bearer ${token}`,
+      },
+    });
 
-      // KYC files for first shop
-      if (needKyc) {
-        if (aadhaarFile) fd.append('aadhaar', aadhaarFile);
-        if (panFile) fd.append('pan', panFile);
-      }
-
-
-      const token = await user.getIdToken();
-      const apiBase = 'https://jio-yatri-driver.onrender.com';
-      const res = await axios.post(`${apiBase}/api/shops/register`, fd, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (!res?.data?.success) {
-        throw new Error(res?.data?.error || 'Registration failed');
-      }
-
-      // setSuccess('Registration successful! Redirecting...');
-      // // Update auth context if you track isRegistered, ignore if not present
-      // try { if (refreshUserMeta) await refreshUserMeta(user); } catch (_) { }
-      // setTimeout(() => navigate('/business-dashboard', { replace: true }), 1200);
-
-      setSuccess('Registration successful!');
-      try { if (refreshUserMeta) await refreshUserMeta(user); } catch (_) { }
-      const submittedKyc = needKyc || !!aadhaarFile || !!panFile;
-      // If KYC was submitted, send the user to the waiting screen
-      if (submittedKyc) {
-        navigate('/kyc-pending', { replace: true });
-      } else {
-        navigate('/business-dashboard', { replace: true });
-      }
-
-    } catch (err) {
-      const msg =
-        err?.response?.status === 413
-          ? 'A file is too large (max 5MB)'
-          : err?.response?.data?.error || err.message || 'Registration failed';
-      setError(msg);
-    } finally {
-      setIsSubmitting(false);
+    if (!res?.data?.success) {
+      throw new Error(res?.data?.error || 'Registration failed');
     }
-  };
+
+    setSuccess('Registration successful!');
+    try { if (refreshUserMeta) await refreshUserMeta(user); } catch (_) {}
+
+    // 3) Decide navigation
+    if (kycWasSubmittedNow) {
+      navigate('/kyc-pending', { replace: true });
+    } else {
+      navigate('/business-dashboard', { replace: true });
+    }
+  } catch (err) {
+    const status = err?.response?.status;
+    const msg =
+      status === 413 ? 'A file is too large (max 5MB)' :
+      status === 415 ? 'Unsupported file type' :
+      err?.response?.data?.error || err.message || 'Registration failed';
+    setError(msg);
+  } finally {
+    setIsSubmitting(false);
+  }
+};
+
 
   if (authLoading) {
     return (
@@ -659,7 +674,7 @@ const CategoryRegistration = () => {
                     placeholder="e.g., 9876543210@ybl or shop@okhdfcbank"
                     className="hr-input"
                     required
-                    pattern="[a-zA-Z0-9._-]+@[a-zA-Z]+"
+                  
                   />
                   <small className="hr-hint">This is your UPI ID (like <code>name@bank</code>), not your phone number.</small>
                 </div>
