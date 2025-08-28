@@ -2,7 +2,7 @@
 const Shop = require('../models/CategoryModel');
 const User = require('../models/UserRole'); // your User model path
 
-const BASE = process.env.API_BASE_URL || 'http://localhost:5000';
+const BASE = 'https://jio-yatri-driver.onrender.com';
 
 // GET /api/admin/shops-with-kyc?status=(all|none|submitted|verified|rejected)&q=<search>
 exports.adminGetAllShopsWithKyc = async (req, res) => {
@@ -117,3 +117,4 @@ exports.adminUpdateKycStatus = async (req, res) => {
     return res.status(500).json({ success: false, error: 'Failed to update KYC status' });
   }
 };
+
