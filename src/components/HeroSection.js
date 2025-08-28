@@ -1286,7 +1286,7 @@ const HeroSection = () => {
                                     setOtp('');
                                     setMessage({ text: '', isError: false });
                                 }}
-                                className="cancel-button"
+                                className="cancell-button"
                             >
                                 Cancel
                             </button>
