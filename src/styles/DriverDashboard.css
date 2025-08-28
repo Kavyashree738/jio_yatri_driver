@@ -1138,7 +1138,7 @@
     flex-direction: column; /* Stack vertically on small screens */
   }
   .dd-container {
-    margin-top:0px;
+    margin-top:10px;
   }
   
   .dd-stat-card {

@@ -11,12 +11,17 @@ function AvailableShipments() {
   const [shipments, setShipments] = useState([]);
   const [driverStatus, setDriverStatus] = useState('inactive');
   const [loading, setLoading] = useState(true);
-  const [notificationPermission, setNotificationPermission] = useState('default');
+  const [notificationPermission, setNotificationPermission] = useState(Notification.permission);
   const [showInstructions, setShowInstructions] = useState(false);
   const [activeShipment, setActiveShipment] = useState(null);
   const [isMobile, setIsMobile] = useState(false);
   const notifiedShipmentIdsRef = useRef(new Set());
 
+  useEffect(() => {
+    // Keep state in sync with browser permission
+    setNotificationPermission(Notification.permission);
+  }, []);
+  
   useEffect(() => {
     const checkIfMobile = () => {
       const userAgent = navigator.userAgent || navigator.vendor || window.opera;
@@ -335,5 +340,6 @@ useEffect(() => {
 }
 
 export default AvailableShipments;
+
 
 

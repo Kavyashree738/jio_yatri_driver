@@ -2,8 +2,7 @@ import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import '../styles/SplashScreen.css';
-import logo from '../assets/images/logo.jpg';
-import ownerImage from '../assets/images/splash-image.jpg';
+import ownerImage from '../assets/images/splash-screen-image.jpg';
 
 const SplashScreen = () => {
   const navigate = useNavigate();
@@ -25,23 +24,6 @@ const SplashScreen = () => {
         exit={{ opacity: 0 }}
         transition={{ duration: 0.5 }}
       >
-        {/* Logo container - now smaller */}
-        <motion.div
-          className="logo-container"
-          initial={{ scale: 0.5 }}
-          animate={{ scale: 1 }}
-          transition={{
-            type: 'spring',
-            stiffness: 100,
-            damping: 10
-          }}
-        >
-          <img
-            src={logo}
-            alt="JioYatri Logo"
-            className="logo-image"
-          />
-        </motion.div>
 
         {/* Owner image with nice styling */}
         <motion.div
@@ -85,26 +67,26 @@ const SplashScreen = () => {
             transition={{ delay: 0.8 }}
             className="company-name"
           >
-            MokshaAmbani Tech Service PVT LMT
+            Mokshambani Tech Service PVT LTD
           </motion.h3>
         </motion.div>
 
-        <motion.p
+        {/* <motion.p
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.9 }}
           className="tagline"
         >
           Your trusted delivery partner
-        </motion.p>
+        </motion.p> */}
 
         {/* Loading indicator */}
-        <motion.div
+        {/* <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 1.2 }}
           className="loading-indicator"
-        />
+        /> */}
       </motion.div>
     </div>
   );

@@ -333,7 +333,7 @@
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .available-shipments {
-    padding: 1.5rem;
+    padding: 0.5rem;
     margin: 1rem;
   }
   
@@ -382,4 +382,5 @@
   object-fit: cover;
   border-radius: 4px;
   border: 1px solid #ddd;
+
 }

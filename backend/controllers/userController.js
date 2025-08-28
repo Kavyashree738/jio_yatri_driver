@@ -222,3 +222,76 @@ exports.getAvatar = async (req, res) => {
     res.status(500).json({ success: false, error: 'Failed to fetch avatar' });
   }
 };
+
+exports.reuploadKycDocs = async (req, res) => {
+  try {
+    await gfsReady;
+
+    const uid = req.user?.uid;
+    if (!uid) return res.status(401).json({ success: false, error: 'Unauthorized' });
+
+    const user = await User.findOne({ userId: uid });
+    if (!user) return res.status(404).json({ success: false, error: 'User not found' });
+
+    const hasAadhaar = Array.isArray(req.files?.aadhaar) && req.files.aadhaar.length > 0;
+    const hasPan = Array.isArray(req.files?.pan) && req.files.pan.length > 0;
+
+    if (!hasAadhaar && !hasPan) {
+      return res.status(400).json({ success: false, error: 'Provide aadhaar and/or pan file' });
+    }
+
+    const updates = {
+      hasKyc: true,
+      'kyc.status': 'submitted',
+      'kyc.submittedAt': new Date(),
+      'kyc.rejectedAt': null,
+      'kyc.verifiedAt': null,
+    };
+
+    // Replace Aadhaar file if provided
+    if (hasAadhaar) {
+      const newAadhaarId = await uploadToGridFS(req.files.aadhaar[0]);
+      // Optional cleanup of old file to save space
+      const old = user.kyc?.aadhaarFile;
+      if (old) {
+        try { await gfs.delete(new mongoose.Types.ObjectId(old)); } catch (_) { }
+      }
+      updates['kyc.aadhaarFile'] = newAadhaarId;
+    }
+
+    // Replace PAN file if provided
+    if (hasPan) {
+      const newPanId = await uploadToGridFS(req.files.pan[0]);
+      const old = user.kyc?.panFile;
+      if (old) {
+        try { await gfs.delete(new mongoose.Types.ObjectId(old)); } catch (_) { }
+      }
+      updates['kyc.panFile'] = newPanId;
+    }
+
+    // Clear any admin notes on resubmission (optional)
+    if (user.kyc?.notes) updates['kyc.notes'] = '';
+
+    if (user.photo === '') user.photo = null;
+    // user.set(updates);
+    // await user.save();
+    await User.updateOne({ _id: user._id }, { $set: updates });
+
+    const base = 'https://jio-yatri-driver.onrender.com';
+    return res.json({
+      success: true,
+      data: {
+        status: user.kyc.status,
+        submittedAt: user.kyc.submittedAt,
+        verifiedAt: user.kyc.verifiedAt,
+        rejectedAt: user.kyc.rejectedAt,
+        notes: user.kyc.notes || '',
+        aadhaarUrl: user.kyc.aadhaarFile ? `${base}/api/shops/images/${user.kyc.aadhaarFile}` : null,
+        panUrl: user.kyc.panFile ? `${base}/api/shops/images/${user.kyc.panFile}` : null,
+      }
+    });
+  } catch (e) {
+    console.error('[reuploadKycDocs] error:', e);
+    return res.status(500).json({ success: false, error: e.message || 'Failed to re-upload KYC' });
+  }
+};

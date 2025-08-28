@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 mongoose.model('shop_files.files', new mongoose.Schema({}, { strict: false }));
 mongoose.model('shop_files.chunks', new mongoose.Schema({}, { strict: false }));
 
+const vpaRegex = /^[a-z0-9.\-_]{2,}@[a-z]{2,}$/i;
 // 2. Base shop schema
 const baseShopSchema = new mongoose.Schema({
   userId: { type: String, required: true },
@@ -26,6 +27,16 @@ const baseShopSchema = new mongoose.Schema({
         return /^[0-9]{10}$/.test(v);
       },
       message: props => `${props.value} is not a valid PhonePe number!`
+    }
+  },
+  upiId: {
+    type: String,
+    required: true,        // make mandatory for shops that accept UPI
+    trim: true,
+    set: v => (v ? String(v).trim().toLowerCase() : v),
+    validate: {
+      validator: v => vpaRegex.test(v || ''),
+      message: p => `${p.value} is not a valid UPI ID`
     }
   },
   email: {

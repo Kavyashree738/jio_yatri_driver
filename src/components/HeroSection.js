@@ -114,50 +114,106 @@ const HeroSection = () => {
         const key = userRole === 'business' ? 'shop_ref' : 'driver_ref'; const fromUrl = (sp.get(key) || '').toUpperCase();
         if (fromUrl) setReferralCode(fromUrl);
     }, [sp, userRole]);
+    // useEffect(() => {
+    //     const run = async () => {
+    //         if (softSignedOut || !auth.currentUser) {
+    //             setIsRegistered(false);
+    //             setRegistrationStep(0);
+    //             return;
+    //         }
+
+    //         const { isRegistered, role } = await checkRegistrationStatus();
+    //         setIsRegistered(!!isRegistered);
+
+    //         // ✅ Do not redirect when user is already on Home
+    //         const onHome = location.pathname === '/' || location.pathname === '/home';
+
+    //         if (isRegistered && role === 'business' && !onHome) {
+    //             if (!hasRoutedRef.current) {
+    //                 hasRoutedRef.current = true;
+    //                 navigate('/business-dashboard', { replace: true });
+    //             }
+    //             return;
+    //         }
+
+    //         if (isRegistered && role === 'driver' && !onHome) {
+    //             if (!hasRoutedRef.current) {
+    //                 hasRoutedRef.current = true;
+    //                 navigate('/orders', { replace: true });
+    //             }
+    //             return;
+    //         }
+
+    //         // If we're on Home, show the post-login UI instead of redirecting
+    //         if (isRegistered) {
+    //             setRegistrationStep(4);
+    //         } else if (role) {
+    //             setUserRole(role);
+    //             setRegistrationStep(role === 'driver' ? 2 : 1);
+    //         } else {
+    //             setRegistrationStep(0);
+    //         }
+    //     };
+
+    //     const unsub = auth.onAuthStateChanged(run);
+    //     return () => unsub();
+    // }, [softSignedOut, location.pathname]); // include pathname so it re-evaluates on Home clicks
+
     useEffect(() => {
-        const run = async () => {
-            if (softSignedOut || !auth.currentUser) {
-                setIsRegistered(false);
-                setRegistrationStep(0);
-                return;
-            }
+  const run = async () => {
+    if (softSignedOut || !auth.currentUser) {
+      setIsRegistered(false);
+      setRegistrationStep(0);
+      return;
+    }
 
-            const { isRegistered, role } = await checkRegistrationStatus();
-            setIsRegistered(!!isRegistered);
+    const { isRegistered, role } = await checkRegistrationStatus();
+    setIsRegistered(!!isRegistered);
+    setUserRole(role || null);
 
-            // ✅ Do not redirect when user is already on Home
-            const onHome = location.pathname === '/' || location.pathname === '/home';
+    const onHome = location.pathname === '/' || location.pathname === '/home';
 
-            if (isRegistered && role === 'business' && !onHome) {
-                if (!hasRoutedRef.current) {
-                    hasRoutedRef.current = true;
-                    navigate('/business-dashboard', { replace: true });
-                }
-                return;
-            }
+    // ✅ Business: not registered → force /register
+    if (role === 'business' && !isRegistered && location.pathname !== '/register') {
+      if (!hasRoutedRef.current) {
+        hasRoutedRef.current = true;
+        navigate('/register', { replace: true });
+      }
+      return;
+    }
 
-            if (isRegistered && role === 'driver' && !onHome) {
-                if (!hasRoutedRef.current) {
-                    hasRoutedRef.current = true;
-                    navigate('/orders', { replace: true });
-                }
-                return;
-            }
+    // ✅ Business: registered → dashboard (unless already on home)
+    if (role === 'business' && isRegistered && !onHome) {
+      if (!hasRoutedRef.current) {
+        hasRoutedRef.current = true;
+        navigate('/business-dashboard', { replace: true });
+      }
+      return;
+    }
 
-            // If we're on Home, show the post-login UI instead of redirecting
-            if (isRegistered) {
-                setRegistrationStep(4);
-            } else if (role) {
-                setUserRole(role);
-                setRegistrationStep(role === 'driver' ? 2 : 1);
-            } else {
-                setRegistrationStep(0);
-            }
-        };
+    // ✅ Driver: registered → orders
+    if (role === 'driver' && isRegistered && !onHome) {
+      if (!hasRoutedRef.current) {
+        hasRoutedRef.current = true;
+        navigate('/orders', { replace: true });
+      }
+      return;
+    }
 
-        const unsub = auth.onAuthStateChanged(run);
-        return () => unsub();
-    }, [softSignedOut, location.pathname]); // include pathname so it re-evaluates on Home clicks
+    // ✅ Driver: not registered → show driver wizard on Home
+    if (role === 'driver') {
+      setRegistrationStep(isRegistered ? 4 : 2);
+      return;
+    }
+
+    // ✅ Generic fallback
+    setRegistrationStep(isRegistered ? 4 : 0);
+  };
+
+  const unsub = auth.onAuthStateChanged(run);
+  return () => unsub();
+}, [softSignedOut, location.pathname, navigate]);
+
 
     const variants = {
         hidden: { opacity: 0, y: 30 },
@@ -1286,7 +1342,7 @@ const HeroSection = () => {
                                     setOtp('');
                                     setMessage({ text: '', isError: false });
                                 }}
-                                className="cancel-button"
+                                className="cancell-button"
                             >
                                 Cancel
                             </button>

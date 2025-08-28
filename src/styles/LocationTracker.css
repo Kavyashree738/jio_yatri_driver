@@ -316,7 +316,7 @@
 /* Responsive Design */
 @media (max-width: 768px) {
   .location-tracker-container {
-    padding: 1.25rem;
+    padding: 0.25rem;
     border-radius: 1rem;
   }
   
