@@ -1,6 +1,17 @@
 // models/User.js
 const mongoose = require('mongoose');
 
+const kycSchema = new mongoose.Schema({
+  aadhaarFile: { type: mongoose.Schema.Types.ObjectId, default: null }, // GridFS (kyc_files)
+  panFile: { type: mongoose.Schema.Types.ObjectId, default: null }, // GridFS (kyc_files)
+  status: { type: String, enum: ['none', 'submitted', 'verified', 'rejected'], default: 'none' },
+  submittedAt: { type: Date, default: null },
+  verifiedAt: { type: Date, default: null },
+  rejectedAt: { type: Date, default: null },
+  notes: { type: String, default: '' }
+}, { _id: false });
+
+
 const userSchema = new mongoose.Schema({
   userId: { type: String, required: true, unique: true },
   uid: { type: String, default: null }, // legacy alias
@@ -20,6 +31,10 @@ const userSchema = new mongoose.Schema({
 
   // NEW: avatar photo stored in GridFS
   photo: { type: mongoose.Schema.Types.ObjectId, default: null },
+
+  hasKyc: { type: Boolean, default: false },
+  kyc: { type: kycSchema, default: () => ({}) },
+
 
   createdAt: { type: Date, default: Date.now },
   lastLogin: { type: Date }
