@@ -63,6 +63,11 @@ import CartPage from './components/Cart';
 import OrderConfirmation from './components/OrderConfirmation';
 import BusinessOrders from './components/BusinessOrders';
 
+
+import KycPending from './components/KycPending';
+import RequireKycVerified from './components/RequireKycVerified';
+import OwnerDocumentViews from './components/OwnerDocumentViews';
+
 // Smart landing
 function LandingRedirect() {
   const { user, userRole, isRegistered, loading } = useAuth();
@@ -122,9 +127,29 @@ const App = () => {
           } />
 
           {/* BUSINESS-ONLY */}
-          <Route path="/business-dashboard" element={
-            <RequireAuth><RoleGuard allow="business"><BusinessDashboard /></RoleGuard></RequireAuth>
-          } />
+
+          <Route
+            path="/kyc-pending"
+            element={
+              <RequireAuth>
+                <RoleGuard allow="business">
+                  <KycPending />
+                </RoleGuard>
+              </RequireAuth>
+            }
+          />
+           <Route
+            path="/business-dashboard"
+            element={
+              <RequireAuth>
+                <RoleGuard allow="business">
+                  <RequireKycVerified>
+                    <BusinessDashboard />
+                  </RequireKycVerified>
+                </RoleGuard>
+              </RequireAuth>
+            }
+          />
           <Route path="/edit-shop/:shopId" element={
             <RequireAuth><RoleGuard allow="business"><EditShopRegistration /></RoleGuard></RequireAuth>
           } />
@@ -143,6 +168,17 @@ const App = () => {
           <Route path="/register" element={
             <RequireAuth><RoleGuard allow="business"><OnlyIfNotRegistered><CategoryRegistration /></OnlyIfNotRegistered></RoleGuard></RequireAuth>
           } />
+
+           <Route
+            path="/owner-documents"
+            element={
+              <RequireAuth>
+                <RoleGuard allow="business">
+                  <OwnerDocumentViews />
+                </RoleGuard>
+              </RequireAuth>
+            }
+          />
 
           {/* ✅ NEW ROUTES (Cart & Orders) */}
           {/* Cart & confirmation are user-facing; keep them accessible without role restriction,

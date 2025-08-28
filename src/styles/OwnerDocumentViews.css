@@ -1,0 +1,373 @@
+/* OwnerDocumentViews.css */
+
+.odv-wrap {
+  padding: 1rem;
+  background: #f9f9f9;
+  font-family: 'Segoe UI', Arial, sans-serif;
+  font-size: 14px;
+  min-height: 100vh;
+  box-sizing: border-box;
+  margin-top:100px
+}
+
+.odv-card {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  max-width: 100%;
+}
+
+.odv-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background: #2c3e50;
+  color: white;
+  flex-wrap: wrap;
+}
+
+.odv-header h1 {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.odv-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.odv-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.5rem 0.8rem;
+  border: none;
+  border-radius: 4px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  font-size: 0.8rem;
+}
+
+.odv-btn.primary {
+  background: #3498db;
+  color: white;
+}
+
+.odv-btn.primary:hover {
+  background: #2980b9;
+}
+
+.odv-btn.light {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
+.odv-btn.light:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.odv-btn.link {
+  background: transparent;
+  color: #3498db;
+  padding: 0.3rem 0.6rem;
+}
+
+.odv-btn.link:hover {
+  text-decoration: underline;
+}
+
+.odv-status-row {
+  padding: 1rem;
+  background: #f8f9fa;
+  border-bottom: 1px solid #e9ecef;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.odv-status-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.odv-notes {
+  padding: 0.6rem;
+  background: #fff3cd;
+  border-left: 3px solid #ffc107;
+  border-radius: 3px;
+  color: #856404;
+  font-size: 0.8rem;
+  max-width: 100%;
+}
+
+.odv-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.3rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.odv-badge.verified {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.odv-badge.rejected {
+  background: #ffebee;
+  color: #d32f2f;
+}
+
+.odv-badge.submitted {
+  background: #e3f2fd;
+  color: #1565c0;
+}
+
+.odv-badge.none {
+  background: #f5f5f5;
+  color: #616161;
+}
+
+.odv-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.odv-box {
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.odv-box-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.8rem;
+  background: #f8f9fa;
+  border-bottom: 1px solid #e0e0e0;
+  flex-wrap: wrap;
+}
+
+.odv-box-head h3 {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #333;
+  font-weight: 600;
+  flex: 1;
+  min-width: 100px;
+}
+
+.odv-missing {
+  color: #f44336;
+  font-size: 0.8rem;
+}
+
+.odv-upload {
+  padding: 0.8rem;
+}
+
+.odv-file {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+
+.odv-file input[type="file"] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.odv-file-name {
+  font-size: 0.8rem;
+  color: #666;
+  word-break: break-all;
+}
+
+.odv-file-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.5rem 0.8rem;
+  background: #3498db;
+  color: white;
+  border-radius: 4px;
+  font-weight: 500;
+  font-size: 0.8rem;
+  width: fit-content;
+}
+
+.odv-file-meta {
+  font-size: 0.75rem;
+  color: #888;
+  margin-top: 0.3rem;
+}
+
+.odv-meta {
+  padding: 0 1rem 1rem;
+}
+
+.odv-time-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.4rem 0;
+  border-bottom: 1px dashed #e0e0e0;
+  font-size: 0.8rem;
+}
+
+.odv-time-row:last-child {
+  border-bottom: none;
+}
+
+.odv-time-row span:first-child {
+  font-weight: 500;
+  color: #666;
+}
+
+.odv-time-row span:last-child {
+  color: #888;
+}
+
+.odv-footer {
+  padding: 1rem;
+  background: #f8f9fa;
+  border-top: 1px solid #e9ecef;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.odv-hint {
+  font-size: 0.75rem;
+  color: #666;
+  font-style: italic;
+}
+
+.odv-error {
+  margin: 0 1rem 1rem;
+  padding: 0.6rem;
+  background: rgba(244, 67, 54, 0.1);
+  border-left: 3px solid #f44336;
+  border-radius: 3px;
+  color: #d32f2f;
+  font-size: 0.8rem;
+}
+
+/* Mobile-specific adjustments */
+@media (max-width: 768px) {
+  .odv-wrap {
+    padding: 0.5rem;
+    font-size: 13px;
+    margin-top: 0px;
+  }
+  
+  .odv-header {
+    padding: 0.8rem;
+  }
+  
+  .odv-header h1 {
+    font-size: 1.1rem;
+  }
+  
+  .odv-btn {
+    padding: 0.4rem 0.6rem;
+    font-size: 0.75rem;
+  }
+  
+  .odv-status-row {
+    padding: 0.8rem;
+  }
+  
+  .odv-grid {
+    padding: 0.8rem;
+    gap: 0.8rem;
+  }
+  
+  .odv-box-head {
+    padding: 0.6rem;
+    flex-direction: row;
+    align-items: center;
+  }
+  
+  .odv-box-head h3 {
+    font-size: 0.85rem;
+    margin-right: 0.5rem;
+  }
+  
+  .odv-upload {
+    padding: 0.6rem;
+  }
+  
+  .odv-file-btn {
+    padding: 0.4rem 0.6rem;
+    font-size: 0.75rem;
+  }
+  
+  .odv-meta, .odv-footer {
+    padding: 0.8rem;
+  }
+  
+  .odv-time-row {
+    font-size: 0.75rem;
+  }
+  
+  .odv-footer {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+  }
+  
+  .odv-hint {
+    order: 2;
+    margin-top: 0.5rem;
+  }
+}
+
+/* Very small devices */
+@media (max-width: 360px) {
+  .odv-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .odv-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .odv-status-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .odv-box-head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .odv-box-head h3 {
+    width: 100%;
+  }
+}

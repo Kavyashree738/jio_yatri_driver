@@ -14,6 +14,9 @@ import { useAuth } from '../context/AuthContext';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 
+// Basic UPI VPA shape check: <id>@<handle>
+const vpaRegex = /^[a-z0-9.\-_]{2,}@[a-z]{2,}$/i;
+
 // Category-specific configuration (UI + validation)
 const CATEGORY_CONFIG = {
   grocery: {
@@ -51,8 +54,8 @@ const CATEGORY_CONFIG = {
     color: '#98D8C8',
     requireItemImage: false,
     itemFields: [
-    //   { key: 'prescriptionRequired', type: 'boolean', label: 'Prescription Required' },
-    //   { key: 'description', type: 'textarea', label: 'Description', maxLength: 200 },
+      //   { key: 'prescriptionRequired', type: 'boolean', label: 'Prescription Required' },
+      //   { key: 'description', type: 'textarea', label: 'Description', maxLength: 200 },
     ],
     defaultItem: { prescriptionRequired: false, description: '' },
   },
@@ -84,6 +87,48 @@ const CategoryRegistration = () => {
   const [sp] = useSearchParams();
   const { user, loading: authLoading, refreshUserMeta } = useAuth();
 
+  const [needKyc, setNeedKyc] = useState(false);
+  const [aadhaarFile, setAadhaarFile] = useState(null);
+  const [panFile, setPanFile] = useState(null);
+
+
+  useEffect(() => {
+    const checkNeedKyc = async () => {
+      if (!user?.uid) return;
+
+      const apiBase = 'https://jio-yatri-driver.onrender.com';
+
+      try {
+        // 1) how many shops does this user already have?
+        const shopsRes = await axios.get(`${apiBase}/api/shops/owner/${user.uid}`);
+        const count = Array.isArray(shopsRes?.data?.data) ? shopsRes.data.data.length : 0;
+
+        // 2) what is the user’s KYC status?
+        const token = await user.getIdToken();
+        let status = 'none';
+        try {
+          const kycRes = await axios.get(`${apiBase}/api/users/me/kyc`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          status = kycRes?.data?.data?.status || 'none';
+        } catch {
+          // ignore — keep 'none' if the KYC endpoint isn’t available
+        }
+
+        // Ask KYC only if this is the first shop AND KYC isn’t already submitted/verified
+        const kycAlreadyOk = (status === 'submitted' || status === 'verified');
+        setNeedKyc(count === 0 && !kycAlreadyOk);
+      } catch {
+        // if in doubt, be safe: require KYC on first shop
+        setNeedKyc(true);
+      }
+    };
+    checkNeedKyc();
+  }, [user?.uid]);
+
+
+
+
   // Read an optional referral code from any of: navigation state, query param, or localStorage
   const referralCode = (
     location.state?.referralCode ||
@@ -99,6 +144,7 @@ const CategoryRegistration = () => {
     shopName: '',
     phone: '',
     phonePeNumber: '',
+    upiId: '',
     email: '',
     address: { address: '', coordinates: { lat: null, lng: null } },
     openingTime: '',
@@ -136,13 +182,13 @@ const CategoryRegistration = () => {
       items: prev.items.length
         ? prev.items
         : [
-            {
-              name: '',
-              price: '',
-              image: null,
-              ...(CATEGORY_CONFIG[selectedCategory]?.defaultItem || {}),
-            },
-          ],
+          {
+            name: '',
+            price: '',
+            image: null,
+            ...(CATEGORY_CONFIG[selectedCategory]?.defaultItem || {}),
+          },
+        ],
     }));
   }, [selectedCategory]);
 
@@ -152,6 +198,7 @@ const CategoryRegistration = () => {
     if (formData.shopName) completed += 10;
     if (formData.phone) completed += 10;
     if (formData.phonePeNumber) completed += 10;
+    if (formData.upiId) completed += 10;
     if (formData.address.address) completed += 10;
     if (formData.openingTime && formData.closingTime) completed += 10;
     if (formData.items.length > 0) completed += 30;
@@ -253,6 +300,11 @@ const CategoryRegistration = () => {
       setError('Please enter a valid email address');
       return false;
     }
+    if (!vpaRegex.test(formData.upiId || '')) {
+      setError('Please enter a valid UPI ID (e.g., name@bank)');
+      return false;
+    }
+
     if (!formData.address.address) {
       setError('Please select an address from the suggestions');
       return false;
@@ -285,6 +337,13 @@ const CategoryRegistration = () => {
       setError('Each shop image must be 5MB or less');
       return false;
     }
+    if (needKyc) {
+      if (!aadhaarFile || !panFile) {
+        setError('Please upload both Aadhaar and PAN (PDF or image)');
+        return false;
+      }
+    }
+
     return true;
   };
 
@@ -299,6 +358,8 @@ const CategoryRegistration = () => {
       return;
     }
 
+
+
     setIsSubmitting(true);
     try {
       const fd = new FormData();
@@ -306,6 +367,7 @@ const CategoryRegistration = () => {
       fd.append('category', selectedCategory);
       fd.append('shopName', formData.shopName);
       fd.append('phone', formData.phone);
+      fd.append('upiId', (formData.upiId || '').trim().toLowerCase()); // ⬅️ NEW
       fd.append('phonePeNumber', formData.phonePeNumber);
       fd.append('email', formData.email || '');
       fd.append('address', JSON.stringify(formData.address));
@@ -336,6 +398,13 @@ const CategoryRegistration = () => {
         if (it.image instanceof File) fd.append('itemImages', it.image);
       });
 
+      // KYC files for first shop
+      if (needKyc) {
+        if (aadhaarFile) fd.append('aadhaar', aadhaarFile);
+        if (panFile) fd.append('pan', panFile);
+      }
+
+
       const token = await user.getIdToken();
       const apiBase = 'https://jio-yatri-driver.onrender.com';
       const res = await axios.post(`${apiBase}/api/shops/register`, fd, {
@@ -349,10 +418,21 @@ const CategoryRegistration = () => {
         throw new Error(res?.data?.error || 'Registration failed');
       }
 
-      setSuccess('Registration successful! Redirecting...');
-      // Update auth context if you track isRegistered, ignore if not present
-      try { if (refreshUserMeta) await refreshUserMeta(user); } catch (_) {}
-      setTimeout(() => navigate('/business-dashboard', { replace: true }), 1200);
+      // setSuccess('Registration successful! Redirecting...');
+      // // Update auth context if you track isRegistered, ignore if not present
+      // try { if (refreshUserMeta) await refreshUserMeta(user); } catch (_) { }
+      // setTimeout(() => navigate('/business-dashboard', { replace: true }), 1200);
+
+      setSuccess('Registration successful!');
+      try { if (refreshUserMeta) await refreshUserMeta(user); } catch (_) { }
+      const submittedKyc = needKyc || !!aadhaarFile || !!panFile;
+      // If KYC was submitted, send the user to the waiting screen
+      if (submittedKyc) {
+        navigate('/kyc-pending', { replace: true });
+      } else {
+        navigate('/business-dashboard', { replace: true });
+      }
+
     } catch (err) {
       const msg =
         err?.response?.status === 413
@@ -416,7 +496,7 @@ const CategoryRegistration = () => {
 
   const ItemsStepTitle = selectedCategory === 'hotel' ? 'Menu Items' : 'Items';
   const itemsTabDisabled =
-    !formData.shopName || !formData.phone || !formData.phonePeNumber || !formData.address.address;
+    !formData.shopName || !formData.phone || !formData.upiId || !formData.phonePeNumber || !formData.address.address;
 
   const imagesTabDisabled =
     formData.items.length === 0 ||
@@ -566,6 +646,24 @@ const CategoryRegistration = () => {
                     required
                   />
                 </div>
+                <div className="hr-form-group">
+                  <label className="hr-label">
+                    <FaWallet className="hr-input-icon" />
+                    UPI ID (VPA) <span className="hr-required">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="upiId"
+                    value={formData.upiId}
+                    onChange={handleInputChange}
+                    placeholder="e.g., 9876543210@ybl or shop@okhdfcbank"
+                    className="hr-input"
+                    required
+                    pattern="[a-zA-Z0-9._-]+@[a-zA-Z]+"
+                  />
+                  <small className="hr-hint">This is your UPI ID (like <code>name@bank</code>), not your phone number.</small>
+                </div>
+
 
                 <div className="hr-form-group">
                   <label className="hr-label">
@@ -624,6 +722,63 @@ const CategoryRegistration = () => {
                 />
               </div>
 
+              {/* KYC for first-time business registration */}
+              {needKyc && (
+                <div className="hr-form-group hr-full-width">
+                  <h3 className="hr-section-subtitle" style={{ marginTop: '8px' }}>
+                    KYC Documents (Required for first shop)
+                  </h3>
+
+                  <div className="hr-form-grid">
+                    {/* Aadhaar */}
+                    <div className="hr-form-group">
+                      <label className="hr-label">
+                        Aadhaar (PDF or Image) <span className="hr-required">*</span>
+                      </label>
+                      <input
+                        type="file"
+                        accept=".pdf,image/*"
+                        onChange={(e) => {
+                          const f = e.target.files?.[0];
+                          if (!f) return;
+                          if (f.size > 5 * 1024 * 1024) {
+                            setError('Aadhaar file must be 5MB or less');
+                            return;
+                          }
+                          setAadhaarFile(f);
+                        }}
+                        className="hr-file-input"
+                        required
+                      />
+                      {aadhaarFile && <small>Selected: {aadhaarFile.name}</small>}
+                    </div>
+
+                    {/* PAN */}
+                    <div className="hr-form-group">
+                      <label className="hr-label">
+                        PAN (PDF or Image) <span className="hr-required">*</span>
+                      </label>
+                      <input
+                        type="file"
+                        accept=".pdf,image/*"
+                        onChange={(e) => {
+                          const f = e.target.files?.[0];
+                          if (!f) return;
+                          if (f.size > 5 * 1024 * 1024) {
+                            setError('PAN file must be 5MB or less');
+                            return;
+                          }
+                          setPanFile(f);
+                        }}
+                        className="hr-file-input"
+                        required
+                      />
+                      {panFile && <small>Selected: {panFile.name}</small>}
+                    </div>
+                  </div>
+                  <p className="hr-upload-hint">These files are stored securely and are not publicly accessible.</p>
+                </div>
+              )}
               <div className="hr-section-actions">
                 <button
                   type="button"
@@ -937,6 +1092,10 @@ const CategoryRegistration = () => {
                     <div className="hr-review-item">
                       <span className="hr-review-label">PhonePe:</span>
                       <span className="hr-review-value">{formData.phonePeNumber}</span>
+                    </div>
+                    <div className="hr-review-item">
+                      <span className="hr-review-label">UPI ID:</span>
+                      <span className="hr-review-value">{formData.upiId}</span>
                     </div>
                     <div className="hr-review-item">
                       <span className="hr-review-label">Email:</span>

@@ -220,6 +220,33 @@ exports.getOrdersByUser = async (req, res) => {
 };
 
 // ---------- update status ----------
+// exports.updateOrderStatus = async (req, res) => {
+//   try {
+//     const { status } = req.body;
+//     console.log('[updateOrderStatus] id =', req.params.id, 'status =', status);
+
+//     const allowed = ['pending', 'accepted', 'confirmed', 'preparing', 'ready', 'out_for_delivery', 'completed', 'cancelled'];
+//     if (!allowed.includes(status)) {
+//       return res.status(400).json({ success: false, error: 'Invalid status' });
+//     }
+
+//     const updated = await Order.findByIdAndUpdate(
+//       req.params.id,
+//       { $set: { status } },
+//       { new: true }
+//     );
+
+//     if (!updated) {
+//       return res.status(404).json({ success: false, error: 'Order not found' });
+//     }
+//     console.log('[updateOrderStatus] updated ->', updated._id.toString(), updated.status);
+//     return res.json({ success: true, data: updated });
+//   } catch (e) {
+//     console.error('[updateOrderStatus] error:', e);
+//     return res.status(500).json({ success: false, error: 'Failed to update status' });
+//   }
+// };
+
 exports.updateOrderStatus = async (req, res) => {
   try {
     const { status } = req.body;
@@ -246,8 +273,50 @@ exports.updateOrderStatus = async (req, res) => {
     return res.status(500).json({ success: false, error: 'Failed to update status' });
   }
 };
-
 // ---------- update payment ----------
+// exports.updatePaymentStatus = async (req, res) => {
+//   try {
+//     const { status = 'paid', method, provider, txnId } = req.body;
+//     console.log('[updatePaymentStatus] id =', req.params.id, 'payload =', req.body);
+
+//     const allowed = ['unpaid', 'paid', 'refunded'];
+//     if (!allowed.includes(status)) {
+//       return res.status(400).json({ success: false, error: 'Invalid payment status' });
+//     }
+
+//     const update = { 'payment.status': status };
+//     if (method) update['payment.method'] = method;
+//     if (provider !== undefined) update['payment.provider'] = provider;
+//     if (txnId !== undefined) update['payment.txnId'] = txnId;
+
+//     let doc = await Order.findByIdAndUpdate(
+//       req.params.id,
+//       { $set: update },
+//       { new: true }
+//     );
+
+//     if (!doc) {
+//       return res.status(404).json({ success: false, error: 'Order not found' });
+//     }
+
+//     // auto create shipment on first time "paid"
+//     if (doc.payment?.status === 'paid' && !doc.shipmentId) {
+//       try {
+//         const shipment = await createShipmentForOrder(doc);
+//         doc = await Order.findById(doc._id).lean(); // reflect shipmentId
+//         console.log('[updatePaymentStatus] Shipment created:', shipment._id.toString());
+//       } catch (e) {
+//         console.error('[updatePaymentStatus] Shipment creation failed:', e.message);
+//       }
+//     }
+
+//     return res.json({ success: true, data: doc });
+//   } catch (e) {
+//     console.error('[updatePaymentStatus] failed:', e);
+//     return res.status(500).json({ success: false, error: 'Failed to update payment status' });
+//   }
+// };
+
 exports.updatePaymentStatus = async (req, res) => {
   try {
     const { status = 'paid', method, provider, txnId } = req.body;
@@ -290,6 +359,8 @@ exports.updatePaymentStatus = async (req, res) => {
     return res.status(500).json({ success: false, error: 'Failed to update payment status' });
   }
 };
+
+
 
 // --- core: create shipment from order ---
 async function createShipmentForOrder(orderDoc) {

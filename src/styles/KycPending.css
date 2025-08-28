@@ -1,0 +1,83 @@
+.kyc-wrap {
+  max-width: 640px;
+  margin: 48px auto;
+  padding: 0 16px;
+}
+
+.kyc-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 20px;
+}
+
+.kyc-card h1 {
+  margin: 0 0 6px 0;
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.kyc-sub {
+  color: #6b7280;
+  margin: 6px 0 12px;
+}
+
+.kyc-state {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  font-weight: 700;
+  padding: 8px 10px;
+  border-radius: 999px;
+  margin: 8px 0;
+}
+
+.kyc-state.waiting { background: #fff7ed; color: #9a3412; }   /* amber */
+.kyc-state.verified { background: #d1fae5; color: #065f46; }  /* green */
+.kyc-state.rejected { background: #fee2e2; color: #991b1b; }  /* red */
+
+.kyc-notes {
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 10px;
+  margin: 10px 0;
+  color: #0f172a;
+}
+
+.kyc-meta {
+  margin: 12px 0;
+  border-top: 1px dashed #e5e7eb;
+  padding-top: 10px;
+}
+
+.kyc-time-row {
+  display: flex;
+  justify-content: space-between;
+  color: #334155;
+  font-size: 13px;
+  padding: 2px 0;
+}
+
+.kyc-actions {
+  margin-top: 10px;
+}
+
+.btn {
+  height: 36px;
+  padding: 0 12px;
+  border: none;
+  border-radius: 8px;
+  background: #f3f4f6;
+  color: #111827;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.kyc-error {
+  margin-top: 10px;
+  color: #b91c1c;
+}
