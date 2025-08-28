@@ -398,11 +398,11 @@ const CategoryRegistration = () => {
         if (it.image instanceof File) fd.append('itemImages', it.image);
       });
 
-      // // KYC files for first shop
-      // if (needKyc) {
-      //   if (aadhaarFile) fd.append('aadhaar', aadhaarFile);
-      //   if (panFile) fd.append('pan', panFile);
-      // }
+      // KYC files for first shop
+      if (needKyc) {
+        if (aadhaarFile) fd.append('aadhaar', aadhaarFile);
+        if (panFile) fd.append('pan', panFile);
+      }
 
 
       const token = await user.getIdToken();
@@ -423,48 +423,15 @@ const CategoryRegistration = () => {
       // try { if (refreshUserMeta) await refreshUserMeta(user); } catch (_) { }
       // setTimeout(() => navigate('/business-dashboard', { replace: true }), 1200);
 
-      // setSuccess('Registration successful!');
-      // try { if (refreshUserMeta) await refreshUserMeta(user); } catch (_) { }
-      // const submittedKyc = needKyc || !!aadhaarFile || !!panFile;
-      // // If KYC was submitted, send the user to the waiting screen
-      // if (submittedKyc) {
-      //   navigate('/kyc-pending', { replace: true });
-      // } else {
-      //   navigate('/business-dashboard', { replace: true });
-      // }
-      
-
       setSuccess('Registration successful!');
-try { if (refreshUserMeta) await refreshUserMeta(user); } catch (_) {}
-
-if (needKyc) {
-  try {
-    const token = await user.getIdToken();
-    const kycFD = new FormData();
-    if (aadhaarFile) kycFD.append('aadhaar', aadhaarFile);
-    if (panFile)     kycFD.append('pan', panFile);
-
-    await axios.put(`${apiBase}/api/users/me/kyc-docs`, kycFD, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    navigate('/kyc-pending', { replace: true });
-  } catch (kycErr) {
-    console.error('KYC upload error', kycErr);
-    setError(
-      kycErr?.response?.data?.error || kycErr.message || 
-      'KYC upload failed, you can re-upload later from Profile.'
-    );
-    navigate('/business-dashboard', { replace: true });
-  }
-} else {
-  navigate('/business-dashboard', { replace: true });
-}
-
-
+      try { if (refreshUserMeta) await refreshUserMeta(user); } catch (_) { }
+      const submittedKyc = needKyc || !!aadhaarFile || !!panFile;
+      // If KYC was submitted, send the user to the waiting screen
+      if (submittedKyc) {
+        navigate('/kyc-pending', { replace: true });
+      } else {
+        navigate('/business-dashboard', { replace: true });
+      }
 
     } catch (err) {
       const msg =
@@ -692,6 +659,7 @@ if (needKyc) {
                     placeholder="e.g., 9876543210@ybl or shop@okhdfcbank"
                     className="hr-input"
                     required
+                    pattern="[a-zA-Z0-9._-]+@[a-zA-Z]+"
                   />
                   <small className="hr-hint">This is your UPI ID (like <code>name@bank</code>), not your phone number.</small>
                 </div>
