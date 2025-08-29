@@ -6,6 +6,7 @@
   min-height: 100vh;
   background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
   padding: 2rem;
+  margin-top:50px;
 }
 
 .hr-card {
@@ -30,6 +31,7 @@
   font-size: 2rem;
   margin-bottom: 0.5rem;
   font-weight: 700;
+  color: white;
 }
 
 .hr-subtitle {
@@ -46,7 +48,7 @@
   border-radius: 50px;
   background: rgba(255, 255, 255, 0.2);
   font-weight: 600;
-  margin-bottom: 1.5rem;
+  margin-bottom: -0.5rem;
 }
 
 .hr-progress-container {
@@ -71,7 +73,7 @@
   right: 10px;
   top: 50%;
   transform: translateY(-50%);
-  font-size: 0.7rem;
+  font-size: 0.5rem;
   color: #764ba2;
   font-weight: bold;
 }
@@ -169,7 +171,7 @@
 
 .hr-input {
   width: 100%;
-  padding: 0.75rem 1rem;
+  padding: 0.5rem 1rem;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   font-size: 1rem;
@@ -207,7 +209,7 @@
 }
 
 .hr-time-input {
-  padding: 0.75rem 1rem;
+  padding: 0.5rem 1rem;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   font-size: 1rem;
@@ -221,13 +223,13 @@
 .hr-item-form {
   background: #f8fafc;
   border-radius: 12px;
-  padding: 1.5rem;
+  padding: 0.5rem;
   margin-bottom: 1.5rem;
   border: 1px solid #e2e8f0;
 }
 
 .hr-item-title {
-  font-size: 1.2rem;
+  font-size: 1rem;
   margin-bottom: 1rem;
   color: #2d3748;
   display: flex;
@@ -307,7 +309,7 @@
 .hr-section-actions {
   display: flex;
   justify-content: space-between;
-  margin-top: 2rem;
+  margin-top: -2rem;
 }
 
 .hr-file-upload-group {
@@ -329,7 +331,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1rem;
+  padding: 0.5rem;
   border: 2px dashed #cbd5e0;
   border-radius: 8px;
   background: #f8fafc;
@@ -405,7 +407,7 @@
 .hr-review-container {
   background: #f8fafc;
   border-radius: 12px;
-  padding: 1.5rem;
+  padding: 1rem;
   border: 1px solid #e2e8f0;
 }
 
@@ -433,7 +435,7 @@
 }
 
 .hr-review-item {
-  margin-bottom: 1rem;
+  margin-bottom: 0.1rem;
 }
 
 .hr-review-label {
@@ -452,10 +454,13 @@
   grid-column: 1 / -1;
 }
 
-.hr-review-items {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  gap: 1rem;
+.hr-review-item {
+ display:flex;
+ gap:10px;
+}
+.hr-review-label{
+  font-weight: 600;
+  color:rgba(28, 28, 153, 0.616);
 }
 
 .hr-review-item-detail {
@@ -660,7 +665,7 @@
   }
   
   .hr-section-title {
-    font-size: 1.25rem;
+    font-size: 1rem;
   }
   
   .hr-category-grid {
@@ -858,18 +863,18 @@
 
 .hr-header {
   text-align: center;
-  margin-bottom: 40px;
+  margin-bottom: 0px;
   animation: fadeInUp 0.8s ease-out 0.2s both;
 }
 
 .hr-title {
-  font-size: 2.2rem;
+  font-size: 2rem;
   font-weight: 700;
   color: #f7f1f1;
   margin-bottom: 12px;
   background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
   -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  /* -webkit-text-fill-color: transparent; */
   background-clip: text;
 }
 
@@ -877,7 +882,7 @@
   font-size: 1.1rem;
   color: #f2f7ff;
   max-width: 500px;
-  margin: 0 auto;
+  margin: 10 auto;
   line-height: 1.6;
 }
 
@@ -1033,20 +1038,28 @@
 
 @media (max-width: 480px) {
   .hr-card {
-    padding: 25px 15px;
+    padding: 0px 0px;
+    padding-bottom:20px;
   }
-  
+  .hr-input{
+    font-size: 0.7rem;
+  }
   .hr-title {
-    font-size: 1.6rem;
+    font-size: 1.2rem;
+  }
+  .hr-label{
+    font-size: 0.5rem;
   }
   
   .hr-category-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 12px;
+    padding:10px;
+    margin-bottom:20px;
   }
   
   .hr-category-card {
-    padding: 18px 12px;
+    padding: 5px 5px;
   }
   
   .hr-category-icon {
@@ -1096,4 +1109,117 @@
     opacity: 0;
     transform: translateX(100%) rotate(30deg);
   }
+
 }
+
+/* Container */
+.hr-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  width: 100%;
+}
+
+/* Section title */
+.hr-section-subtitle {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 10px;
+  border-left: 4px solid #3498db;
+  padding-left: 10px;
+}
+
+/* Column layout (stacked) */
+.hr-form-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* Label */
+.hr-label {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #34495e;
+  margin-bottom: 6px;
+  display: block;
+}
+
+/* Required star */
+.hr-required {
+  color: #e74c3c;
+  font-weight: bold;
+}
+
+/* File input wrapper */
+.hr-file-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* Hide default input */
+.hr-file-input {
+  display: none;
+}
+
+/* Custom "Choose File" button */
+.hr-file-label {
+  background: #667eea;
+  color: white;
+  padding: 5px 18px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.3s ease;
+  display: inline-block;
+}
+
+.hr-file-label:hover {
+  background: #2980b9;
+}
+
+/* File name text */
+.hr-file-name {
+  font-size: 0.9rem;
+  color: #555;
+  font-style: italic;
+  max-width: 250px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Upload hint */
+.hr-upload-hint {
+  font-size: 0.9rem;
+  color: #7f8c8d;
+  margin-top: 10px;
+  padding: 8px 12px;
+  background: #f4f9fc;
+  border-left: 3px solid #3498db;
+  border-radius: 6px;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .hr-file-name {
+    max-width: 150px;
+  }
+}
+
+.hr-label svg{
+  margin-right:10px;
+}
+
+
+
+
+
+
+
+
+
