@@ -437,7 +437,7 @@
     grid-template-columns: repeat(2, 1fr);
   }
   .sd-details-container{
-    margin-top: 0px;
+    margin-top: 40px;
   }
   
   .sd-filter-buttons {
