@@ -16,7 +16,7 @@ export default function RequireKycVerified({ children }) {
       if (!user) return nav('/home', { replace: true });
       try {
         const token = await user.getIdToken();
-        const { data } = await axios.get(`${apiBase}/api/users/me/kyc`, {
+        const { data } = await axios.get(`${apiBase}/api/user/me/kyc`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const s = data?.data?.status || 'none';
