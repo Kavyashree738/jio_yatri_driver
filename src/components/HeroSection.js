@@ -856,9 +856,9 @@ const HeroSection = () => {
                         className={`step ${currentStep === step.number ? 'active' : ''} ${currentStep > step.number ? 'completed' : ''}`}
                     >
                         <div className="step-icon">{step.icon}</div>
-                        <div className="step-info">
-                            <div className="step-number">Step {step.number}</div>
-                            <div className="step-title">{step.title}</div>
+                        <div className="step-infos">
+                            <div className="step-numbers">Step {step.number}</div>
+                            <div className="step-titles">{step.title}</div>
                         </div>
                     </div>
                 ))}
