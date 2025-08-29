@@ -85,7 +85,7 @@ const HeroSection = () => {
 
 
     const TEST_PHONE = "+911234567890";
-    const TEST_OTP = "123456";
+    const TEST_OTP = "1234";
     useEffect(() => {
         if (isInView) {
             controls.start('visible');
@@ -247,7 +247,7 @@ const HeroSection = () => {
     };
 
     const startResendTimer = () => {
-        setOtpResendTime(30);
+        setOtpResendTime(300);
         const timer = setInterval(() => {
             setOtpResendTime((prev) => {
                 if (prev <= 1) {
@@ -420,8 +420,8 @@ const HeroSection = () => {
             setMessage({ text: 'Please select a role first.', isError: true });
             return;
         }
-        if (!otp || otp.length !== 6) {
-            setMessage({ text: 'Please enter a 6-digit code', isError: true });
+        if (!otp || otp.length !== 4) {
+            setMessage({ text: 'Please enter a 4-digit code', isError: true });
             return;
         }
 
@@ -1282,7 +1282,7 @@ const HeroSection = () => {
                             <p className="otp-subtitle">Sent to {phoneNumber}</p>
 
                             <div className="otp-container">
-                                {[...Array(6)].map((_, index) => (
+                                {[...Array(4)].map((_, index) => (
                                     <input
                                         key={index}
                                         type="text"
@@ -1291,7 +1291,7 @@ const HeroSection = () => {
                                         onChange={(e) => {
                                             const newOtp = otp.split('');
                                             newOtp[index] = e.target.value.replace(/\D/g, '');
-                                            setOtp(newOtp.join('').slice(0, 6));
+                                            setOtp(newOtp.join('').slice(0, 4));
 
                                             if (e.target.value && index < 5) {
                                                 document.getElementById(`otp-input-${index + 1}`).focus();
@@ -1317,8 +1317,8 @@ const HeroSection = () => {
 
                             <button
                                 onClick={verifyOtp}
-                                disabled={isLoading || otp.length !== 6}
-                                className={`otp-button ${isLoading || otp.length !== 6 ? 'disabled' : ''}`}
+                                disabled={isLoading || otp.length !== 4}
+                                className={`otp-button ${isLoading || otp.length !== 4 ? 'disabled' : ''}`}
                             >
                                 {isLoading ? (
                                     <>
