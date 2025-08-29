@@ -1293,7 +1293,7 @@ const HeroSection = () => {
                                             newOtp[index] = e.target.value.replace(/\D/g, '');
                                             setOtp(newOtp.join('').slice(0, 4));
 
-                                            if (e.target.value && index < 5) {
+                                            if (e.target.value && index < 3) {
                                                 document.getElementById(`otp-input-${index + 1}`).focus();
                                             }
                                         }}
