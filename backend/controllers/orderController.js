@@ -252,22 +252,40 @@ exports.updateOrderStatus = async (req, res) => {
     const { status } = req.body;
     console.log('[updateOrderStatus] id =', req.params.id, 'status =', status);
 
-    const allowed = ['pending', 'accepted', 'confirmed', 'preparing', 'ready', 'out_for_delivery', 'completed', 'cancelled'];
+    const allowed = [
+      'pending', 'accepted', 'confirmed', 'preparing',
+      'ready', 'out_for_delivery', 'completed', 'cancelled'
+    ];
     if (!allowed.includes(status)) {
       return res.status(400).json({ success: false, error: 'Invalid status' });
     }
 
-    const updated = await Order.findByIdAndUpdate(
+    let order = await Order.findByIdAndUpdate(
       req.params.id,
       { $set: { status } },
       { new: true }
     );
 
-    if (!updated) {
+    if (!order) {
       return res.status(404).json({ success: false, error: 'Order not found' });
     }
-    console.log('[updateOrderStatus] updated ->', updated._id.toString(), updated.status);
-    return res.json({ success: true, data: updated });
+
+    // ✅ Create shipment when the order is accepted (first time only)
+    if (status === 'accepted' && !order.shipmentId) {
+      try {
+        const shipment = await createShipmentForOrder(order);
+        // re-fetch to include the newly set shipmentId
+        order = await Order.findById(order._id).lean();
+        console.log('[updateOrderStatus] Shipment created:', shipment._id.toString());
+      } catch (e) {
+        console.error('[updateOrderStatus] Shipment creation failed:', e.message);
+        // You can choose to keep the 200 response or return 500 here.
+        // Keeping 200 with the order 'accepted' but without shipment is often OK.
+      }
+    }
+
+    console.log('[updateOrderStatus] updated ->', order._id.toString(), order.status);
+    return res.json({ success: true, data: order });
   } catch (e) {
     console.error('[updateOrderStatus] error:', e);
     return res.status(500).json({ success: false, error: 'Failed to update status' });
@@ -328,11 +346,11 @@ exports.updatePaymentStatus = async (req, res) => {
     }
 
     const update = { 'payment.status': status };
-    if (method) update['payment.method'] = method;
+    if (method !== undefined)   update['payment.method'] = method;
     if (provider !== undefined) update['payment.provider'] = provider;
-    if (txnId !== undefined) update['payment.txnId'] = txnId;
+    if (txnId !== undefined)    update['payment.txnId'] = txnId;
 
-    let doc = await Order.findByIdAndUpdate(
+    const doc = await Order.findByIdAndUpdate(
       req.params.id,
       { $set: update },
       { new: true }
@@ -342,16 +360,8 @@ exports.updatePaymentStatus = async (req, res) => {
       return res.status(404).json({ success: false, error: 'Order not found' });
     }
 
-    // auto create shipment on first time "paid"
-    if (doc.payment?.status === 'paid' && !doc.shipmentId) {
-      try {
-        const shipment = await createShipmentForOrder(doc);
-        doc = await Order.findById(doc._id).lean(); // reflect shipmentId
-        console.log('[updatePaymentStatus] Shipment created:', shipment._id.toString());
-      } catch (e) {
-        console.error('[updatePaymentStatus] Shipment creation failed:', e.message);
-      }
-    }
+    // ✅ Intentionally NOT creating a shipment here anymore.
+    // Shipment creation is handled elsewhere (e.g., when status becomes 'accepted').
 
     return res.json({ success: true, data: doc });
   } catch (e) {
@@ -359,7 +369,6 @@ exports.updatePaymentStatus = async (req, res) => {
     return res.status(500).json({ success: false, error: 'Failed to update payment status' });
   }
 };
-
 
 
 // --- core: create shipment from order ---
