@@ -462,7 +462,7 @@
 .driver-registration-form {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 5px;
   background-color: white;
   padding:1.5rem;
   border-radius: 15px;
@@ -488,11 +488,11 @@
   color: #555;
 }
 
-.form-group label::after {
+/* .form-group label::after {
   content: "*";
   color: #ff3860;
   margin-left: 0.2rem;
-}
+} */
 .form-group input{
     width:100%;
     padding: 1rem;
@@ -2061,6 +2061,10 @@ progress::-webkit-progress-value {
   border-color: #2563eb;
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.4);
 }
+
+
+
+/* OTP Modal - Mobile Responsive */
 .otp-overlay {
   position: fixed;
   top: 0;
@@ -2449,5 +2453,696 @@ progress::-webkit-progress-value {
   width:40px;
   height:40px;
   margin-bottom:10px;
+}
+
+.hero-section{
+  margin-bottom:60px;
+}
+
+/* Driver Registration Form - Modern & Responsive */
+.driver-registration-form {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 1.2rem;
+  box-shadow: 0 8px 30px rgba(0, 68, 255, 0.12);
+  max-width: 460px;
+  margin: 1rem auto;
+  width: 100%;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  position: relative;
+  overflow: hidden;
+  animation: formAppear 0.4s ease-out;
+}
+
+@keyframes formAppear {
+  0% { 
+    opacity: 0;
+    transform: translateY(20px) scale(0.98);
+  }
+  100% { 
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Step Indicator - Compact & Clean */
+.step-indicator {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+  position: relative;
+  padding: 0 5px;
+}
+
+.step-indicator::before {
+  content: '';
+  position: absolute;
+  top: 14px;
+  left: 15%;
+  right: 15%;
+  height: 2px;
+  background: #eef2f7;
+  z-index: 1;
+}
+
+.step {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 33.33%;
+}
+
+.step-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #f0f5ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 5px;
+  color: #7e9ff0;
+  font-size: 12px;
+  font-weight: 600;
+  border: 2px solid #f0f5ff;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.step.active .step-icon {
+  background: #0044FF;
+  color: white;
+  border-color: #0044FF;
+  box-shadow: 0 0 0 4px rgba(0, 68, 255, 0.15);
+}
+
+.step.completed .step-icon {
+  background: #0044FF;
+  color: white;
+  border-color: #0044FF;
+}
+
+.step-info {
+  text-align: center;
+}
+
+.step-number {
+  font-weight: 600;
+  color: #a0a7b3;
+  font-size: 10px;
+  transition: all 0.3s ease;
+}
+
+.step.active .step-number,
+.step.completed .step-number {
+  color: #0044FF;
+}
+
+.step-title {
+  color: #c5cbd7;
+  font-size: 10px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.step.active .step-title,
+.step.completed .step-title {
+  color: #0044FF;
+  font-weight: 600;
+}
+
+/* Form Header */
+.driver-registration-form h3 {
+  text-align: center;
+  margin: 0 0 1.5rem 0;
+  color: #1a2b4d;
+  font-size: 1.3rem;
+  font-weight: 700;
+  position: relative;
+}
+
+/* Form Elements */
+.form-group {
+  margin-bottom: 1.2rem;
+  animation: slideIn 0.4s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: #394360;
+  font-size: 13px;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 15px;
+  transition: all 0.25s ease;
+  background: #f9fbff;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #0044FF;
+  box-shadow: 0 0 0 3px rgba(0, 68, 255, 0.1);
+  background: white;
+}
+
+/* Floating Input */
+.floating-input {
+  position: relative;
+  margin-bottom: 1.2rem;
+}
+
+.floating-input input {
+  width: 100%;
+  padding: 14px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 15px;
+  background: #f9fbff;
+}
+
+.floating-input input:focus {
+  outline: none;
+  border-color: #0044FF;
+  box-shadow: 0 0 0 3px rgba(0, 68, 255, 0.1);
+  background: white;
+}
+
+.floating-input label {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  color: #94a3b8;
+  font-size: 15px;
+  pointer-events: none;
+  transition: all 0.25s ease;
+  background: transparent;
+  padding: 0 5px;
+}
+
+.floating-input input:focus + label,
+.floating-input input:not(:placeholder-shown) + label {
+  top: -9px;
+  left: 10px;
+  font-size: 11px;
+  color: #0044FF;
+  background: white;
+  font-weight: 600;
+}
+
+/* Vehicle Options */
+.vehicle-options {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-top: 0.5rem;
+}
+
+.vehicle-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  background: white;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  min-height: 70px;
+}
+
+.vehicle-btn:hover {
+  border-color: #0044FF;
+  transform: translateY(-2px);
+}
+
+.vehicle-btn.active {
+  background: #0044FF;
+  color: white;
+  border-color: #0044FF;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0, 68, 255, 0.15);
+}
+
+.vehicle-btn svg {
+  font-size: 18px;
+  transition: transform 0.25s ease;
+}
+
+.vehicle-btn.active svg {
+  color: white;
+  transform: scale(1.1);
+}
+
+/* Document Upload - Compact & Beautiful */
+.document-upload-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  padding: 10px 12px;
+  border: 1.5px dashed #e2e8f0;
+  border-radius: 10px;
+  background: #f9fbff;
+  transition: all 0.25s ease;
+  min-height: 50px;
+}
+
+.document-upload-row:hover {
+  border-color: #0044FF;
+  background: #f0f7ff;
+}
+
+.document-upload-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+}
+
+.document-label {
+  font-weight: 600;
+  color: #394360;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.document-upload-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: #0044FF;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(0, 68, 255, 0.2);
+}
+
+.document-upload-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 8px rgba(0, 68, 255, 0.3);
+}
+
+.upload-icon {
+  color: white;
+  font-size: 14px;
+}
+
+/* Uploaded Indicator - Very Compact */
+.uploaded-indicator {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #16a34a;
+  font-size: 12px;
+  font-weight: 600;
+  margin-left: 8px;
+  flex-shrink: 0;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.uploaded-icon {
+  font-size: 14px;
+}
+
+/* Progress Bar */
+progress {
+  width: 100%;
+  height: 4px;
+  margin-top: 6px;
+  border-radius: 2px;
+  border: none;
+}
+
+progress::-webkit-progress-bar {
+  background-color: #e2e8f0;
+  border-radius: 2px;
+}
+
+progress::-webkit-progress-value {
+  background: linear-gradient(90deg, #0044FF, #3b82f6);
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+/* Form Navigation */
+.form-navigation {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 1.5rem;
+  gap: 10px;
+}
+
+.prev-btn,
+.next-btn,
+.submit-btn {
+  padding: 11px 18px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  border: none;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.prev-btn {
+  background: white;
+  border: 1.5px solid #e2e8f0;
+  color: #64748b;
+}
+
+.prev-btn:hover {
+  background: #f8fafc;
+  border-color: #0044FF;
+  color: #0044FF;
+}
+
+.next-btn,
+.submit-btn {
+  background: #0044FF;
+  color: white;
+  position: relative;
+  overflow: hidden;
+}
+
+.next-btn:hover,
+.submit-btn:hover {
+  background: #0039d4;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0, 68, 255, 0.2);
+}
+
+.next-btn:disabled,
+.submit-btn:disabled {
+  background: #cbd5e1;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Phone Input Fix */
+.driver-registration-form .phone-input-container {
+  width: 100% !important;
+}
+
+.driver-registration-form .react-tel-input .form-control {
+  width: 100% !important;
+  padding: 12px 14px 12px 50px !important;
+  font-size: 15px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  height: auto;
+  background: #f9fbff;
+}
+
+.driver-registration-form .react-tel-input .form-control:focus {
+  border-color: #0044FF;
+  box-shadow: 0 0 0 3px rgba(0, 68, 255, 0.1);
+}
+
+.driver-registration-form .react-tel-input .flag-dropdown {
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px 0 0 10px;
+  background: #f9fbff;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .driver-registration-form {
+    padding: 1rem;
+    margin: 0.5rem;
+    border-radius: 14px;
+  }
+  
+  .step-indicator {
+    margin-bottom: 1.2rem;
+  }
+  
+  .step-icon {
+    width: 26px;
+    height: 26px;
+    font-size: 11px;
+  }
+  
+  .vehicle-options {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+  
+  .vehicle-btn {
+    min-height: 40px;
+    padding: 8px;
+  }
+  
+  .document-upload-row {
+    padding: 8px 10px;
+  }
+  
+  .document-label {
+    font-size: 12px;
+  }
+  
+  .form-navigation {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .prev-btn,
+  .next-btn,
+  .submit-btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .driver-registration-form {
+    padding: 0.8rem;
+    font-size: 13px;
+  }
+  
+  .driver-registration-form h3 {
+    font-size: 1.2rem;
+    margin-bottom: 1.2rem;
+  }
+  
+  .form-group input {
+    padding: 10px 12px;
+    font-size: 14px;
+  }
+  
+  .floating-input input {
+    padding: 12px;
+  }
+  
+  .floating-input label {
+    top: 12px;
+    left: 12px;
+    font-size: 14px;
+  }
+  
+  .vehicle-btn {
+    font-size: 11px;
+  }
+  
+  .vehicle-btn svg {
+    font-size: 16px;
+  }
+  
+  .document-upload-btn {
+    width: 32px;
+    height: 32px;
+  }
+  
+  .upload-icon {
+    font-size: 13px;
+  }
+  
+  .uploaded-indicator {
+    font-size: 11px;
+  }
+  
+  .prev-btn,
+  .next-btn,
+  .submit-btn {
+    padding: 10px 15px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 350px) {
+  .driver-registration-form {
+    padding: 0.7rem;
+  }
+  
+  .step-info {
+    display: none;
+  }
+  
+  .step-icon {
+    width: 24px;
+    height: 24px;
+    margin-bottom: 0;
+  }
+  
+  .form-group {
+    margin-bottom: 1rem;
+  }
+  
+  .document-upload-group {
+    flex-direction:row;
+    align-items: flex-start;
+    gap: 6px;
+  }
+  
+  .document-upload-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .uploaded-indicator {
+    margin-left: 0;
+  }
+}
+
+.step-indicator {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 2rem;
+  position: relative;
+  padding: 0 5px;
+}
+
+.step-indicator::before {
+  content: '';
+  position: absolute;
+  top: 14px;
+  left: 15%;
+  right: 15%;
+  height: 2px;
+  background: #eef2f7;
+  z-index: 1;
+}
+
+.step {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 33.33%;
+  transition: all 0.4s ease;
+}
+
+.step-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #f0f5ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
+  color: #7e9ff0;
+  font-size: 14px;
+  font-weight: 600;
+  border: 2px solid #f0f5ff;
+  transition: all 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+  position: relative;
+  overflow: hidden;
+}
+
+.step.active .step-icon {
+  background: #0044FF;
+  color: white;
+  border-color: #0044FF;
+  box-shadow: 0 0 0 6px rgba(0, 68, 255, 0.2);
+  transform: scale(1.1);
+}
+
+.step.completed .step-icon {
+  background: #10b981;
+  color: white;
+  border-color: #10b981;
+  box-shadow: 0 0 0 6px rgba(16, 185, 129, 0.2);
+}
+
+.step.completed .step-icon::after {
+  content: '✓';
+  position: absolute;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.step-infos {
+  text-align: center;
+  opacity: 0.7;
+  transition: all 0.3s ease;
+}
+
+.step.active .step-infos,
+.step.completed .step-infos {
+  opacity: 1;
+}
+
+.step-numbers {
+  font-weight: 600;
+  color: #a0a7b3;
+  font-size: 11px;
+  transition: all 0.3s ease;
+}
+
+.step.active .step-numbers,
+.step.completed .step-numbers {
+  color: #0044FF;
+  font-weight: 700;
+}
+
+.step.completed .step-numbers {
+  color: #10b981;
+}
+
+.step-titles {
+  color: #c5cbd7;
+  font-size: 11px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  margin-top: 2px;
+}
+
+.step.active .step-titles,
+.step.completed .step-titles {
+  color: #1a2b4d;
+  font-weight: 600;
 }
 
