@@ -738,7 +738,7 @@ async function uploadKycDocs({ token, aadhaarFile, panFile }) {
               </div>
 
               {/* KYC for first-time business registration */}
-              {needKyc && (
+               {needKyc && (
                 <div className="hr-form-group hr-full-width">
                   <h3 className="hr-section-subtitle" style={{ marginTop: '8px' }}>
                     KYC Documents (Required for first shop)
@@ -750,22 +750,30 @@ async function uploadKycDocs({ token, aadhaarFile, panFile }) {
                       <label className="hr-label">
                         Aadhaar (PDF or Image) <span className="hr-required">*</span>
                       </label>
-                      <input
-                        type="file"
-                        accept=".pdf,image/*"
-                        onChange={(e) => {
-                          const f = e.target.files?.[0];
-                          if (!f) return;
-                          if (f.size > 5 * 1024 * 1024) {
-                            setError('Aadhaar file must be 5MB or less');
-                            return;
-                          }
-                          setAadhaarFile(f);
-                        }}
-                        className="hr-file-input"
-                        required
-                      />
-                      {aadhaarFile && <small>Selected: {aadhaarFile.name}</small>}
+                      <div className="hr-file-wrapper">
+                        <input
+                          id="aadhaar"
+                          type="file"
+                          accept=".pdf,image/*"
+                          className="hr-file-input"
+                          onChange={(e) => {
+                            const f = e.target.files?.[0];
+                            if (!f) return;
+                            if (f.size > 5 * 1024 * 1024) {
+                              setError("Aadhaar file must be 5MB or less");
+                              return;
+                            }
+                            setAadhaarFile(f);
+                          }}
+                          required
+                        />
+                        <label htmlFor="aadhaar" className="hr-file-label">
+                          Choose File
+                        </label>
+                        <span className="hr-file-name">
+                          {aadhaarFile ? aadhaarFile.name : "No file chosen"}
+                        </span>
+                      </div>
                     </div>
 
                     {/* PAN */}
@@ -773,27 +781,36 @@ async function uploadKycDocs({ token, aadhaarFile, panFile }) {
                       <label className="hr-label">
                         PAN (PDF or Image) <span className="hr-required">*</span>
                       </label>
-                      <input
-                        type="file"
-                        accept=".pdf,image/*"
-                        onChange={(e) => {
-                          const f = e.target.files?.[0];
-                          if (!f) return;
-                          if (f.size > 5 * 1024 * 1024) {
-                            setError('PAN file must be 5MB or less');
-                            return;
-                          }
-                          setPanFile(f);
-                        }}
-                        className="hr-file-input"
-                        required
-                      />
-                      {panFile && <small>Selected: {panFile.name}</small>}
+                      <div className="hr-file-wrapper">
+                        <input
+                          id="pan"
+                          type="file"
+                          accept=".pdf,image/*"
+                          className="hr-file-input"
+                          onChange={(e) => {
+                            const f = e.target.files?.[0];
+                            if (!f) return;
+                            if (f.size > 5 * 1024 * 1024) {
+                              setError("PAN file must be 5MB or less");
+                              return;
+                            }
+                            setPanFile(f);
+                          }}
+                          required
+                        />
+                        <label htmlFor="pan" className="hr-file-label">
+                          Choose File
+                        </label>
+                        <span className="hr-file-name">
+                          {panFile ? panFile.name : "No file chosen"}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                  <p className="hr-upload-hint">These files are stored securely and are not publicly accessible.</p>
+
                 </div>
               )}
+                
               <div className="hr-section-actions">
                 <button
                   type="button"
