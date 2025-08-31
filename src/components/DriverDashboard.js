@@ -512,13 +512,13 @@ const DriverDashboard = () => {
             setDriverInfo(driverData.data);
             setStatus(driverData.data?.status || 'inactive');
             setSettlement({
-                today: settlementData.today || {
+                today: settlementData.currentDaySettlement  || {
                     cashCollected: 0,
                     onlineCollected: 0,
                     driverEarned: 0,
                     ownerEarned: 0
                 },
-                pending: settlementData.pendingSettlements || []
+                pending: settlementData.pending || []
             });
 
             if (imageRes.ok) {
