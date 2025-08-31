@@ -713,8 +713,8 @@ const DriverDashboard = () => {
             });
 
             setSettlement({
-                today: res.data.today || { cashCollected: 0, onlineCollected: 0, driverEarned: 0, ownerEarned: 0 },
-                pending: res.data.pendingSettlements || []
+                today: res.data.currentDaySettlement || { cashCollected: 0, onlineCollected: 0, driverEarned: 0, ownerEarned: 0 },
+                pending: res.data.pending || []
             });
 
             setMessage({ text: 'Payment settled successfully', isError: false });
