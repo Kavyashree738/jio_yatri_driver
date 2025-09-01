@@ -4,7 +4,7 @@
 .splash-container {
   min-height: 100vh;
   display: flex;
-  align-items: flex-end; /* Changed from center to flex-start */
+  align-items: flex-start;
   justify-content: center;
   position: relative;
   overflow: hidden;
@@ -21,7 +21,6 @@
   background-image: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.6)), var(--owner-image);
   background-size: cover;
   background-position: center;
-  /* background-position: top center; */
   background-repeat: no-repeat;
   z-index: -1;
 }
@@ -42,10 +41,10 @@
   align-items: center;
   text-align: center;
   color: white;
-  margin-top: 5vh; /* Added margin to push content further down */
+  margin-top: 5vh;
 }
 
-/* Owner image container - hidden since we're using background */
+/* Owner image hidden (we use background instead) */
 .owner-container {
   display: none;
 }
@@ -54,27 +53,23 @@
 .welcome-containers {
   margin-bottom: 2rem;
   padding: 2.5rem;
-  /* background: rgba(255, 255, 255, 0.1); */
-  border-radius: 20px;
-  /* box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3); */
-  /* backdrop-filter: blur(10px); */
-  /* border: 1px solid rgba(255, 255, 255, 0.18); */
   max-width: 800px;
   width: 100%;
 }
 
-/* Main welcome text */
+/* Main welcome text - stays small across all screens */
 .welcome-texts {
-  font-size: 4rem;
-  font-weight: 800;
+  font-size: 1rem;   /* fixed small size */
+  font-weight: 700;
   margin-bottom: 1rem;
   text-shadow: 2px 2px 10px rgba(0, 0, 0, 0.5);
   line-height: 1.2;
+  margin-top:-60px;
 }
 
 /* Highlighted word */
 .highlight-words {
-  color: #FFD700;
+  color: #d43bf3c9;
   position: relative;
   display: inline-block;
 }
@@ -85,49 +80,34 @@
   bottom: -5px;
   left: 0;
   width: 100%;
-  height: 4px;
-  background: linear-gradient(90deg, transparent, #FFD700, transparent);
+  height: 3px;
+  background: linear-gradient(90deg, transparent, #d30ed3, transparent);
   border-radius: 2px;
 }
 
-/* Company name */
+/* Company name - stays small */
 .company-name {
-  font-size: 1.4rem;
-  font-weight: 500;
-  margin: 1.5rem 0;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  color: #f0f0f0;
-  opacity: 0.9;
+  font-size: 0.8rem;  /* fixed small size */
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: #fff;
+  text-shadow: 2px 2px 10px rgba(0, 0, 0, 0.5);
+  line-height: 1.2;
 }
 
 /* Tagline styling */
 .tagline {
-  font-size: 1.6rem;
+  font-size: 1rem;
   font-weight: 300;
-  margin-bottom: 2.5rem;
+  margin-bottom: 2rem;
   font-style: italic;
-  position: relative;
-  padding-bottom: 0.8rem;
   color: #f8f8f8;
-}
-
-.tagline::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 100px;
-  height: 3px;
-  background: linear-gradient(to right, transparent, #FFD700, transparent);
-  border-radius: 3px;
 }
 
 /* Loading indicator */
 .loading-indicator {
-  width: 70px;
-  height: 70px;
+  width: 50px;
+  height: 50px;
   border: 4px solid rgba(255, 255, 255, 0.1);
   border-top: 4px solid #FFD700;
   border-radius: 50%;
@@ -141,115 +121,8 @@
   100% { transform: rotate(360deg); }
 }
 
-/* Floating animation for the entire content */
-@keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
-}
-
-.splash-content {
-  animation: float 6s ease-in-out infinite;
-}
-
-/* Responsive design */
-@media (max-width: 992px) {
-
-  
-  .welcome-texts {
-    font-size: 3.2rem;
-  }
-  
-  .tagline {
-    font-size: 1.4rem;
-  }
-}
-
-@media (max-width: 768px) {
-  
-  .welcome-containers {
-    padding: 2rem;
-  }
-  
-  .welcome-texts {
-    font-size: 2.8rem;
-  }
-  
-  .company-name {
-    font-size: 1.2rem;
-  }
-  
-  .tagline {
-    font-size: 1.2rem;
-  }
-  
-  .loading-indicator {
-    width: 60px;
-    height: 60px;
-  }
-}
-
-@media (max-width: 576px) {
-
-  
-  .welcome-containers {
-    padding: 1.5rem;
-    /* backdrop-filter: blur(5px); */
-  }
-  
-  .welcome-texts {
-    font-size: 2.2rem;
-  }
-  
-  .company-name {
-    font-size: 1rem;
-    letter-spacing: 1px;
-  }
-  
-  .tagline {
-    font-size: 1.1rem;
-  }
-  
-  .loading-indicator {
-    width: 50px;
-    height: 50px;
-  }
-}
-
-/* Very small devices */
-@media (max-width: 400px) {
-  
-  .welcome-texts {
-    font-size: 1.8rem;
-  }
-  
-  .tagline {
-    font-size: 1rem;
-  }
-}
-
-/* Reduced motion for accessibility */
-@media (prefers-reduced-motion: reduce) {
-  .splash-content,
-  .loading-indicator {
-    animation: none;
-  }
-  
-  .loading-indicator {
-    animation: spin 1.2s ease-in-out infinite;
-  }
-}
-
-/* For laptop screens only */
-@media (min-width: 1024px) and (max-width: 1440px) {
-  .splash-container::before {
-    background-size: contain;   /* show full image */
-    background-repeat: no-repeat;
-    background-position: center;
-    background-color:#0190e2;
-  }
-}
-
-@media (min-width: 650px) and (max-width: 1440px) {
+/* ✅ Universal rule for screens >= 650px */
+@media (min-width: 650px) {
   .splash-container::before {
     background-size: contain;   /* show full image */
     background-repeat: no-repeat;
