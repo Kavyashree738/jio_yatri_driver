@@ -468,6 +468,7 @@ const DriverDashboard = () => {
     const [pollingInterval, setPollingInterval] = useState(null);
     const [marqueeActive, setMarqueeActive] = useState(false);
     const [marqueeText] = useState('Earn ₹10 Cashback');
+    const [fatal, setFatal] = useState(null);
     const fetchDriverInfo = useCallback(async () => {
         try {
             const token = await user.getIdToken();
@@ -556,6 +557,30 @@ const DriverDashboard = () => {
     }, [user, fetchDriverInfo]);
 
 
+    useEffect(() => {
+  const onErr = (e) => {
+    const msg = e?.message || e?.error?.message || String(e);
+    const file = e?.filename ? ` @ ${e.filename}:${e.lineno || ''}:${e.colno || ''}` : '';
+    setFatal(`${msg}${file}`);
+  };
+
+  const onRej = (e) => {
+    const reason = e?.reason;
+    const msg = (reason && (reason.message || reason.toString())) || 'Unhandled promise rejection';
+    const stack = reason?.stack ? `\n${reason.stack}` : '';
+    setFatal(`${msg}${stack}`);
+  };
+
+  window.addEventListener('error', onErr);
+  window.addEventListener('unhandledrejection', onRej);
+
+  return () => {
+    window.removeEventListener('error', onErr);
+    window.removeEventListener('unhandledrejection', onRej);
+  };
+}, []);
+
+    
     useEffect(() => {
         const interval = setInterval(() => {
             // Toggle marquee every 8 seconds (4s static, 4s animation)
@@ -770,6 +795,26 @@ const DriverDashboard = () => {
             </div>
         );
     };
+  if (fatal) {
+  return (
+    <>
+      <Header />
+      <div style={{
+        padding: 16,
+        background: '#fff3cd',
+        color: '#664d03',
+        border: '1px solid #ffecb5',
+        borderRadius: 8,
+        margin: 16,
+        whiteSpace: 'pre-wrap',
+        fontFamily: 'monospace'
+      }}>
+        <strong>Runtime Error:</strong>{'\n'}{fatal}
+      </div>
+      <Footer />
+    </>
+  );
+}
 
     if (!user) {
         return (
