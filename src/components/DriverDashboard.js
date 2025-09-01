@@ -571,11 +571,11 @@ const DriverDashboard = () => {
     //         status => status === 'verified'
     //     );
     // }, [driverInfo]);
-    const allDocumentsVerified = useMemo(() => {
+      const allDocumentsVerified = useMemo(() => {
         if (!driverInfo?.documentVerification) return false;
-        return Object.entries(driverInfo.documentVerification)
-            .filter(([key]) => !['verificationStatus', 'verificationNotes'].includes(key))
-            .every(([_, status]) => status.trim().toLowerCase() === 'verified');
+        return Object.values(driverInfo.documentVerification).every(
+            status => status === 'verified'
+        );
     }, [driverInfo]);
 
 
