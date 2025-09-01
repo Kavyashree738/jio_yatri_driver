@@ -879,7 +879,7 @@ const HeroSection = () => {
                         setRegistrationStep(1);
                     }}
                 >
-                    // <MdDirectionsCar className="role-icon" />
+                  
                     <img src={driver} style={{ width: "50px" ,height:"50px" ,marginBottom:"10px" }} alt="Driver" />
                     <span>Driver</span>
                     <p>Deliver packages and earn money</p>
@@ -891,7 +891,7 @@ const HeroSection = () => {
                         setRegistrationStep(1);
                     }}
                 >
-                    // <FaStore className="role-icon" />
+            
                         <img src={partner} style={{ width: "80px" ,height:"60px" ,marginBottom:"10px" }} alt="Partner" />
                     <span>Business Partner</span>
                     <p>List your business and reach more customers</p>
