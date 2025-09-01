@@ -34,6 +34,8 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import delivery from '../assets/images/delivery-service.png';
 import { useLocation, useSearchParams } from 'react-router-dom';
+import driver from '../assets/images/driver.png'
+import partner from '../assets/images/business-partner.jpg'
 const HeroSection = () => {
     const controls = useAnimation();
     const [phoneNumber, setPhoneNumber] = useState('');
@@ -877,7 +879,8 @@ const HeroSection = () => {
                         setRegistrationStep(1);
                     }}
                 >
-                    <MdDirectionsCar className="role-icon" />
+                    // <MdDirectionsCar className="role-icon" />
+                    <img src={driver} style={{ width: "50px" ,height:"50px" ,marginBottom:"10px" }} alt="Driver" />
                     <span>Driver</span>
                     <p>Deliver packages and earn money</p>
                 </button>
@@ -888,7 +891,8 @@ const HeroSection = () => {
                         setRegistrationStep(1);
                     }}
                 >
-                    <FaStore className="role-icon" />
+                    // <FaStore className="role-icon" />
+                        <img src={partner} style={{ width: "80px" ,height:"60px" ,marginBottom:"10px" }} alt="Partner" />
                     <span>Business Partner</span>
                     <p>List your business and reach more customers</p>
                 </button>
