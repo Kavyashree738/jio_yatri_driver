@@ -10,86 +10,46 @@ const SplashScreen = () => {
   useEffect(() => {
     const timer = setTimeout(() => {
       navigate('/home');
-    }, 3000);
+    }, 5000);
 
     return () => clearTimeout(timer);
   }, [navigate]);
 
   return (
     <div className="splash-container">
-      <motion.div
-        className="splash-content"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: 0.5 }}
-      >
-
+      <div className="splash-content">
+        
         {/* Owner image with nice styling */}
-        <motion.div
-          className="owner-container"
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.3 }}
-        >
+        <div className="owner-container">
           <img
             src={ownerImage}
             alt="Owner"
             className="owner-image"
           />
-        </motion.div>
+        </div>
 
-        {/* Welcome text and company name - FIXED STRUCTURE */}
-        <motion.div
-          className="welcome-containers"
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.6 }}
-        >
-          <motion.h1
-            className="welcome-texts"
-            transition={{
-              type: 'spring',
-              stiffness: 100
-            }}
-          >
-            <motion.span
-              className="highlight-words"
-            >
-              Welcome
-            </motion.span>
-            &nbsp;to JioYatri
-          </motion.h1>
+        {/* Welcome text and company name */}
+        <div className="welcome-containers">
+          <h1 className="welcome-texts">
+            <span className="highlight-words">Welcome</span> to JioYatri
+          </h1>
 
-          <motion.h3
-            initial={{ y: 10, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.8 }}
-            className="company-name"
-          >
-            Mokshambani Tech Service PVT LTD
-          </motion.h3>
-        </motion.div>
+          <h3 className="company-name">
+            MokshaAmbani Tech Service PVT LMT
+          </h3>
+        </div>
 
-        {/* <motion.p
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.9 }}
-          className="tagline"
-        >
+        {/* Tagline (optional) */}
+        {/* <p className="tagline">
           Your trusted delivery partner
-        </motion.p> */}
+        </p> */}
 
-        {/* Loading indicator */}
-        {/* <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1.2 }}
-          className="loading-indicator"
-        /> */}
-      </motion.div>
+        {/* Loading indicator (optional) */}
+        {/* <div className="loading-indicator"></div> */}
+      </div>
     </div>
   );
 };
 
 export default SplashScreen;
+
