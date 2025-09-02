@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { FaUser, FaPhone, FaToggleOn, FaToggleOff, FaCar, FaYoutube, FaStar, FaCheck, FaTimes, FaExclamationTriangle } from 'react-icons/fa';
+import { FaUser, FaPhone, FaToggleOn, FaToggleOff, FaCar, FaYoutube, FaStar, FaCheck, FaTimes, FaExclamationTriangle, FaBug, FaSync, FaNetworkWired } from 'react-icons/fa';
 import { MdDirectionsCar, MdDirectionsBike, MdLocalShipping } from 'react-icons/md';
 import Header from './Header';
 import Footer from './Footer';
@@ -17,6 +17,9 @@ import 'moment/locale/en-in';
 import DailyEarningsFilter from './DailyEarningsFilter';
 
 moment.locale('en-in');
+
+// API Base URL
+const API_BASE_URL = 'https://jio-yatri-driver.onrender.com';
 
 // Error Boundary Component
 class DriverErrorBoundary extends React.Component {
@@ -34,6 +37,11 @@ class DriverErrorBoundary extends React.Component {
       error: error,
       errorInfo: errorInfo
     });
+    
+    // Send error to debug state if available
+    if (this.props.onError) {
+      this.props.onError(error.toString());
+    }
   }
 
   render() {
@@ -51,6 +59,12 @@ class DriverErrorBoundary extends React.Component {
           <p style={{ color: '#856404' }}>
             Please try refreshing the app or contact support if the problem continues.
           </p>
+          <div style={{ margin: '10px 0', padding: '10px', background: '#f8d7da', borderRadius: '4px' }}>
+            <strong>Error Details:</strong>
+            <div style={{ fontSize: '12px', fontFamily: 'monospace', marginTop: '5px' }}>
+              {this.state.error?.toString()}
+            </div>
+          </div>
           <button 
             onClick={() => window.location.reload()}
             style={{
@@ -59,10 +73,25 @@ class DriverErrorBoundary extends React.Component {
               border: '1px solid #f5c6cb',
               borderRadius: '4px',
               color: '#721c24',
-              cursor: 'pointer'
+              cursor: 'pointer',
+              margin: '5px'
             }}
           >
             Reload App
+          </button>
+          <button 
+            onClick={() => this.setState({ hasError: false })}
+            style={{
+              padding: '10px 20px',
+              backgroundColor: '#d4edda',
+              border: '1px solid #c3e6cb',
+              borderRadius: '4px',
+              color: '#155724',
+              cursor: 'pointer',
+              margin: '5px'
+            }}
+          >
+            Try Again
           </button>
         </div>
       );
@@ -93,37 +122,98 @@ const DriverDashboard = () => {
     const [marqueeText] = useState('Earn ₹10 Cashback');
     const [fatal, setFatal] = useState(null);
     
-    // Debug state
+    // Advanced Debug state
     const [debugInfo, setDebugInfo] = useState({
         stage: 'initializing',
         driverInfo: null,
         documentsVerified: false,
         isRegistered: false,
         hasUser: false,
-        error: null
+        error: null,
+        apiCalls: [],
+        networkStatus: 'unknown',
+        webviewType: 'unknown',
+        jsCompatIssues: []
     });
 
     // Webview detection
     const [isWebView, setIsWebView] = useState(false);
+    const [showDebug, setShowDebug] = useState(false);
+    const [debugExpanded, setDebugExpanded] = useState(false);
 
+    // Detect webview and browser capabilities
     useEffect(() => {
-        // Detect if we're in a webview
         const userAgent = navigator.userAgent || navigator.vendor || window.opera;
         const isWebViewEnv = /(WebView|Android|iPhone|iPad).*Version\/[.0-9]*\s+Safari/.test(userAgent) || 
                             userAgent.includes('wv');
+        
         setIsWebView(isWebViewEnv);
-        setDebugInfo(prev => ({...prev, isWebView: isWebViewEnv}));
+        
+        // Detect specific webview types
+        let webviewType = 'unknown';
+        if (userAgent.includes('Android')) webviewType = 'Android WebView';
+        if (userAgent.includes('iPhone') || userAgent.includes('iPad')) webviewType = 'iOS WKWebView';
+        if (userAgent.includes('; wv)')) webviewType = 'Android System WebView';
+        
+        // Check JavaScript compatibility
+        const compatIssues = [];
+        if (typeof Promise.allSettled !== 'function') compatIssues.push('Promise.allSettled not supported');
+        if (typeof globalThis !== 'object') compatIssues.push('globalThis not supported');
+        if (!('optional' in document.createElement('input'))) compatIssues.push('HTML5 input features limited');
+        
+        setDebugInfo(prev => ({
+            ...prev, 
+            isWebView: isWebViewEnv,
+            webviewType,
+            jsCompatIssues: compatIssues,
+            networkStatus: navigator.onLine ? 'online' : 'offline'
+        }));
+        
+        // Show debug info in webview by default
+        if (isWebViewEnv) {
+            setShowDebug(true);
+        }
+        
+        // Network status listener
+        const handleOnline = () => setDebugInfo(prev => ({...prev, networkStatus: 'online'}));
+        const handleOffline = () => setDebugInfo(prev => ({...prev, networkStatus: 'offline'}));
+        
+        window.addEventListener('online', handleOnline);
+        window.addEventListener('offline', handleOffline);
+        
+        return () => {
+            window.removeEventListener('online', handleOnline);
+            window.removeEventListener('offline', handleOffline);
+        };
     }, []);
+
+    // Track API calls for debugging
+    const trackApiCall = (url, method, status, error = null) => {
+        setDebugInfo(prev => ({
+            ...prev,
+            apiCalls: [...prev.apiCalls, {
+                url,
+                method,
+                status,
+                error,
+                timestamp: new Date().toISOString()
+            }].slice(-10) // Keep only last 10 calls
+        }));
+    };
 
     const fetchDriverInfo = useCallback(async () => {
         try {
             setDebugInfo(prev => ({...prev, stage: 'fetching_driver_info'}));
             const token = await user.getIdToken();
 
-            // First, try to get driver info only
-            const driverRes = await fetch(`https://jio-yatri-driver.onrender.com/api/driver/info/${user.uid}`, {
+            // Track this API call
+            trackApiCall(`${API_BASE_URL}/api/driver/info/${user.uid}`, 'GET', 'started');
+
+            const driverRes = await fetch(`${API_BASE_URL}/api/driver/info/${user.uid}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
+
+            trackApiCall(`${API_BASE_URL}/api/driver/info/${user.uid}`, 'GET', driverRes.status);
 
             if (driverRes.status === 404) {
                 setIsRegistered(false);
@@ -138,11 +228,13 @@ const DriverDashboard = () => {
             setDriverInfo(driverData.data);
             setStatus(driverData.data?.status || 'inactive');
 
-            // Try to get profile image (but don't fail if it errors)
+            // Try to get profile image
             try {
-                const imageRes = await fetch(`https://jio-yatri-driver.onrender.com/api/upload/profile-image/${user.uid}`, {
+                trackApiCall(`${API_BASE_URL}/api/upload/profile-image/${user.uid}`, 'GET', 'started');
+                const imageRes = await fetch(`${API_BASE_URL}/api/upload/profile-image/${user.uid}`, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
+                trackApiCall(`${API_BASE_URL}/api/upload/profile-image/${user.uid}`, 'GET', imageRes.status);
                 
                 if (imageRes.ok) {
                     const blob = await imageRes.blob();
@@ -152,19 +244,22 @@ const DriverDashboard = () => {
                     setProfileImage(user.photoURL);
                 }
             } catch (imageError) {
+                trackApiCall(`${API_BASE_URL}/api/upload/profile-image/${user.uid}`, 'GET', 'error', imageError.message);
                 console.log('Profile image fetch failed, continuing without it');
             }
 
-            // Try to get settlement data (but don't fail if it errors)
+            // Try to get settlement data
             try {
-                const settlementRes = await fetch(`https://jio-yatri-driver.onrender.com/api/settlement/driver/${user.uid}`, {
+                trackApiCall(`${API_BASE_URL}/api/settlement/driver/${user.uid}`, 'GET', 'started');
+                const settlementRes = await fetch(`${API_BASE_URL}/api/settlement/driver/${user.uid}`, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
+                trackApiCall(`${API_BASE_URL}/api/settlement/driver/${user.uid}`, 'GET', settlementRes.status);
                 
                 if (settlementRes.ok) {
                     const settlementData = await settlementRes.json();
                     setSettlement({
-                        today: settlementData.currentDaySettlement  || {
+                        today: settlementData.currentDaySettlement || {
                             cashCollected: 0,
                             onlineCollected: 0,
                             driverEarned: 0,
@@ -174,6 +269,7 @@ const DriverDashboard = () => {
                     });
                 }
             } catch (settlementError) {
+                trackApiCall(`${API_BASE_URL}/api/settlement/driver/${user.uid}`, 'GET', 'error', settlementError.message);
                 console.log('Settlement data fetch failed, continuing without it');
             }
 
@@ -190,6 +286,7 @@ const DriverDashboard = () => {
         } catch (err) {
             setError(err.message);
             setDebugInfo(prev => ({...prev, stage: 'error', error: err.message}));
+            trackApiCall(`${API_BASE_URL}/api/driver/info/${user.uid}`, 'GET', 'error', err.message);
         } finally {
             setLoading(false);
         }
@@ -219,11 +316,14 @@ const DriverDashboard = () => {
         const fetchShipments = async () => {
             try {
                 const token = await user.getIdToken();
-                const res = await axios.get(`https://jio-yatri-driver.onrender.com/api/shipments/driver/${user.uid}`, {
+                trackApiCall(`${API_BASE_URL}/api/shipments/driver/${user.uid}`, 'GET', 'started');
+                const res = await axios.get(`${API_BASE_URL}/api/shipments/driver/${user.uid}`, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
+                trackApiCall(`${API_BASE_URL}/api/shipments/driver/${user.uid}`, 'GET', res.status);
                 setShipments(res.data || []);
             } catch (err) {
+                trackApiCall(`${API_BASE_URL}/api/shipments/driver/${user.uid}`, 'GET', 'error', err.message);
                 console.log('Error fetching shipments, continuing without them');
             }
         };
@@ -266,9 +366,9 @@ const DriverDashboard = () => {
 
     const allDocumentsVerified = useMemo(() => {
         if (!driverInfo?.documentVerification) return false;
-        return Object.values(driverInfo.documentVerification).every(
-            status => status === 'verified'
-        );
+        return Object.entries(driverInfo.documentVerification)
+            .filter(([key]) => !['verificationStatus', 'verificationNotes'].includes(key))
+            .every(([_, status]) => status.trim().toLowerCase() === 'verified');
     }, [driverInfo]);
 
     const completedDeliveries = useMemo(() => {
@@ -280,7 +380,8 @@ const DriverDashboard = () => {
         setIsUpdating(true);
         try {
             const token = await user.getIdToken(true);
-            const res = await fetch('https://jio-yatri-driver.onrender.com/api/driver/status', {
+            trackApiCall(`${API_BASE_URL}/api/driver/status`, 'PUT', 'started');
+            const res = await fetch(`${API_BASE_URL}/api/driver/status`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -288,6 +389,7 @@ const DriverDashboard = () => {
                 },
                 body: JSON.stringify({ status: newStatus })
             });
+            trackApiCall(`${API_BASE_URL}/api/driver/status`, 'PUT', res.status);
 
             if (!res.ok) throw new Error('Failed to update status');
             setStatus(newStatus);
@@ -298,6 +400,7 @@ const DriverDashboard = () => {
             }));
             setMessage({ text: 'Status updated', isError: false });
         } catch (err) {
+            trackApiCall(`${API_BASE_URL}/api/driver/status`, 'PUT', 'error', err.message);
             setMessage({ text: err.message, isError: true });
         } finally {
             setIsUpdating(false);
@@ -344,11 +447,13 @@ const DriverDashboard = () => {
             formData.append('file', file);
 
             const token = await user.getIdToken(true);
-            const response = await fetch('https://jio-yatri-driver.onrender.com/api/upload/profile-image', {
+            trackApiCall(`${API_BASE_URL}/api/upload/profile-image`, 'POST', 'started');
+            const response = await fetch(`${API_BASE_URL}/api/upload/profile-image`, {
                 method: 'POST',
                 headers: { Authorization: `Bearer ${token}` },
                 body: formData
             });
+            trackApiCall(`${API_BASE_URL}/api/upload/profile-image`, 'POST', response.status);
 
             if (!response.ok) {
                 throw new Error('Upload failed');
@@ -356,6 +461,7 @@ const DriverDashboard = () => {
 
             await fetchDriverInfo();
         } catch (err) {
+            trackApiCall(`${API_BASE_URL}/api/upload/profile-image`, 'POST', 'error', err.message);
             setError(err.message);
         } finally {
             setIsUploading(false);
@@ -379,17 +485,21 @@ const DriverDashboard = () => {
     const handleSettlePayment = async (settlementId, amount, direction) => {
         try {
             const token = await user.getIdToken();
-            await axios.post(`https://jio-yatri-driver.onrender.com/api/settlement/complete/${user.uid}`, {
+            trackApiCall(`${API_BASE_URL}/api/settlement/complete/${user.uid}`, 'POST', 'started');
+            await axios.post(`${API_BASE_URL}/api/settlement/complete/${user.uid}`, {
                 settlementId,
                 amount,
                 direction
             }, {
                 headers: { Authorization: `Bearer ${token}` }
             });
+            trackApiCall(`${API_BASE_URL}/api/settlement/complete/${user.uid}`, 'POST', 'success');
 
-            const res = await axios.get(`https://jio-yatri-driver.onrender.com/api/settlement/driver/${user.uid}`, {
+            trackApiCall(`${API_BASE_URL}/api/settlement/driver/${user.uid}`, 'GET', 'started');
+            const res = await axios.get(`${API_BASE_URL}/api/settlement/driver/${user.uid}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
+            trackApiCall(`${API_BASE_URL}/api/settlement/driver/${user.uid}`, 'GET', res.status);
 
             setSettlement({
                 today: res.data.currentDaySettlement || { cashCollected: 0, onlineCollected: 0, driverEarned: 0, ownerEarned: 0 },
@@ -398,6 +508,7 @@ const DriverDashboard = () => {
 
             setMessage({ text: 'Payment settled successfully', isError: false });
         } catch (err) {
+            trackApiCall(`${API_BASE_URL}/api/settlement/complete/${user.uid}`, 'POST', 'error', err.message);
             setMessage({ text: err.message, isError: true });
         }
     };
@@ -450,34 +561,131 @@ const DriverDashboard = () => {
         );
     };
 
-    // Debug overlay (visible in webview to help diagnose issues)
+    // Advanced Debug overlay with detailed information
     const DebugOverlay = () => (
         <div style={{
             position: 'fixed',
             top: 10,
             right: 10,
-            background: 'rgba(0,0,0,0.8)',
+            background: 'rgba(0,0,0,0.9)',
             color: 'white',
             padding: '10px',
             zIndex: 9999,
             fontSize: '12px',
             borderRadius: '5px',
-            maxWidth: '300px',
-            border: '2px solid red'
+            maxWidth: debugExpanded ? '500px' : '300px',
+            border: '2px solid red',
+            display: showDebug ? 'block' : 'none',
+            maxHeight: debugExpanded ? '80vh' : 'auto',
+            overflowY: debugExpanded ? 'auto' : 'visible'
         }}>
-            <div><strong>DEBUG INFO {isWebView ? '(WEBVIEW)' : '(BROWSER)'}</strong></div>
-            <div>Stage: {debugInfo.stage}</div>
-            <div>Has User: {debugInfo.hasUser ? 'Yes' : 'No'}</div>
-            <div>Driver Info: {debugInfo.driverInfo ? 'Yes' : 'No'}</div>
-            <div>Docs Verified: {debugInfo.documentsVerified ? 'Yes' : 'No'}</div>
-            <div>Is Registered: {debugInfo.isRegistered ? 'Yes' : 'No'}</div>
-            <div>Loading: {loading ? 'Yes' : 'No'}</div>
-            <div>Error: {error || 'None'}</div>
-            {debugInfo.error && <div>Debug Error: {debugInfo.error}</div>}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                <strong>DEBUG INFO {isWebView ? '(WEBVIEW)' : '(BROWSER)'}</strong>
+                <div>
+                    <button 
+                        onClick={() => setDebugExpanded(!debugExpanded)}
+                        style={{
+                            padding: '2px 5px',
+                            fontSize: '10px',
+                            background: debugExpanded ? '#4CAF50' : '#2196F3',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '3px',
+                            cursor: 'pointer',
+                            marginRight: '5px'
+                        }}
+                    >
+                        {debugExpanded ? '▲' : '▼'}
+                    </button>
+                    <button 
+                        onClick={() => setShowDebug(false)}
+                        style={{
+                            padding: '2px 5px',
+                            fontSize: '10px',
+                            background: '#ff6b6b',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '3px',
+                            cursor: 'pointer'
+                        }}
+                    >
+                        ×
+                    </button>
+                </div>
+            </div>
+            
+            <div style={{ marginBottom: '5px' }}>
+                <span style={{ color: '#FFD700' }}>Stage:</span> {debugInfo.stage}
+            </div>
+            <div style={{ marginBottom: '5px' }}>
+                <span style={{ color: '#FFD700' }}>Network:</span> 
+                <span style={{ color: debugInfo.networkStatus === 'online' ? '#4CAF50' : '#ff6b6b' }}>
+                    {debugInfo.networkStatus.toUpperCase()}
+                </span>
+            </div>
+            <div style={{ marginBottom: '5px' }}>
+                <span style={{ color: '#FFD700' }}>Has User:</span> {debugInfo.hasUser ? '✅' : '❌'}
+            </div>
+            <div style={{ marginBottom: '5px' }}>
+                <span style={{ color: '#FFD700' }}>Driver Info:</span> {debugInfo.driverInfo ? '✅' : '❌'}
+            </div>
+            <div style={{ marginBottom: '5px' }}>
+                <span style={{ color: '#FFD700' }}>Docs Verified:</span> {debugInfo.documentsVerified ? '✅' : '❌'}
+            </div>
+            <div style={{ marginBottom: '5px' }}>
+                <span style={{ color: '#FFD700' }}>Registered:</span> {debugInfo.isRegistered ? '✅' : '❌'}
+            </div>
+            <div style={{ marginBottom: '5px' }}>
+                <span style={{ color: '#FFD700' }}>Loading:</span> {loading ? '⏳' : '✅'}
+            </div>
+            
+            {debugExpanded && (
+                <>
+                    <hr style={{ margin: '8px 0', borderColor: '#444' }} />
+                    <div><strong>Environment Details:</strong></div>
+                    <div>WebView Type: {debugInfo.webviewType}</div>
+                    <div>User Agent: {navigator.userAgent.substring(0, 50)}...</div>
+                    
+                    {debugInfo.jsCompatIssues.length > 0 && (
+                        <div style={{ color: '#ff6b6b', marginTop: '5px' }}>
+                            <div>JS Issues: {debugInfo.jsCompatIssues.join(', ')}</div>
+                        </div>
+                    )}
+                    
+                    <hr style={{ margin: '8px 0', borderColor: '#444' }} />
+                    <div><strong>API Calls:</strong></div>
+                    {debugInfo.apiCalls.slice().reverse().map((call, index) => (
+                        <div key={index} style={{ 
+                            fontSize: '10px', 
+                            padding: '2px',
+                            color: call.status === 'error' ? '#ff6b6b' : 
+                                  call.status === 'success' ? '#4CAF50' : '#FFF'
+                        }}>
+                            {call.method} {call.url.split('/').pop()}: {call.status}
+                            {call.error && ` - ${call.error}`}
+                        </div>
+                    ))}
+                    
+                    {debugInfo.error && (
+                        <>
+                            <hr style={{ margin: '8px 0', borderColor: '#444' }} />
+                            <div style={{ color: '#ff6b6b' }}>
+                                <strong>Error:</strong> {debugInfo.error}
+                            </div>
+                        </>
+                    )}
+                </>
+            )}
+            
+            {!debugExpanded && debugInfo.error && (
+                <div style={{ color: '#ff6b6b', marginTop: '5px', fontSize: '10px' }}>
+                    Error: {debugInfo.error.substring(0, 50)}...
+                </div>
+            )}
         </div>
     );
 
-    // Webview compatibility check
+    // Webview compatibility check with more options
     const WebviewCompatibilityNotice = () => (
         <div style={{
             position: 'fixed',
@@ -489,9 +697,57 @@ const DriverDashboard = () => {
             zIndex: 9998,
             fontSize: '12px',
             borderRadius: '5px',
-            maxWidth: '300px'
+            maxWidth: '350px'
         }}>
-            <FaExclamationTriangle /> WebView Environment Detected
+            <FaExclamationTriangle /> WebView Detected: {debugInfo.webviewType}
+            <div style={{ marginTop: '5px', display: 'flex', gap: '5px' }}>
+                <button 
+                    onClick={() => setShowDebug(true)}
+                    style={{
+                        padding: '2px 5px',
+                        fontSize: '10px',
+                        background: 'white',
+                        color: '#ff6b6b',
+                        border: 'none',
+                        borderRadius: '3px',
+                        cursor: 'pointer'
+                    }}
+                >
+                    <FaBug /> Debug
+                </button>
+                <button 
+                    onClick={() => window.location.reload()}
+                    style={{
+                        padding: '2px 5px',
+                        fontSize: '10px',
+                        background: 'white',
+                        color: '#ff6b6b',
+                        border: 'none',
+                        borderRadius: '3px',
+                        cursor: 'pointer'
+                    }}
+                >
+                    <FaSync /> Reload
+                </button>
+                <button 
+                    onClick={() => {
+                        setDebugInfo(prev => ({...prev, apiCalls: []}));
+                        setError(null);
+                        setFatal(null);
+                    }}
+                    style={{
+                        padding: '2px 5px',
+                        fontSize: '10px',
+                        background: 'white',
+                        color: '#ff6b6b',
+                        border: 'none',
+                        borderRadius: '3px',
+                        cursor: 'pointer'
+                    }}
+                >
+                    <FaNetworkWired /> Clear Logs
+                </button>
+            </div>
         </div>
     );
 
@@ -503,7 +759,7 @@ const DriverDashboard = () => {
                     padding: 16,
                     background: '#fff3cd',
                     color: '#664d03',
-                    border: '1px solid ',
+                    border: '1px solid #ffecb5',
                     borderRadius: 8,
                     margin: 16,
                     whiteSpace: 'pre-wrap',
@@ -545,6 +801,11 @@ const DriverDashboard = () => {
             <div className="dd-spinner-container">
                 <div className="dd-beautiful-spinner"></div>
                 <p className="dd-loading-text">Loading Dashboard...</p>
+                {debugInfo.stage === 'error' && (
+                    <p style={{ color: '#ff6b6b', marginTop: '10px' }}>
+                        Having issues? Check the debug panel for details.
+                    </p>
+                )}
             </div>
         </div>
     );
@@ -571,7 +832,16 @@ const DriverDashboard = () => {
             <Header />
             <DebugOverlay />
             {isWebView && <WebviewCompatibilityNotice />}
-            <div className="dd-error">Error: {error}</div>
+            <div className="dd-error">
+                <h3>Error Loading Dashboard</h3>
+                <p>{error}</p>
+                <button onClick={() => window.location.reload()} className="dd-retry-btn">
+                    Retry
+                </button>
+                <button onClick={handleLogout} className="dd-logout-btn">
+                    Logout
+                </button>
+            </div>
             <Footer />
         </>
     );
@@ -598,7 +868,7 @@ const DriverDashboard = () => {
     );
 
     return (
-        <DriverErrorBoundary>
+        <DriverErrorBoundary onError={(error) => setDebugInfo(prev => ({...prev, error}))}>
             <>
                 <Header />
                 <DebugOverlay />
