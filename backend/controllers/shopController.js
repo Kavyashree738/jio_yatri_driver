@@ -825,7 +825,7 @@ exports.getShopReferralCode = async (req, res) => {
       await shop.save();
     }
 
-    const shareLink = `https://play.google.com/store/apps/details?id=com.matspl.jioyatripartner?shop_ref=${shop.referralCode}`;
+    const shareLink = `https://play.google.com/store/apps/details?id=com.matspl.jioyatripartner&shop_ref=${shop.referralCode}`;
 
     return res.json({
       success: true,
