@@ -119,6 +119,103 @@ async function checkAndSettle(driverId, session = null) {
   }
 }
 
+exports.recordPayment = async (req, res) => {
+  console.log('\n' + '='.repeat(70));
+  console.log(`[recordPayment] START - New payment recording initiated`);
+  console.log(`[recordPayment] Timestamp: ${new Date().toISOString()}`);
+  console.log('='.repeat(70) + '\n');
+  
+  const session = await mongoose.startSession();
+  session.startTransaction();
+  console.log(`[${new Date().toISOString()}] [recordPayment] MongoDB transaction started`);
+
+  try {
+    const { driverId, amount, method } = req.body;
+    console.log(`[${new Date().toISOString()}] [recordPayment] Request body:`);
+    console.log({
+      driverId,
+      amount,
+      method,
+      timestamp: new Date().toISOString()
+    });
+
+    // Validate input
+    if (!['cash', 'online'].includes(method)) {
+      console.error(`\n[${new Date().toISOString()}] [recordPayment] ERROR: Invalid payment method "${method}"`);
+      await session.abortTransaction();
+      return res.status(400).json({ error: 'Invalid payment method' });
+    }
+
+    console.log(`\n[${new Date().toISOString()}] [recordPayment] STEP 1: Checking and settling existing payments`);
+    await checkAndSettle(driverId, session);
+
+    console.log(`\n[${new Date().toISOString()}] [recordPayment] STEP 2: Preparing update object`);
+    const update = {
+      $inc: {
+        [`currentDaySettlement.${method}Collected`]: amount,
+        'currentDaySettlement.driverEarned': method === 'online' ? amount * 0.8 : 0,
+        'currentDaySettlement.ownerEarned': method === 'cash' ? amount * 0.2 : 0,
+        'earnings': amount * (method === 'online' ? 0.8 : 1),
+        [`paymentBreakdown.${method}`]: amount
+      },
+      $push: {
+        collectedPayments: {
+          amount,
+          method,
+          collectedAt: new Date()
+        }
+      }
+    };
+
+    console.log(`[${new Date().toISOString()}] [recordPayment] Update operation details:`);
+    console.log(JSON.stringify(update, null, 2));
+
+    console.log(`\n[${new Date().toISOString()}] [recordPayment] STEP 3: Updating driver document`);
+    const result = await Driver.findOneAndUpdate(
+      { userId: driverId }, 
+      update,
+      { new: true, session }
+    );
+
+    await session.commitTransaction();
+    console.log(`\n[${new Date().toISOString()}] [recordPayment] Transaction committed successfully`);
+    
+    console.log(`[${new Date().toISOString()}] [recordPayment] RESULT:`);
+    console.log({
+      success: true,
+      driverId: result.userId,
+      updatedFields: {
+        earnings: result.earnings,
+        paymentBreakdown: result.paymentBreakdown,
+        collectedPayments: result.collectedPayments.length
+      }
+    });
+
+    console.log('\n' + '='.repeat(70));
+    console.log(`[recordPayment] COMPLETED - Payment recorded successfully`);
+    console.log('='.repeat(70) + '\n');
+    res.json({ success: true, driver: result });
+  } catch (err) {
+    console.error('\n' + '!'.repeat(70));
+    console.error(`[${new Date().toISOString()}] [recordPayment] ERROR:`);
+    console.error({
+      message: err.message,
+      stack: err.stack,
+      timestamp: new Date().toISOString()
+    });
+    
+    await session.abortTransaction();
+    console.error(`[${new Date().toISOString()}] [recordPayment] Transaction aborted due to error`);
+    
+    res.status(500).json({ 
+      error: err.message,
+      timestamp: new Date().toISOString()
+    });
+  } finally {
+    session.endSession();
+    console.log(`[${new Date().toISOString()}] [recordPayment] MongoDB session ended`);
+  }
+};
 
 
 async function performDailySettlement(driverId, settlementDate, session = null) {
