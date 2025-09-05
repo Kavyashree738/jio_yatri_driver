@@ -1404,3 +1404,31 @@ exports.getLocationStatus = async (req, res) => {
     res.status(500).json({ status: 'Error checking location status' });
   }
 };
+
+exports.updateLastKnownLocation = async (req, res) => {
+  try {
+    const { coords } = req.body; // [lng, lat]
+    if (!Array.isArray(coords) || coords.length !== 2 ||
+        typeof coords[0] !== 'number' || typeof coords[1] !== 'number') {
+      return res.status(400).json({ success: false, error: 'coords must be [lng,lat]' });
+    }
+
+    const driver = await Driver.findOneAndUpdate(
+      { userId: req.user.uid },
+      {
+        $set: {
+          lastKnownLocation: { type: 'Point', coordinates: coords, updatedAt: new Date() },
+          isAvailable: true // optional: mark available while dashboard is open
+        }
+      },
+      { new: true }
+    );
+
+    if (!driver) return res.status(404).json({ success: false, error: 'Driver not found' });
+
+    res.json({ success: true, lastKnownLocation: driver.lastKnownLocation });
+  } catch (err) {
+    console.error('updateLastKnownLocation error:', err);
+    res.status(500).json({ success: false, error: 'Failed to update location' });
+  }
+};
