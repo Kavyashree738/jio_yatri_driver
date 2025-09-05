@@ -67,6 +67,7 @@
 
 import { createContext, useContext, useState, useEffect } from 'react';
 import { auth } from '../firebase';
+import { onIdTokenChanged } from 'firebase/auth';
 
 const AuthContext = createContext();
 
@@ -152,6 +153,29 @@ export function AuthProvider({ children }) {
 
     return () => unsubscribe();
   }, [softSignedOut]);
+
+  useEffect(() => {
+  // Forward Firebase ID token to Flutter (only works in WebView)
+  const unsub = onIdTokenChanged(auth, async (user) => {
+    if (!user) return;
+    try {
+      const idToken = await user.getIdToken(true);
+      const payload = JSON.stringify({ type: 'auth', idToken, uid: user.uid });
+
+      if (window.AuthBridge && typeof window.AuthBridge.postMessage === 'function') {
+        window.AuthBridge.postMessage(payload);
+        console.log('✅ Sent ID token to Flutter via AuthBridge');
+      } else {
+        console.log('ℹ️ AuthBridge not available (normal browser)');
+      }
+    } catch (err) {
+      console.error('Failed to get web idToken:', err);
+    }
+  });
+
+  return () => unsub();
+}, []);
+
 
   const value = {
     user,
