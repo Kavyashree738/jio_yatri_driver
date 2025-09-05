@@ -5,6 +5,24 @@ const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY;
 const { notifyNewShipment } = require('../services/notificationService');
 
 const mongoose = require('mongoose');  // Add this line at the top
+
+function toGeoPoint(input) {
+  // Already a Point?
+  if (input && input.type === 'Point' && Array.isArray(input.coordinates)) {
+    const [lng, lat] = input.coordinates;
+    if (Number.isFinite(lng) && Number.isFinite(lat)) {
+      return { type: 'Point', coordinates: [lng, lat] };
+    }
+  }
+  // Maybe a raw array?
+  if (Array.isArray(input) && input.length === 2) {
+    const [lng, lat] = input;
+    if (Number.isFinite(lng) && Number.isFinite(lat)) {
+      return { type: 'Point', coordinates: [lng, lat] };
+    }
+  }
+  return null;
+}
 exports.calculateDistance = async (req, res) => {
   try {
     const { origin, destination } = req.body;
@@ -64,27 +82,72 @@ const { v4: uuidv4 } = require('uuid');
 
 exports.createShipment = async (req, res) => {
   try {
-    const { sender, receiver, vehicleType, distance, cost } = req.body;
+    const {
+      sender,
+      receiver,
+      parcel,
+      vehicleType,
+      distance,
+      cost,
+      shopId,          // optional (shop order)
+      isShopOrder      // optional (boolean)
+    } = req.body;
+
     const userId = req.user.uid;
+
+    // Basic validation
+    if (!sender?.name || !sender?.phone || !sender?.address?.addressLine1) {
+      return res.status(400).json({ error: 'Sender name, phone, and addressLine1 are required' });
+    }
+    if (!receiver?.name || !receiver?.phone || !receiver?.address?.addressLine1) {
+      return res.status(400).json({ error: 'Receiver name, phone, and addressLine1 are required' });
+    }
+    if (!parcel?.description) {
+      return res.status(400).json({ error: 'Parcel description is required' });
+    }
+    if (!vehicleType || !Number.isFinite(distance) || !Number.isFinite(cost)) {
+      return res.status(400).json({ error: 'vehicleType, distance, and cost are required' });
+    }
+    if (isShopOrder && !shopId) {
+      return res.status(400).json({ error: 'Shop ID is required for shop orders' });
+    }
+
+    // Normalize coordinates to GeoJSON Points (sender & receiver)
+    const senderPoint   = toGeoPoint(sender.address?.coordinates);
+    const receiverPoint = toGeoPoint(receiver.address?.coordinates);
+
+    if (!senderPoint) {
+      return res.status(400).json({ error: 'Sender coordinates must be GeoJSON Point or [lng,lat]' });
+    }
+    if (!receiverPoint) {
+      return res.status(400).json({ error: 'Receiver coordinates must be GeoJSON Point or [lng,lat]' });
+    }
 
     const trackingNumber = uuidv4().split('-')[0].toUpperCase();
 
-    const newShipment = new Shipment({
+    // Build doc
+    const shipmentData = {
       sender: {
         name: sender.name,
         phone: sender.phone,
+        email: sender.email || '',
         address: {
           addressLine1: sender.address.addressLine1,
-          coordinates: sender.address.coordinates
+          coordinates: senderPoint,         // GeoJSON Point
         }
       },
       receiver: {
         name: receiver.name,
         phone: receiver.phone,
+        email: receiver.email || '',
         address: {
           addressLine1: receiver.address.addressLine1,
-          coordinates: receiver.address.coordinates
+          coordinates: receiverPoint,       // GeoJSON Point
         }
+      },
+      parcel: {
+        description: parcel.description,
+        images: [] // fill later
       },
       vehicleType,
       distance,
@@ -92,25 +155,61 @@ exports.createShipment = async (req, res) => {
       trackingNumber,
       userId,
       status: 'pending'
-    });
+    };
 
-    const savedShipment = await newShipment.save();
-    console.log(savedShipment)
-    console.log('Matching drivers for notification:', matchingDrivers);
-    console.log(`Sending notification to driver UID: ${Driver.userId}`)
-   
+    if (isShopOrder) {
+      shipmentData.shopId = shopId;
+      shipmentData.isShopOrder = true;
+    }
 
-    res.status(201).json({
+    // Save
+    const savedShipment = await new Shipment(shipmentData).save();
+
+    // ---------------- 10km proximity fan-out (using Driver.lastKnownLocation) ----------------
+    const MAX_DISTANCE_METERS = 10_000;
+
+    const nearbyDrivers = await Driver.find({
+      vehicleType,
+      status: 'active',
+      isAvailable: true,               // optional but recommended
+      fcmToken: { $ne: null },
+      lastKnownLocation: {
+        $near: {
+          $geometry: senderPoint,      // sender GeoJSON point
+          $maxDistance: MAX_DISTANCE_METERS
+        }
+      }
+    })
+    .select('userId fcmToken')
+    .lean();
+
+    console.log(`[createShipment] Found ${nearbyDrivers.length} drivers within 10km of sender`);
+
+    await Promise.all(
+      nearbyDrivers.map(d => notifyNewShipment(d.userId, savedShipment))
+    );
+    // ----------------------------------------------------------------------------------------
+
+    return res.status(201).json({
       message: 'Shipment created successfully',
       trackingNumber: savedShipment.trackingNumber,
       shipment: savedShipment
     });
+
   } catch (error) {
     console.error('Error creating shipment:', error);
-    res.status(500).json({
+
+    // Duplicate tracking number (rare, but keep your previous handling)
+    if (error.code === 11000 && error.keyPattern?.trackingNumber) {
+      return res.status(409).json({
+        message: 'Please try again',
+        error: 'Duplicate tracking number'
+      });
+    }
+
+    return res.status(500).json({
       message: 'Failed to create shipment',
-      error: error.message,
-      details: error.errors
+      error: error.message
     });
   }
 };
@@ -143,28 +242,49 @@ exports.getOrderStatus = async (req, res) => {
 
 exports.getMatchingShipments = async (req, res) => {
   try {
-    // 1. Get the logged-in driver
-    const driver = await Driver.findOne({ userId: req.user.uid }).select('vehicleType');
+    const driver = await Driver.findOne({ userId: req.user.uid })
+      .select('vehicleType lastKnownLocation')
+      .lean();
 
     if (!driver) {
       return res.status(404).json({ success: false, error: 'Driver not found' });
     }
 
-    // 2. Fetch shipments that match the vehicle type
-    const matchingShipments = await Shipment.find({
-      vehicleType: driver.vehicleType,
-      status: 'pending' // Optional: Only pending shipments
-    });
+    const point = driver.lastKnownLocation;
+    const validPoint = point && point.type === 'Point' &&
+      Array.isArray(point.coordinates) && point.coordinates.length === 2 &&
+      typeof point.coordinates[0] === 'number' && typeof point.coordinates[1] === 'number';
 
-    res.status(200).json({
-      success: true,
-      shipments: matchingShipments
-    });
+    if (!validPoint) {
+      return res.status(200).json({
+        success: true,
+        shipments: [],
+        message: 'No recent location. Open dashboard to share location.'
+      });
+    }
+
+    const MAX_DISTANCE_METERS = 10_000;
+
+    const shipments = await Shipment.find({
+      status: 'pending',
+      vehicleType: driver.vehicleType,
+      'sender.address.coordinates': {
+        $near: {
+          $geometry: { type: 'Point', coordinates: point.coordinates }, // driver last-known
+          $maxDistance: MAX_DISTANCE_METERS
+        }
+      }
+    })
+    .sort({ createdAt: -1 })
+    .lean();
+
+    res.status(200).json({ success: true, shipments });
   } catch (error) {
     console.error('Error fetching matching shipments:', error);
     res.status(500).json({ success: false, error: 'Server error while fetching shipments' });
   }
 };
+
 
 
 // exports.acceptShipment = async (req, res) => {
@@ -638,4 +758,5 @@ exports.getShopShipments = async (req, res) => {
     res.status(500).json({ message: 'Failed to fetch shop shipments' });
   }
 };
+
 
