@@ -26,6 +26,7 @@
 //     useEffect(() => {
 //         const unsubscribe = auth.onAuthStateChanged(async (currentUser) => {
 //             if (currentUser) {
+
 //                 try {
 //                     const idToken = await currentUser.getIdToken();
 //                     setUser(currentUser);
