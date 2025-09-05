@@ -18,35 +18,15 @@ import DailyEarningsFilter from './DailyEarningsFilter';
 
 moment.locale('en-in');
 
-/* -------------------- WebView-safe Notification shim --------------------
-   - In real browsers: no change; native Notification API works.
-   - In WebView (no Notification API): provide a no-op class to prevent crashes.
-------------------------------------------------------------------------- */
+/* -------------------- WebView-safe guard --------------------
+   Prevents crashes in WebView if some dependency touches Notification.
+   Does NOT request permission or show any UI.
+---------------------------------------------------------------- */
 if (typeof window !== 'undefined' && typeof window.Notification === 'undefined') {
-  // Minimal stub to avoid ReferenceError in WebView
   window.Notification = class {
-    constructor() { /* no-op */ }
+    constructor() {}
     static async requestPermission() { return 'denied'; }
     static get permission() { return 'denied'; }
-  };
-}
-// Optional convenience wrapper: never blocks; uses real notifications in browsers.
-if (typeof window !== 'undefined' && typeof window.__notify !== 'function') {
-  window.__notify = async (title, options = {}) => {
-    try {
-      if ('Notification' in window && Notification.permission === 'granted') {
-        // Real desktop/mobile browser path
-        new Notification(title, options);
-      } else if ('Notification' in window && Notification.requestPermission) {
-        const p = await Notification.requestPermission();
-        if (p === 'granted') new Notification(title, options);
-      } else {
-        // WebView fallback: just log; you can swap for a toast UI if you want
-        console.log('[notify]', title, options?.body || '');
-      }
-    } catch (e) {
-      console.warn('notify failed:', e);
-    }
   };
 }
 
@@ -76,13 +56,12 @@ const DriverDashboard = () => {
     try {
       const token = await user.getIdToken();
 
-      // Optional health check (does nothing UI-wise if it fails)
+      // Optional health check
       const settlementCheckRes = await fetch(
         `https://jio-yatri-driver.onrender.com/api/settlement/check-settlement/${user.uid}`,
         { method: 'GET', headers: { Authorization: `Bearer ${token}` } }
       );
       if (!settlementCheckRes.ok) {
-        // Non-fatal; continue
         console.warn('Settlement check failed');
       }
 
@@ -209,8 +188,7 @@ const DriverDashboard = () => {
         lastUpdated: new Date().toISOString()
       }));
       setMessage?.({ text: 'Status updated', isError: false });
-      // Non-blocking user hint; safe in WebView due to shim
-      window.__notify?.('Status updated', { body: `You are now ${newStatus}` });
+      // (No notification UI)
     } catch (err) {
       setMessage?.({ text: err.message, isError: true });
     } finally {
@@ -255,7 +233,7 @@ const DriverDashboard = () => {
       if (!response.ok) throw new Error('Upload failed');
 
       await fetchDriverInfo();
-      window.__notify?.('Profile updated', { body: 'Your profile image was saved.' });
+      // (No notification UI)
     } catch (err) {
       setError(err.message);
     } finally {
@@ -293,7 +271,7 @@ const DriverDashboard = () => {
       });
 
       setMessage?.({ text: 'Payment settled successfully', isError: false });
-      window.__notify?.('Settlement updated', { body: 'Settlement recorded successfully.' });
+      // (No notification UI)
     } catch (err) {
       setMessage?.({ text: err.message, isError: true });
     }
