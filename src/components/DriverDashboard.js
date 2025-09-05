@@ -188,7 +188,6 @@ const DriverDashboard = () => {
         lastUpdated: new Date().toISOString()
       }));
       setMessage?.({ text: 'Status updated', isError: false });
-      // (No notification UI)
     } catch (err) {
       setMessage?.({ text: err.message, isError: true });
     } finally {
@@ -233,7 +232,6 @@ const DriverDashboard = () => {
       if (!response.ok) throw new Error('Upload failed');
 
       await fetchDriverInfo();
-      // (No notification UI)
     } catch (err) {
       setError(err.message);
     } finally {
@@ -271,7 +269,6 @@ const DriverDashboard = () => {
       });
 
       setMessage?.({ text: 'Payment settled successfully', isError: false });
-      // (No notification UI)
     } catch (err) {
       setMessage?.({ text: err.message, isError: true });
     }
