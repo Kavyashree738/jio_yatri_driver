@@ -309,6 +309,15 @@ const driverSchema = new mongoose.Schema({
       default: ''
     }
   },
+  lastKnownLocation: {
+  type: {
+    type: String,
+    enum: ['Point'],
+    default: 'Point'
+  },
+  coordinates: { type: [Number], default: [0, 0] }, // [lng, lat]
+  updatedAt: { type: Date, default: Date.now }
+},
   isLocationActive: { type: Boolean, default: false },
   fcmToken: { type: String, default: null },
   isAvailable: { type: Boolean, default: true },
