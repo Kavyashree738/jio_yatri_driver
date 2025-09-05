@@ -15,7 +15,7 @@ import axios from 'axios';
 import moment from 'moment';
 import 'moment/locale/en-in';
 import DailyEarningsFilter from './DailyEarningsFilter';
-
+import useDriverHeartbeat from '../hooks/useDriverHeartbeat';
 moment.locale('en-in');
 
 /* -------------------- WebView-safe guard --------------------
@@ -43,6 +43,7 @@ const DriverDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [status, setStatus] = useState('inactive');
+   useDriverHeartbeat(user, status === 'active');
   const [isUpdating, setIsUpdating] = useState(false);
   const [profileImage, setProfileImage] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
