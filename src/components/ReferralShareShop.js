@@ -64,45 +64,22 @@ const ReferralShareShop = () => {
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
   };
 
-const shareNative = () => {
-  if (!referralData) return;
-
-  const message = `${referralData.shareLink}|${referralData.referralCode}`;
-
-  // Try Flutter WebView bridge first
-  if (window.NativeShare && typeof window.NativeShare.postMessage === 'function') {
-    console.log("📤 Sending to Flutter:", message);
-    window.NativeShare.postMessage(message);
-  } 
-  // For Android (older method)
-  else if (window.Android && typeof window.Android.share === 'function') {
-    window.Android.share(referralData.shareLink, referralData.referralCode);
-  }
-  // For iOS
-  else if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.NativeShare) {
-    window.webkit.messageHandlers.NativeShare.postMessage(message);
-  }
-  // Web Share API (for browsers)
-  else if (navigator.share) {
-    navigator.share({
-      title: 'Join JioYatri and get ₹10 cashback!',
-      text: `Use my referral code ${referralData.referralCode} to get ₹10 cashback!`,
-      url: referralData.shareLink,
-    }).catch(err => {
-      console.log('Web Share API failed:', err);
-      fallbackToClipboard();
-    });
-  }
-  // Final fallback
-  else {
-    fallbackToClipboard();
-  }
-
-  function fallbackToClipboard() {
-    navigator.clipboard.writeText(`${referralData.shareLink} (Code: ${referralData.referralCode})`);
-    alert('Link copied to clipboard!');
-  }
-};
+const shareNative = async () => {
+    if (!referral) return;
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: 'Join and get ₹10 cashback!',
+          text: `Use my shop referral code ${referral.referralCode} to get ₹10 cashback!`,
+          url: referral.shareLink
+        });
+      } else {
+        copyToClipboard();
+      }
+    } catch (e) {
+      // ignore cancel
+    }
+  };
 
   if (loading) {
     return (
