@@ -410,7 +410,7 @@ driverSchema.pre('save', async function() {
 });
 
 driverSchema.index({ userId: 1 });
-driverSchema.index({ location: '2dsphere' });
+driverSchema.index({ lastKnownLocation: '2dsphere' });
 driverSchema.index({ earnings: 1 });
 driverSchema.index({ 'referralRewards.createdAt': -1 });
 module.exports = mongoose.model('Driver', driverSchema);
