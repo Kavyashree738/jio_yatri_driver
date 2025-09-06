@@ -16,7 +16,8 @@ export const initializeOwnerFCM = async (shopId) => {
         messagingInstance = await initMessaging();
         if (!messagingInstance) return;
       }
-      // make sure SW is registered at root
+
+      // register service worker
       let swReg = await navigator.serviceWorker.getRegistration('/');
       if (!swReg) {
         swReg = await navigator.serviceWorker.register('/firebase-messaging-sw.js', { scope: '/' });
@@ -26,33 +27,56 @@ export const initializeOwnerFCM = async (shopId) => {
         const perm = await Notification.requestPermission();
         if (perm !== 'granted') return;
       }
+
       messagingReady = true;
 
-      // bind once
+      // ✅ bind onMessage once
       if (!onMessageBound) {
         onMessageBound = true;
+
         onMessage(messagingInstance, (payload) => {
           console.log('📩 Owner Foreground FCM:', payload);
+
+          let title = 'New Notification';
+          let body  = 'You have a new update';
+
           if (payload.notification) {
-            const { title, body } = payload.notification;
+            title = payload.notification.title;
+            body  = payload.notification.body;
+          } else if (payload.data) {
+            switch (payload.data.type) {
+              case 'NEW_ORDER':
+                title = 'New Order Received';
+                body  = `Order #${payload.data.orderCode || payload.data.orderId}`;
+                break;
+              default:
+                title = 'Update';
+                body  = 'You have a new update';
+            }
+          }
+
+          if (Notification.permission === 'granted') {
             new Notification(title, { body, icon: '/logo.jpg' });
           }
+
           new Audio('/notification.wav').play().catch(() => {});
         });
       }
     }
 
-    // ✅ Always ensure the token is saved for THIS shop
+    // ✅ ensure token is posted for this shop
     if (!postedForShop.has(shopId)) {
       const swReg = await navigator.serviceWorker.getRegistration('/');
       const token = await getToken(messagingInstance, {
         vapidKey: publicVapidKey,
         serviceWorkerRegistration: swReg,
       });
+
       if (!token) {
         console.warn('[OwnerFCM] no token returned');
         return;
       }
+
       await axios.post(`${apiBase}/api/shops/${shopId}/fcm-token`, { token });
       console.log('[OwnerFCM] token saved for shop', shopId);
       postedForShop.add(shopId);
@@ -61,3 +85,4 @@ export const initializeOwnerFCM = async (shopId) => {
     console.error('[OwnerFCM] init error:', e);
   }
 };
+
