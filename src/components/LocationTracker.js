@@ -218,8 +218,8 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
   // Debug raw shapes from backend
   useEffect(() => {
     if (activeShipment) {
-      console.log('[RAW] sender.address', activeShipment.sender?.address);
-      console.log('[RAW] receiver.address', activeShipment.receiver?.address);
+      // console.log('[RAW] sender.address', activeShipment.sender?.address);
+      // console.log('[RAW] receiver.address', activeShipment.receiver?.address);
     }
   }, [activeShipment]);
 
@@ -229,7 +229,7 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
         activeShipment?.sender?.address ??
         activeShipment?.sender
     );
-    console.log('[NORMALIZED] senderLatLng', p);
+    // console.log('[NORMALIZED] senderLatLng', p);
     return p;
   }, [activeShipment]);
 
@@ -239,7 +239,7 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
         activeShipment?.receiver?.address ??
         activeShipment?.receiver
     );
-    console.log('[NORMALIZED] receiverLatLng', p);
+    // console.log('[NORMALIZED] receiverLatLng', p);
     return p;
   }, [activeShipment]);
 
@@ -272,7 +272,7 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
     const cObj = normalizeToLatLng(location);
     const center = isValidLatLng(cObj) ? cObj : { lat: 12.9716, lng: 77.5946 };
 
-    console.log('[MAP] init center', center);
+    // console.log('[MAP] init center', center);
 
     mapRef.current = new window.google.maps.Map(mapContainerRef.current, {
       zoom: 15,
@@ -306,15 +306,15 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
     if (!mapRef.current || !activeShipment || !window.google) return;
 
     const driverLatLng = normalizeToLatLng(location);
-    console.log('[DRIVER] normalized', driverLatLng);
+    // console.log('[DRIVER] normalized', driverLatLng);
 
     if (!isValidLatLng(driverLatLng)) {
-      console.warn('[WARN] Invalid driver point, skipping marker/route.');
+      // console.warn('[WARN] Invalid driver point, skipping marker/route.');
       return;
     }
     if (!isValidLatLng(senderLatLng) || !isValidLatLng(receiverLatLng)) {
       setRouteError('Missing/invalid sender or receiver coordinates');
-      console.warn('[WARN] Bad sender/receiver', { senderLatLng, receiverLatLng });
+      // console.warn('[WARN] Bad sender/receiver', { senderLatLng, receiverLatLng });
       return;
     }
 
@@ -334,10 +334,10 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
         },
         title: 'Your Location',
       });
-      console.log('[MARKER] created: driver');
+      // console.log('[MARKER] created: driver');
     } else {
       markerRef.current.setPosition(driverLatLng);
-      console.log('[MARKER] updated: driver');
+      // console.log('[MARKER] updated: driver');
     }
 
     // SENDER marker
@@ -352,10 +352,10 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
         label: { text: 'S', color: '#ffffff', fontWeight: '700' },
         title: 'Sender',
       });
-      console.log('[MARKER] created: sender');
+      // console.log('[MARKER] created: sender');
     } else {
       senderMarkerRef.current.setPosition(senderLatLng);
-      console.log('[MARKER] updated: sender');
+      // console.log('[MARKER] updated: sender');
     }
 
     // RECEIVER marker
@@ -370,10 +370,10 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
         label: { text: 'R', color: '#ffffff', fontWeight: '700' },
         title: 'Receiver',
       });
-      console.log('[MARKER] created: receiver');
+      // console.log('[MARKER] created: receiver');
     } else {
       receiverMarkerRef.current.setPosition(receiverLatLng);
-      console.log('[MARKER] updated: receiver');
+      // console.log('[MARKER] updated: receiver');
     }
 
     // Fit bounds
@@ -382,10 +382,10 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
     bounds.extend(senderLatLng);
     bounds.extend(receiverLatLng);
     mapRef.current.fitBounds(bounds);
-    console.log('[MAP] fitBounds done');
+    // console.log('[MAP] fitBounds done');
 
     // Route
-    console.log('[ROUTE] origin', driverLatLng, 'via', senderLatLng, 'to', receiverLatLng);
+    // console.log('[ROUTE] origin', driverLatLng, 'via', senderLatLng, 'to', receiverLatLng);
     directionsServiceRef.current.route(
       {
         origin: driverLatLng,
@@ -431,13 +431,13 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
       script.onload = () => initMap();
       document.body.appendChild(script);
       googleMapsScriptRef.current = script;
-      console.log('[MAP] Google Maps script injected');
+      // console.log('[MAP] Google Maps script injected');
     }
   }, [activeShipment, initMap]);
 
   useEffect(() => {
     if (!loadingMap && location) {
-      console.log('[MAP] update requested');
+      // console.log('[MAP] update requested');
       updateMap();
     }
   }, [location, loadingMap, updateMap]);
@@ -449,7 +449,7 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
       try {
         const token = await user.getIdToken();
 
-        console.log('[API] PUT /driver/location', coords);
+        // console.log('[API] PUT /driver/location', coords);
         await axios.put(
           `${API_BASE_URL}/api/driver/location`,
           { coordinates: coords, isLocationActive: true },
@@ -457,7 +457,7 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
         );
 
         if (activeShipment?._id) {
-          console.log('[API] PUT /shipments/:id/driver-location', activeShipment._id, coords);
+          // console.log('[API] PUT /shipments/:id/driver-location', activeShipment._id, coords);
           await axios.put(
             `${API_BASE_URL}/api/shipments/${activeShipment._id}/driver-location`,
             { coordinates: coords },
@@ -470,8 +470,8 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
           );
         }
       } catch (err) {
-        console.error('[API] location update failed', err);
-        toast.error('Failed to update your location');
+        // console.error('[API] location update failed', err);
+        // toast.error('Failed to update your location');
       }
     }, 5000),
     [user, activeShipment]
@@ -488,14 +488,14 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
     const p = normalizeToLatLng(location);
     if (mapRef.current && isValidLatLng(p)) {
       mapRef.current.panTo(p);
-      console.log('[MAP] recenter to', p);
+      // console.log('[MAP] recenter to', p);
     }
   };
 
   const handleCancelShipment = async () => {
     try {
       const token = await user.getIdToken();
-      console.log('[API] cancel shipment', activeShipment?._id);
+      // console.log('[API] cancel shipment', activeShipment?._id);
       await axios.put(
         `${API_BASE_URL}/api/shipments/${activeShipment._id}/cancel`,
         { reason: 'Driver cancelled the shipment' },
@@ -508,7 +508,7 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
       toast.success('Shipment cancelled successfully');
       setTimeout(() => window.location.reload(), 2000);
     } catch (error) {
-      console.error('[API] cancel failed', error);
+      // console.error('[API] cancel failed', error);
       toast.error(error.response?.data?.message || 'Error cancelling shipment');
     }
   };
@@ -516,7 +516,7 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
   const handleDeliverShipment = async () => {
     try {
       const token = await user.getIdToken();
-      console.log('[API] deliver shipment', activeShipment?._id);
+      // console.log('[API] deliver shipment', activeShipment?._id);
       await axios.put(
         `${API_BASE_URL}/api/shipments/${activeShipment._id}/deliver`,
         {},
@@ -529,7 +529,7 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
       toast.success('Shipment delivered successfully!');
       setTimeout(() => window.location.reload(), 2000);
     } catch (error) {
-      console.error('[API] deliver failed', error);
+      // console.error('[API] deliver failed', error);
       toast.error(error.response?.data?.message || 'Error delivering shipment');
     }
   };
