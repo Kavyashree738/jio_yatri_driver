@@ -15,14 +15,31 @@ const messaging = firebase.messaging();
 
 // Background message handler
 messaging.onBackgroundMessage((payload) => {
-  console.log('Background message:', payload);
-  const { title, body } = payload.notification;
-  const notificationOptions = {
-    body,
-    icon: '/newlogo.jpg'
-  };
+  console.log('[SW] Background message:', payload);
+
+  let title = 'New Notification';
+  let body  = 'You have a new update';
+
+  if (payload.notification) {
+    title = payload.notification.title;
+    body  = payload.notification.body;
+  } else if (payload.data) {
+    switch (payload.data.type) {
+      case 'NEW_ORDER':
+        title = 'New Order Received';
+        body  = `Order #${payload.data.orderCode || payload.data.orderId}`;
+        break;
+      default:
+        title = 'Update';
+        body  = 'You have a new update';
+    }
+  }
+
+  const notificationOptions = { body, icon: '/newlogo.jpg', data: payload.data };
+
   self.registration.showNotification(title, notificationOptions);
 });
+
 
 // Notification click handler
 self.addEventListener('notificationclick', (event) => {
@@ -43,4 +60,5 @@ self.addEventListener('notificationclick', (event) => {
   );
 
 });
+
 
