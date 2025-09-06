@@ -111,24 +111,34 @@ const DriverDashboard = () => {
     }
   }, [user]);
 
-  useEffect(() => {
-    if (!user) return;
+ useEffect(() => {
+  if (!user) return;
 
-    fetchDriverInfo();
+  const fetchAllData = async () => {
+    await fetchDriverInfo(); // Fetch driver info + settlement
+    try {
+      const token = await user.getIdToken();
+      const res = await axios.get(`https://jio-yatri-driver.onrender.com/api/shipments/driver/${user.uid}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setShipments(res.data || []);
+    } catch (err) {
+      console.error('Error fetching shipments:', err.message);
+    }
+  };
 
-    const fetchShipments = async () => {
-      try {
-        const token = await user.getIdToken();
-        const res = await axios.get(`https://jio-yatri-driver.onrender.com/api/shipments/driver/${user.uid}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        setShipments(res.data || []);
-      } catch (err) {
-        console.error('Error fetching shipments:', err.message);
-      }
-    };
-    fetchShipments();
-  }, [user, fetchDriverInfo]);
+  // Initial fetch
+  fetchAllData();
+
+  // Polling every 30 seconds
+  const interval = setInterval(() => {
+    fetchAllData();
+  }, 30000); // 30,000 ms = 30 seconds
+
+  // Cleanup
+  return () => clearInterval(interval);
+}, [user, fetchDriverInfo]);
+
 
   // Global runtime traps (prevent silent crashes)
   useEffect(() => {
