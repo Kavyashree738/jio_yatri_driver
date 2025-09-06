@@ -288,7 +288,7 @@
     flex-direction: column; /* Stack vertically on small screens */
   }
   .dd-container {
-    margin-top:0px;
+    margin-top:25px;
   }
   
   .dd-stat-card {
