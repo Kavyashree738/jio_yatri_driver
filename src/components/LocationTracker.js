@@ -5,17 +5,73 @@ import '../styles/LocationTracker.css';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from 'react-router-dom';
+
 const API_BASE_URL = 'https://jio-yatri-driver.onrender.com';
 
+/* ------------------------------- Helpers ------------------------------- */
+// Convert any shape -> {lat, lng} or null
+function normalizeToLatLng(input) {
+  if (!input) return null;
 
+  // A) already {lat,lng}
+  if (Number.isFinite(input?.lat) && Number.isFinite(input?.lng)) {
+    return { lat: Number(input.lat), lng: Number(input.lng) };
+  }
+
+  // B) {latitude, longitude}
+  if (Number.isFinite(input?.latitude) && Number.isFinite(input?.longitude)) {
+    return { lat: Number(input.latitude), lng: Number(input.longitude) };
+  }
+
+  // C) {coordinates:[lng,lat]} or nested {address:{coordinates:[lng,lat]}}
+  const coords =
+    (Array.isArray(input?.coordinates) && input.coordinates) ||
+    (Array.isArray(input?.address?.coordinates) && input.address.coordinates);
+
+  if (Array.isArray(coords) && coords.length >= 2) {
+    const lng = Number(coords[0]);
+    const lat = Number(coords[1]);
+    if (Number.isFinite(lat) && Number.isFinite(lng)) return { lat, lng };
+  }
+
+  // D) raw [lng,lat]
+  if (Array.isArray(input) && input.length >= 2) {
+    const lng = Number(input[0]);
+    const lat = Number(input[1]);
+    if (Number.isFinite(lat) && Number.isFinite(lng)) return { lat, lng };
+  }
+
+  // E) fallback strings -> numbers
+  const latNum = Number(input?.lat ?? input?.latitude);
+  const lngNum = Number(input?.lng ?? input?.longitude);
+  if (Number.isFinite(latNum) && Number.isFinite(lngNum)) {
+    return { lat: latNum, lng: lngNum };
+  }
+
+  return null;
+}
+
+function isValidLatLng(p) {
+  return (
+    p &&
+    Number.isFinite(p.lat) &&
+    Number.isFinite(p.lng) &&
+    p.lat >= -90 &&
+    p.lat <= 90 &&
+    p.lng >= -180 &&
+    p.lng <= 180
+  );
+}
+
+/* ---------------------------- Geolocation hook ---------------------------- */
 const useGeolocation = (options) => {
   const [position, setPosition] = useState(null);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     if (!navigator.geolocation) {
-      setError("Geolocation not supported");
+      setError('Geolocation not supported');
       return;
     }
 
@@ -25,11 +81,14 @@ const useGeolocation = (options) => {
           coords: {
             latitude: pos.coords.latitude,
             longitude: pos.coords.longitude,
-            heading: pos.coords.heading
-          }
+            heading: pos.coords.heading,
+          },
         };
         setPosition(newPos);
-        localStorage.setItem("lastKnownLocation", JSON.stringify([pos.coords.longitude, pos.coords.latitude]));
+        localStorage.setItem(
+          'lastKnownLocation',
+          JSON.stringify([pos.coords.longitude, pos.coords.latitude]) // [lng,lat]
+        );
       },
       (err) => setError(err.message),
       options
@@ -41,16 +100,23 @@ const useGeolocation = (options) => {
   return { position, error };
 };
 
-const EtaDisplay = React.memo(({ etaToSender, etaToReceiver, distanceToSender, distanceToReceiver }) => (
-  <div className="eta-display">
-    {etaToSender && (
-      <p><strong>To Sender:</strong> {distanceToSender} - ETA: {etaToSender}</p>
-    )}
-    {etaToReceiver && (
-      <p><strong>To Receiver:</strong> {distanceToReceiver} - ETA: {etaToReceiver}</p>
-    )}
-  </div>
-));
+/* --------------------------------- UI bits -------------------------------- */
+const EtaDisplay = React.memo(
+  ({ etaToSender, etaToReceiver, distanceToSender, distanceToReceiver }) => (
+    <div className="eta-display">
+      {etaToSender && (
+        <p>
+          <strong>To Sender:</strong> {distanceToSender} - ETA: {etaToSender}
+        </p>
+      )}
+      {etaToReceiver && (
+        <p>
+          <strong>To Receiver:</strong> {distanceToReceiver} - ETA: {etaToReceiver}
+        </p>
+      )}
+    </div>
+  )
+);
 
 const ShipmentDetailsCard = ({ shipment }) => {
   if (!shipment) return null;
@@ -64,14 +130,22 @@ const ShipmentDetailsCard = ({ shipment }) => {
         <div className="address-sections">
           <div className="address-card sender">
             <h4>Sender</h4>
-            <p><strong>Name:</strong> {shipment.sender?.name}</p>
-            <p><strong>Phone:</strong> {shipment.sender?.phone}</p>
+            <p>
+              <strong>Name:</strong> {shipment.sender?.name}
+            </p>
+            <p>
+              <strong>Phone:</strong> {shipment.sender?.phone}
+            </p>
             <p>{shipment.sender?.address?.addressLine1}</p>
           </div>
           <div className="address-card receiver">
             <h4>Receiver</h4>
-            <p><strong>Name:</strong> {shipment.receiver?.name}</p>
-            <p><strong>Phone:</strong> {shipment.receiver?.phone}</p>
+            <p>
+              <strong>Name:</strong> {shipment.receiver?.name}
+            </p>
+            <p>
+              <strong>Phone:</strong> {shipment.receiver?.phone}
+            </p>
             <p>{shipment.receiver?.address?.addressLine1}</p>
           </div>
         </div>
@@ -80,58 +154,96 @@ const ShipmentDetailsCard = ({ shipment }) => {
   );
 };
 
+/* ---------------------------- Main Component ---------------------------- */
 const LocationTracker = ({ shipment, onStatusUpdate }) => {
   const { user } = useAuth();
-   const navigate = useNavigate();
+  const navigate = useNavigate();
+
   const { position: geoPosition } = useGeolocation({
     enableHighAccuracy: true,
     timeout: 10000,
-    maximumAge: 0
+    maximumAge: 0,
   });
 
   const [localShipment, setLocalShipment] = useState(() => {
     const saved = localStorage.getItem('lastShipment');
     return saved ? JSON.parse(saved) : null;
   });
-
-  const [loadingMap, setLoadingMap] = useState(true);
   const activeShipment = shipment || localShipment;
 
+  const [loadingMap, setLoadingMap] = useState(true);
+
+  /* ------------------------------ Persist state ------------------------------ */
   useEffect(() => {
     if (shipment) {
-      localStorage.setItem("lastShipment", JSON.stringify(shipment));
+      localStorage.setItem('lastShipment', JSON.stringify(shipment));
       setLocalShipment(shipment);
     }
   }, [shipment]);
 
   useEffect(() => {
-    if (
-      !shipment &&
-      localShipment &&
-      ['cancelled', 'delivered'].includes(localShipment.status)
-    ) {
+    if (!shipment && localShipment && ['cancelled', 'delivered'].includes(localShipment.status)) {
       localStorage.removeItem('lastShipment');
       setLocalShipment(null);
       if (onStatusUpdate) onStatusUpdate(localShipment.status);
     }
   }, [shipment, localShipment, onStatusUpdate]);
 
+  /* ------------------------------ Driver point ------------------------------ */
   const location = useMemo(() => {
     if (geoPosition?.coords) {
-      return [geoPosition.coords.longitude, geoPosition.coords.latitude];
+      return [
+        Number(geoPosition.coords.longitude),
+        Number(geoPosition.coords.latitude),
+      ];
     }
     const stored = localStorage.getItem('lastKnownLocation');
-    return stored ? JSON.parse(stored) : null;
+    if (!stored) return null;
+    try {
+      const arr = JSON.parse(stored);
+      if (Array.isArray(arr) && arr.length >= 2) {
+        const lng = Number(arr[0]);
+        const lat = Number(arr[1]);
+        return Number.isFinite(lng) && Number.isFinite(lat) ? [lng, lat] : null;
+      }
+    } catch {}
+    return null;
   }, [geoPosition]);
 
-  const heading = geoPosition?.coords?.heading || 0;
+  const heading = Number.isFinite(geoPosition?.coords?.heading)
+    ? geoPosition.coords.heading
+    : 0;
 
-  const [etaToSender, setEtaToSender] = useState('');
-  const [distanceToSender, setDistanceToSender] = useState('');
-  const [etaToReceiver, setEtaToReceiver] = useState('');
-  const [distanceToReceiver, setDistanceToReceiver] = useState('');
-  const [routeError, setRouteError] = useState(null);
+  /* ----------------------------- Sender/Receiver ---------------------------- */
+  // Debug raw shapes from backend
+  useEffect(() => {
+    if (activeShipment) {
+      console.log('[RAW] sender.address', activeShipment.sender?.address);
+      console.log('[RAW] receiver.address', activeShipment.receiver?.address);
+    }
+  }, [activeShipment]);
 
+  const senderLatLng = useMemo(() => {
+    const p = normalizeToLatLng(
+      activeShipment?.sender?.address?.coordinates ??
+        activeShipment?.sender?.address ??
+        activeShipment?.sender
+    );
+    console.log('[NORMALIZED] senderLatLng', p);
+    return p;
+  }, [activeShipment]);
+
+  const receiverLatLng = useMemo(() => {
+    const p = normalizeToLatLng(
+      activeShipment?.receiver?.address?.coordinates ??
+        activeShipment?.receiver?.address ??
+        activeShipment?.receiver
+    );
+    console.log('[NORMALIZED] receiverLatLng', p);
+    return p;
+  }, [activeShipment]);
+
+  /* --------------------------------- Map refs -------------------------------- */
   const mapRef = useRef(null);
   const mapContainerRef = useRef(null);
   const markerRef = useRef(null);
@@ -141,38 +253,31 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
   const directionsServiceRef = useRef(null);
   const googleMapsScriptRef = useRef(null);
 
-  const senderLatLng = useMemo(() => ({
-    lat: activeShipment?.sender?.address?.coordinates?.lat,
-    lng: activeShipment?.sender?.address?.coordinates?.lng,
-  }), [activeShipment]);
-
-  const receiverLatLng = useMemo(() => ({
-    lat: activeShipment?.receiver?.address?.coordinates?.lat,
-    lng: activeShipment?.receiver?.address?.coordinates?.lng,
-  }), [activeShipment]);
-
-    const handleViewFullMap = () => {
+  /* ------------------------------ Fullscreen nav ----------------------------- */
+  const handleViewFullMap = () => {
     navigate('/full-map', {
       state: {
         currentLocation: location,
         heading,
         senderLatLng,
-        receiverLatLng
-      }
+        receiverLatLng,
+      },
     });
   };
 
+  /* --------------------------------- Map init -------------------------------- */
   const initMap = useCallback(() => {
     if (!activeShipment || !mapContainerRef.current || mapRef.current) return;
 
-    const center = location
-      ? { lat: location[1], lng: location[0] }
-      : { lat: 12.9716, lng: 77.5946 };
+    const cObj = normalizeToLatLng(location);
+    const center = isValidLatLng(cObj) ? cObj : { lat: 12.9716, lng: 77.5946 };
+
+    console.log('[MAP] init center', center);
 
     mapRef.current = new window.google.maps.Map(mapContainerRef.current, {
       zoom: 15,
       center,
-      mapTypeId: 'roadmap'
+      mapTypeId: 'roadmap',
     });
 
     directionsRendererRef.current = new window.google.maps.DirectionsRenderer({
@@ -190,11 +295,30 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
     setLoadingMap(false);
   }, [location, activeShipment]);
 
+  /* -------------------------------- Map update ------------------------------- */
+  const [etaToSender, setEtaToSender] = useState('');
+  const [distanceToSender, setDistanceToSender] = useState('');
+  const [etaToReceiver, setEtaToReceiver] = useState('');
+  const [distanceToReceiver, setDistanceToReceiver] = useState('');
+  const [routeError, setRouteError] = useState(null);
+
   const updateMap = useCallback(() => {
-    if (!mapRef.current || !location || !activeShipment || !window.google) return;
+    if (!mapRef.current || !activeShipment || !window.google) return;
 
-    const driverLatLng = { lat: location[1], lng: location[0] };
+    const driverLatLng = normalizeToLatLng(location);
+    console.log('[DRIVER] normalized', driverLatLng);
 
+    if (!isValidLatLng(driverLatLng)) {
+      console.warn('[WARN] Invalid driver point, skipping marker/route.');
+      return;
+    }
+    if (!isValidLatLng(senderLatLng) || !isValidLatLng(receiverLatLng)) {
+      setRouteError('Missing/invalid sender or receiver coordinates');
+      console.warn('[WARN] Bad sender/receiver', { senderLatLng, receiverLatLng });
+      return;
+    }
+
+    // DRIVER marker
     if (!markerRef.current) {
       markerRef.current = new window.google.maps.Marker({
         position: driverLatLng,
@@ -202,7 +326,7 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
         icon: {
           path: window.google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
           scale: 6,
-          rotation: heading || 0,
+          rotation: Number.isFinite(heading) ? heading : 0,
           fillColor: '#EA4335',
           fillOpacity: 1,
           strokeWeight: 2,
@@ -210,28 +334,58 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
         },
         title: 'Your Location',
       });
+      console.log('[MARKER] created: driver');
     } else {
       markerRef.current.setPosition(driverLatLng);
+      console.log('[MARKER] updated: driver');
     }
 
+    // SENDER marker
     if (!senderMarkerRef.current) {
       senderMarkerRef.current = new window.google.maps.Marker({
         position: senderLatLng,
         map: mapRef.current,
-        label: { text: 'S', color: '#FFFFFF' },
-        icon: 'https://maps.google.com/mapfiles/ms/icons/green-dot.png',
+        icon: {
+          url: 'https://maps.google.com/mapfiles/ms/icons/green-dot.png',
+          labelOrigin: new window.google.maps.Point(10, 11),
+        },
+        label: { text: 'S', color: '#ffffff', fontWeight: '700' },
+        title: 'Sender',
       });
+      console.log('[MARKER] created: sender');
+    } else {
+      senderMarkerRef.current.setPosition(senderLatLng);
+      console.log('[MARKER] updated: sender');
     }
 
+    // RECEIVER marker
     if (!receiverMarkerRef.current) {
       receiverMarkerRef.current = new window.google.maps.Marker({
         position: receiverLatLng,
         map: mapRef.current,
-        label: { text: 'R', color: '#FFFFFF' },
-        icon: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png',
+        icon: {
+          url: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png',
+          labelOrigin: new window.google.maps.Point(10, 11),
+        },
+        label: { text: 'R', color: '#ffffff', fontWeight: '700' },
+        title: 'Receiver',
       });
+      console.log('[MARKER] created: receiver');
+    } else {
+      receiverMarkerRef.current.setPosition(receiverLatLng);
+      console.log('[MARKER] updated: receiver');
     }
 
+    // Fit bounds
+    const bounds = new window.google.maps.LatLngBounds();
+    bounds.extend(driverLatLng);
+    bounds.extend(senderLatLng);
+    bounds.extend(receiverLatLng);
+    mapRef.current.fitBounds(bounds);
+    console.log('[MAP] fitBounds done');
+
+    // Route
+    console.log('[ROUTE] origin', driverLatLng, 'via', senderLatLng, 'to', receiverLatLng);
     directionsServiceRef.current.route(
       {
         origin: driverLatLng,
@@ -240,15 +394,18 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
         travelMode: window.google.maps.TravelMode.DRIVING,
       },
       (result, status) => {
+        console.log('[ROUTE] status', status, result);
         if (status === 'OK') {
           directionsRendererRef.current.setDirections(result);
           setRouteError(null);
-          const legs = result.routes[0].legs;
-          if (legs.length === 2) {
-            setDistanceToSender(legs[0].distance.text);
-            setEtaToSender(legs[0].duration.text);
-            setDistanceToReceiver(legs[1].distance.text);
-            setEtaToReceiver(legs[1].duration.text);
+          const legs = result?.routes?.[0]?.legs || [];
+          if (legs.length >= 1) {
+            setDistanceToSender(legs[0]?.distance?.text || '');
+            setEtaToSender(legs[0]?.duration?.text || '');
+          }
+          if (legs.length >= 2) {
+            setDistanceToReceiver(legs[1]?.distance?.text || '');
+            setEtaToReceiver(legs[1]?.duration?.text || '');
           }
         } else {
           setRouteError(`Route error: ${status}`);
@@ -257,6 +414,7 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
     );
   }, [location, heading, activeShipment, senderLatLng, receiverLatLng]);
 
+  /* --------------------------- Load Maps JS once --------------------------- */
   useEffect(() => {
     if (!activeShipment) {
       mapRef.current = null;
@@ -273,46 +431,47 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
       script.onload = () => initMap();
       document.body.appendChild(script);
       googleMapsScriptRef.current = script;
+      console.log('[MAP] Google Maps script injected');
     }
   }, [activeShipment, initMap]);
 
   useEffect(() => {
     if (!loadingMap && location) {
+      console.log('[MAP] update requested');
       updateMap();
     }
   }, [location, loadingMap, updateMap]);
 
+  /* ------------------------ Send driver location (API) ------------------------ */
   const debouncedSendLocation = useCallback(
     debounce(async (coords) => {
       if (!coords || !user) return;
-
       try {
         const token = await user.getIdToken();
 
-        await axios.put(`${API_BASE_URL}/api/driver/location`, {
-          coordinates: coords,
-          isLocationActive: true
-        }, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        console.log('[API] PUT /driver/location', coords);
+        await axios.put(
+          `${API_BASE_URL}/api/driver/location`,
+          { coordinates: coords, isLocationActive: true },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
 
         if (activeShipment?._id) {
+          console.log('[API] PUT /shipments/:id/driver-location', activeShipment._id, coords);
           await axios.put(
             `${API_BASE_URL}/api/shipments/${activeShipment._id}/driver-location`,
-            {
-              coordinates: coords,
-              // status: 'in_transit'
-            },
+            { coordinates: coords },
             {
               headers: {
                 Authorization: `Bearer ${token}`,
-                'Content-Type': 'application/json'
-              }
+                'Content-Type': 'application/json',
+              },
             }
           );
         }
       } catch (err) {
-        toast.error("Failed to update your location");
+        console.error('[API] location update failed', err);
+        toast.error('Failed to update your location');
       }
     }, 5000),
     [user, activeShipment]
@@ -324,31 +483,32 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
     }
   }, [location, user, debouncedSendLocation]);
 
+  /* ------------------------------ UI Handlers ------------------------------ */
   const handleRecenter = () => {
-    if (mapRef.current && location) {
-      mapRef.current.panTo({ lat: location[1], lng: location[0] });
+    const p = normalizeToLatLng(location);
+    if (mapRef.current && isValidLatLng(p)) {
+      mapRef.current.panTo(p);
+      console.log('[MAP] recenter to', p);
     }
   };
 
   const handleCancelShipment = async () => {
     try {
       const token = await user.getIdToken();
+      console.log('[API] cancel shipment', activeShipment?._id);
       await axios.put(
         `${API_BASE_URL}/api/shipments/${activeShipment._id}/cancel`,
-        { reason: "Driver cancelled the shipment" },
+        { reason: 'Driver cancelled the shipment' },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       localStorage.removeItem('lastShipment');
       setLocalShipment(null);
       if (onStatusUpdate) onStatusUpdate('cancelled');
       mapRef.current = null;
-      toast.success("Shipment cancelled successfully");
-
-      // Reload the page after 2 seconds to show updated shipments
-      setTimeout(() => {
-        window.location.reload();
-      }, 2000);
+      toast.success('Shipment cancelled successfully');
+      setTimeout(() => window.location.reload(), 2000);
     } catch (error) {
+      console.error('[API] cancel failed', error);
       toast.error(error.response?.data?.message || 'Error cancelling shipment');
     }
   };
@@ -356,6 +516,7 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
   const handleDeliverShipment = async () => {
     try {
       const token = await user.getIdToken();
+      console.log('[API] deliver shipment', activeShipment?._id);
       await axios.put(
         `${API_BASE_URL}/api/shipments/${activeShipment._id}/deliver`,
         {},
@@ -365,17 +526,15 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
       setLocalShipment(null);
       if (onStatusUpdate) onStatusUpdate('delivered');
       mapRef.current = null;
-      toast.success("Shipment delivered successfully!");
-
-      // Reload the page after 2 seconds to show updated shipments
-      setTimeout(() => {
-        window.location.reload();
-      }, 2000);
+      toast.success('Shipment delivered successfully!');
+      setTimeout(() => window.location.reload(), 2000);
     } catch (error) {
+      console.error('[API] deliver failed', error);
       toast.error(error.response?.data?.message || 'Error delivering shipment');
     }
   };
 
+  /* --------------------------------- Render --------------------------------- */
   if (!activeShipment || ['cancelled', 'delivered'].includes(activeShipment.status)) {
     return (
       <div className="no-shipment">
@@ -394,16 +553,15 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
           className="map-container"
           style={{ height: '500px', width: '100%' }}
         />
-        <button onClick={handleRecenter} className="recenter-button">📍</button>
+        <button onClick={handleRecenter} className="recenter-button">
+          📍
+        </button>
       </div>
 
-      <button
-        onClick={handleViewFullMap}
-        className="fullscreen-button"
-        aria-label="View full screen map"
-      >
+      <button onClick={handleViewFullMap} className="fullscreen-button" aria-label="View full screen map">
         <span className="button-icon">🗺️</span> View Full Map
       </button>
+
       <EtaDisplay
         etaToSender={etaToSender}
         etaToReceiver={etaToReceiver}
@@ -415,7 +573,7 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
       <div className="shipment-actions">
         <button
           onClick={() => {
-            window.scrollTo({ top: 0, behavior: "smooth" });
+            window.scrollTo({ top: 0, behavior: 'smooth' });
             handleCancelShipment();
           }}
           className="cancel-buttons"
@@ -425,7 +583,7 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
 
         <button
           onClick={() => {
-            window.scrollTo({ top: 0, behavior: "smooth" });
+            window.scrollTo({ top: 0, behavior: 'smooth' });
             handleDeliverShipment();
           }}
           className="deliver-button"
