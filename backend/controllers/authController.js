@@ -3,6 +3,7 @@ const crypto = require('crypto');
 const sendSms = require('../services/otpService');
 const axios = require('axios');
 
+
 const sendOtp = async (req, res) => {
   try {
     const { phoneNumber } = req.body;
@@ -199,6 +200,7 @@ const verifyOtp = async (req, res) => {
 
 
 module.exports = { sendOtp, verifyOtp };
+
 
 
 
