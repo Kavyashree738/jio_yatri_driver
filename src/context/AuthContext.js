@@ -1,72 +1,4 @@
-// import { createContext, useContext, useState, useEffect } from 'react';
-// import { auth } from '../firebase';
-
-// const AuthContext = createContext();
-
-
-// export function AuthProvider({ children }) {
-//     const [user, setUser] = useState(null);
-//     const [token, setToken] = useState(null);
-//     const [message, setMessage] = useState({ text: '', isError: false });
-//     const [loading, setLoading] = useState(true);
-
-//     const login = (userData, authToken) => {
-//         setUser(userData);
-//         setToken(authToken);
-//         localStorage.setItem('authToken', authToken);
-//     };
-
-//     const logout = () => {
-//         setUser(null);
-//         setToken(null);
-//         localStorage.removeItem('authToken');
-//         setMessage({ text: '', isError: false });
-//     };
-
-//     useEffect(() => {
-//         const unsubscribe = auth.onAuthStateChanged(async (currentUser) => {
-//             if (currentUser) {
-
-//                 try {
-//                     const idToken = await currentUser.getIdToken();
-//                     setUser(currentUser);
-//                     setToken(idToken);
-//                     localStorage.setItem('authToken', idToken);
-//                 } catch (error) {
-//                     setMessage({ text: error.message, isError: true });
-//                     logout();
-//                 }
-//             } else {
-//                 logout();
-//             }
-//             setLoading(false);
-//         });
-
-//         return () => unsubscribe();
-//     }, []);
-
-//     const value = {
-//         user,
-//         token,
-//         message,
-//         login,
-//         logout,
-//         setMessage,
-//         loading,
-//     };
-
-//     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-// }
-
-// export function useAuth() {
-//     const context = useContext(AuthContext);
-//     if (context === undefined) {
-//         throw new Error('useAuth must be used within an AuthProvider');
-//     }
-//     return context;
-// }
-
-// src/context/AuthContext.jsx
+// src/context/AuthContext.js
 import { createContext, useContext, useState, useEffect } from 'react';
 import { auth } from '../firebase';
 import { onIdTokenChanged } from 'firebase/auth';
@@ -79,43 +11,37 @@ export function AuthProvider({ children }) {
   const [message, setMessage] = useState({ text: '', isError: false });
   const [loading, setLoading] = useState(true);
 
-  // NEW
+  // App meta
   const [userRole, setUserRole] = useState(null);          // 'driver' | 'business' | null
   const [isRegistered, setIsRegistered] = useState(false); // boolean
   const [softSignedOut, setSoftSignedOut] = useState(false);
-
-  // ✅ NEW: Owner shopId
-  const [shopId, setShopId] = useState(null);
 
   const logout = () => {
     setUser(null);
     setToken(null);
     setUserRole(null);
     setIsRegistered(false);
-    setShopId(null);
     localStorage.removeItem('authToken');
     localStorage.removeItem('userRole');
     localStorage.removeItem('isRegistered');
     setMessage({ text: '', isError: false });
   };
 
-  // Soft logout (don’t sign out Firebase, just reset app state)
+  // Soft logout (keep Firebase session, but reset app state)
   const softLogout = () => {
     setUser(null);
     setToken(null);
     setUserRole(null);
     setIsRegistered(false);
-    setShopId(null);
     localStorage.removeItem('authToken');
     localStorage.removeItem('userRole');
     localStorage.removeItem('isRegistered');
     setMessage({ text: '', isError: false });
     setSoftSignedOut(true);
   };
-
   const endSoftLogout = () => setSoftSignedOut(false);
 
-  // Load role/registration (+ shopId if your API returns it)
+  // Load role/registration (and optionally shopId) from your API
   const refreshUserMeta = async (firebaseUser) => {
     const idToken = await firebaseUser.getIdToken();
     const res = await fetch(
@@ -124,16 +50,15 @@ export function AuthProvider({ children }) {
     );
     const json = await res.json();
     if (json.success) {
-      setUserRole(json.data.role);
+      setUserRole(json.data.role || null);
       setIsRegistered(!!json.data.isRegistered);
       localStorage.setItem('userRole', json.data.role || '');
       localStorage.setItem('isRegistered', json.data.isRegistered ? '1' : '0');
-
-      if (json.data?.shopId) setShopId(json.data.shopId); // ✅ capture shopId if present
     }
-    return json.data; // return meta for immediate use
+    return json.data; // may include shopId if your backend returns it
   };
 
+  // Primary auth listener (keeps website logged in, stores token)
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (currentUser) => {
       try {
@@ -141,29 +66,29 @@ export function AuthProvider({ children }) {
           setLoading(false);
           return;
         }
-
         if (currentUser) {
           const idToken = await currentUser.getIdToken();
           setUser(currentUser);
           setToken(idToken);
           localStorage.setItem('authToken', idToken);
 
-          // load role + registration
+          // Fetch role/registration (and maybe shopId)
           const meta = await refreshUserMeta(currentUser);
 
-          // If shopId not returned but role is business, fetch it now
-          if (!meta?.shopId && meta?.role === 'business') {
-            try {
-              const idToken2 = await currentUser.getIdToken();
-              const res2 = await fetch(
-                'https://jio-yatri-driver.onrender.com/api/shops/me',
-                { headers: { Authorization: `Bearer ${idToken2}` } }
-              );
-              const j2 = await res2.json();
-              if (j2.success && j2?.data?._id) setShopId(j2.data._id);
-            } catch (e) {
-              console.error('Failed to fetch shopId:', e);
-            }
+          // ✅ Send a single enriched message to Flutter with auth + meta
+          if (window.AuthBridge?.postMessage) {
+            const payload = JSON.stringify({
+              type: 'auth',
+              idToken,
+              uid: currentUser.uid,
+              role: meta?.role || null,
+              isRegistered: !!meta?.isRegistered,
+              shopId: meta?.shopId || null, // include if your API returns it
+            });
+            window.AuthBridge.postMessage(payload);
+            console.log('✅ Sent auth+meta to Flutter via AuthBridge');
+          } else {
+            console.log('ℹ️ AuthBridge not available (normal browser)');
           }
         } else {
           logout();
@@ -175,53 +100,34 @@ export function AuthProvider({ children }) {
         setLoading(false);
       }
     });
-
     return () => unsubscribe();
   }, [softSignedOut]);
 
-  // ✅ Send {idToken, uid, shopId} to Flutter once both are ready
+  // Also keep sending when the ID token refreshes
   useEffect(() => {
-    if (!user || !shopId) return;
-    (async () => {
+    const unsub = onIdTokenChanged(auth, async (fbUser) => {
+      if (!fbUser) return;
       try {
-        const idToken = await user.getIdToken(true);
-        const payload = {
-          type: 'auth',
-          uid: user.uid,
-          idToken,
-          shopId, // IMPORTANT
-        };
-
-        if (window.AuthBridge && typeof window.AuthBridge.postMessage === 'function') {
-          window.AuthBridge.postMessage(JSON.stringify(payload));
-          console.log('✅ Sent idToken + shopId to Flutter via AuthBridge');
-        }
-      } catch (e) {
-        console.error('AuthBridge send (shop) failed:', e);
-      }
-    })();
-  }, [user, shopId]);
-
-  // Keep forwarding token updates too; include shopId when available
-  useEffect(() => {
-    const unsub = onIdTokenChanged(auth, async (u) => {
-      if (!u) return;
-      try {
-        const idToken = await u.getIdToken(true);
-        const payload = { type: 'auth', idToken, uid: u.uid };
-        if (shopId) payload.shopId = shopId;
-
-        if (window.AuthBridge && typeof window.AuthBridge.postMessage === 'function') {
-          window.AuthBridge.postMessage(JSON.stringify(payload));
-          console.log('✅ Sent ID token to Flutter via AuthBridge', payload);
+        const idToken = await fbUser.getIdToken(true);
+        const meta = await refreshUserMeta(fbUser);
+        if (window.AuthBridge?.postMessage) {
+          const payload = JSON.stringify({
+            type: 'auth',
+            idToken,
+            uid: fbUser.uid,
+            role: meta?.role || null,
+            isRegistered: !!meta?.isRegistered,
+            shopId: meta?.shopId || null,
+          });
+          window.AuthBridge.postMessage(payload);
+          console.log('🔄 Re-sent auth+meta to Flutter via AuthBridge');
         }
       } catch (err) {
-        console.error('Failed to get web idToken:', err);
+        console.error('Failed to forward idToken:', err);
       }
     });
-
     return () => unsub();
-  }, [shopId]);
+  }, []);
 
   const value = {
     user,
@@ -235,7 +141,6 @@ export function AuthProvider({ children }) {
     softSignedOut,
     softLogout,
     endSoftLogout,
-    shopId, // optional: expose if needed elsewhere
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
