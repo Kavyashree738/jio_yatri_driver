@@ -2324,7 +2324,7 @@ progress::-webkit-progress-value {
 }
 
 .otp-input {
-  flex: 0 0 42px;
+  flex: 0 0 50px;
   width: 30px;
   height: 40px;
   text-align: center;
