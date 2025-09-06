@@ -66,6 +66,7 @@
 //     return context;
 // }
 
+// src/context/AuthContext.jsx
 import { createContext, useContext, useState, useEffect } from 'react';
 import { auth } from '../firebase';
 import { onIdTokenChanged } from 'firebase/auth';
@@ -82,48 +83,56 @@ export function AuthProvider({ children }) {
   const [userRole, setUserRole] = useState(null);          // 'driver' | 'business' | null
   const [isRegistered, setIsRegistered] = useState(false); // boolean
   const [softSignedOut, setSoftSignedOut] = useState(false);
+
+  // ✅ NEW: Owner shopId
+  const [shopId, setShopId] = useState(null);
+
   const logout = () => {
     setUser(null);
     setToken(null);
     setUserRole(null);
     setIsRegistered(false);
+    setShopId(null);
     localStorage.removeItem('authToken');
     localStorage.removeItem('userRole');
     localStorage.removeItem('isRegistered');
     setMessage({ text: '', isError: false });
   };
-  // 👇 Soft logout: keep Firebase session, but reset app state and show phone verify UI
+
+  // Soft logout (don’t sign out Firebase, just reset app state)
   const softLogout = () => {
-    // wipe app state, but DON'T call auth.signOut()
     setUser(null);
     setToken(null);
     setUserRole(null);
     setIsRegistered(false);
+    setShopId(null);
     localStorage.removeItem('authToken');
     localStorage.removeItem('userRole');
     localStorage.removeItem('isRegistered');
     setMessage({ text: '', isError: false });
-    setSoftSignedOut(true); // gate the auth listener
+    setSoftSignedOut(true);
   };
 
-   const endSoftLogout = () => setSoftSignedOut(false);
-  // Helper to (re)load role + registration from API
-  // in AuthProvider
+  const endSoftLogout = () => setSoftSignedOut(false);
+
+  // Load role/registration (+ shopId if your API returns it)
   const refreshUserMeta = async (firebaseUser) => {
     const idToken = await firebaseUser.getIdToken();
-    const res = await fetch(`https://jio-yatri-driver.onrender.com/api/user/check-registration/${firebaseUser.uid}`, {
-      headers: { Authorization: `Bearer ${idToken}` }
-    });
+    const res = await fetch(
+      `https://jio-yatri-driver.onrender.com/api/user/check-registration/${firebaseUser.uid}`,
+      { headers: { Authorization: `Bearer ${idToken}` } }
+    );
     const json = await res.json();
     if (json.success) {
       setUserRole(json.data.role);
       setIsRegistered(!!json.data.isRegistered);
       localStorage.setItem('userRole', json.data.role || '');
       localStorage.setItem('isRegistered', json.data.isRegistered ? '1' : '0');
-    }
-    return json.data; // <-- ✅ so callers can immediately use it
-  };
 
+      if (json.data?.shopId) setShopId(json.data.shopId); // ✅ capture shopId if present
+    }
+    return json.data; // return meta for immediate use
+  };
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (currentUser) => {
@@ -140,7 +149,22 @@ export function AuthProvider({ children }) {
           localStorage.setItem('authToken', idToken);
 
           // load role + registration
-          await refreshUserMeta(currentUser);
+          const meta = await refreshUserMeta(currentUser);
+
+          // If shopId not returned but role is business, fetch it now
+          if (!meta?.shopId && meta?.role === 'business') {
+            try {
+              const idToken2 = await currentUser.getIdToken();
+              const res2 = await fetch(
+                'https://jio-yatri-driver.onrender.com/api/shops/me',
+                { headers: { Authorization: `Bearer ${idToken2}` } }
+              );
+              const j2 = await res2.json();
+              if (j2.success && j2?.data?._id) setShopId(j2.data._id);
+            } catch (e) {
+              console.error('Failed to fetch shopId:', e);
+            }
+          }
         } else {
           logout();
         }
@@ -155,28 +179,49 @@ export function AuthProvider({ children }) {
     return () => unsubscribe();
   }, [softSignedOut]);
 
+  // ✅ Send {idToken, uid, shopId} to Flutter once both are ready
   useEffect(() => {
-  // Forward Firebase ID token to Flutter (only works in WebView)
-  const unsub = onIdTokenChanged(auth, async (user) => {
-    if (!user) return;
-    try {
-      const idToken = await user.getIdToken(true);
-      const payload = JSON.stringify({ type: 'auth', idToken, uid: user.uid });
+    if (!user || !shopId) return;
+    (async () => {
+      try {
+        const idToken = await user.getIdToken(true);
+        const payload = {
+          type: 'auth',
+          uid: user.uid,
+          idToken,
+          shopId, // IMPORTANT
+        };
 
-      if (window.AuthBridge && typeof window.AuthBridge.postMessage === 'function') {
-        window.AuthBridge.postMessage(payload);
-        console.log('✅ Sent ID token to Flutter via AuthBridge');
-      } else {
-        console.log('ℹ️ AuthBridge not available (normal browser)');
+        if (window.AuthBridge && typeof window.AuthBridge.postMessage === 'function') {
+          window.AuthBridge.postMessage(JSON.stringify(payload));
+          console.log('✅ Sent idToken + shopId to Flutter via AuthBridge');
+        }
+      } catch (e) {
+        console.error('AuthBridge send (shop) failed:', e);
       }
-    } catch (err) {
-      console.error('Failed to get web idToken:', err);
-    }
-  });
+    })();
+  }, [user, shopId]);
 
-  return () => unsub();
-}, []);
+  // Keep forwarding token updates too; include shopId when available
+  useEffect(() => {
+    const unsub = onIdTokenChanged(auth, async (u) => {
+      if (!u) return;
+      try {
+        const idToken = await u.getIdToken(true);
+        const payload = { type: 'auth', idToken, uid: u.uid };
+        if (shopId) payload.shopId = shopId;
 
+        if (window.AuthBridge && typeof window.AuthBridge.postMessage === 'function') {
+          window.AuthBridge.postMessage(JSON.stringify(payload));
+          console.log('✅ Sent ID token to Flutter via AuthBridge', payload);
+        }
+      } catch (err) {
+        console.error('Failed to get web idToken:', err);
+      }
+    });
+
+    return () => unsub();
+  }, [shopId]);
 
   const value = {
     user,
@@ -189,8 +234,8 @@ export function AuthProvider({ children }) {
     refreshUserMeta,
     softSignedOut,
     softLogout,
-    endSoftLogout
-    // expose this
+    endSoftLogout,
+    shopId, // optional: expose if needed elsewhere
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
