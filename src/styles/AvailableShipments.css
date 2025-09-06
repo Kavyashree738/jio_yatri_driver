@@ -334,7 +334,7 @@
 @media (max-width: 768px) {
   .available-shipments {
     padding: 0.5rem;
-    margin: 1rem;
+    margin-bottom:55px;
   }
   
   .shipment-list {
@@ -384,3 +384,4 @@
   border: 1px solid #ddd;
 
 }
+
