@@ -89,6 +89,14 @@ function BusinessOrdersWrapper() {
 }
 
 const App = () => {
+
+  useEffect(() => {
+    // ✅ Tell Flutter that the website is ready to receive push events
+    if (window.WebReady && typeof window.WebReady.postMessage === "function") {
+      window.WebReady.postMessage(JSON.stringify({ type: "ready" }));
+      console.log("🟢 Sent WebReady to Flutter");
+    }
+  }, []);
   return (
     // ✅ CartProvider should wrap the whole app
     <CartProvider>
