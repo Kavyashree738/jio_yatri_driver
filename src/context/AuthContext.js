@@ -5,6 +5,10 @@ import { onIdTokenChanged } from 'firebase/auth';
 
 const AuthContext = createContext();
 
+// 👉 If this build is only for one role, you can force it here:
+// const CURRENT_APP_ROLE = 'business'; // or 'driver'
+const CURRENT_APP_ROLE = null; // leave null to use backend-returned role
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
@@ -41,7 +45,8 @@ export function AuthProvider({ children }) {
     localStorage.removeItem('isRegistered');
     setMessage({ text: '', isError: false });
     setSoftSignedOut(true);
-    // Optionally tell Flutter we’re “logged out” at app level
+
+    // Tell Flutter we’re “logged out” at app level
     trySendToFlutter({
       type: 'auth',
       idToken: null,
@@ -53,7 +58,7 @@ export function AuthProvider({ children }) {
   };
   const endSoftLogout = () => setSoftSignedOut(false);
 
-  // -------- helpers --------
+  // ---------- helpers ----------
 
   const trySendToFlutter = (obj) => {
     const json = JSON.stringify(obj);
@@ -66,36 +71,55 @@ export function AuthProvider({ children }) {
     } else {
       console.log('ℹ️ AuthBridge not available (normal browser). Payload:', obj);
     }
+
+    // Optional: surface in WebView via Toaster channel too
+    try {
+      if (window?.Toaster?.postMessage) {
+        const roleTxt = obj.role ?? 'null';
+        const shopTxt = obj.shopId ?? 'null';
+        window.Toaster.postMessage(`AuthBridge: role=${roleTxt} shopId=${shopTxt}`);
+      }
+    } catch {}
   };
 
   const refreshUserMeta = async (firebaseUser) => {
-    const idToken = await firebaseUser.getIdToken();
-    const res = await fetch(
-      `https://jio-yatri-driver.onrender.com/api/user/check-registration/${firebaseUser.uid}`,
-      { headers: { Authorization: `Bearer ${idToken}` } }
-    );
-    const json = await res.json();
+    try {
+      const idToken = await firebaseUser.getIdToken();
+      const res = await fetch(
+        `https://jio-yatri-driver.onrender.com/api/user/check-registration/${firebaseUser.uid}`,
+        { headers: { Authorization: `Bearer ${idToken}` } }
+      );
+      const json = await res.json();
+      console.log('[check-registration] RESPONSE:', json);
 
-    // Defensive defaults
-    const meta = json?.data || {};
-    const role = meta.role ?? null;
-    const registered = !!meta.isRegistered;
-    const shopId = meta.shopId ?? null; // backend should return this for business
+      const raw = json?.data ?? {};
+      // Use backend role unless CURRENT_APP_ROLE is set
+      const role = CURRENT_APP_ROLE ?? (raw.role ?? null);
+      const registered = !!raw.isRegistered;
+      const shopId = raw.shopId ?? null; // backend should set for business
 
-    setUserRole(role);
-    setIsRegistered(registered);
+      setUserRole(role);
+      setIsRegistered(registered);
+      localStorage.setItem('userRole', role || '');
+      localStorage.setItem('isRegistered', registered ? '1' : '0');
 
-    localStorage.setItem('userRole', role || '');
-    localStorage.setItem('isRegistered', registered ? '1' : '0');
-
-    return { role, isRegistered: registered, shopId };
+      return { role, isRegistered: registered, shopId };
+    } catch (err) {
+      console.error('[check-registration] FAILED:', err);
+      // Keep state safe defaults
+      setUserRole(null);
+      setIsRegistered(false);
+      localStorage.setItem('userRole', '');
+      localStorage.setItem('isRegistered', '0');
+      return { role: CURRENT_APP_ROLE ?? null, isRegistered: false, shopId: null };
+    }
   };
 
   const buildBridgePayload = (firebaseUser, idToken, meta) => ({
     type: 'auth',
     idToken: idToken || null,
     uid: firebaseUser?.uid || null,
-    role: meta?.role ?? null,
+    role: CURRENT_APP_ROLE ?? (meta?.role ?? null),
     isRegistered: !!meta?.isRegistered,
     shopId: meta?.shopId ?? null,
   });
@@ -114,7 +138,7 @@ export function AuthProvider({ children }) {
     }
 
     // 1) Token
-    const idToken = await firebaseUser.getIdToken(/* forceRefresh */ true);
+    const idToken = await firebaseUser.getIdToken(true);
     setToken(idToken);
     localStorage.setItem('authToken', idToken);
 
@@ -126,7 +150,7 @@ export function AuthProvider({ children }) {
     trySendToFlutter(payload);
   };
 
-  // -------- listeners --------
+  // ---------- listeners ----------
 
   // Primary auth listener
   useEffect(() => {
@@ -145,7 +169,7 @@ export function AuthProvider({ children }) {
           await syncAuthToFlutter(null);
         }
       } catch (error) {
-        console.error(error);
+        console.error('[onAuthStateChanged] error:', error);
         setMessage({ text: error.message, isError: true });
         logout();
       } finally {
