@@ -11,7 +11,7 @@ import axios from 'axios';
  * @param {boolean} enabled - heartbeat active (e.g., status === 'active')
  * @param {number} intervalMs - repeat interval (default 90s)
  */
-export default function useDriverHeartbeat(user, enabled, intervalMs = 90_000) {
+export default function useDriverHeartbeat(user, enabled, intervalMs = 30_000) {
   const timerRef = useRef(null);
 
   useEffect(() => {
@@ -58,4 +58,5 @@ export default function useDriverHeartbeat(user, enabled, intervalMs = 90_000) {
     };
   }, [user, enabled, intervalMs]);
 }
+
 
