@@ -36,7 +36,7 @@ export default function useDriverHeartbeat(user, enabled, intervalMs = 90_000) {
 
         const idToken = await user.getIdToken();
         await axios.post(
-          'http://localhost:5000/api/driver/heartbeat',
+          'https://jio-yatri-driver.onrender.com/api/driver/heartbeat',
           { coords }, // [lng, lat]
           { headers: { Authorization: `Bearer ${idToken}` } }
         );
@@ -58,3 +58,4 @@ export default function useDriverHeartbeat(user, enabled, intervalMs = 90_000) {
     };
   }, [user, enabled, intervalMs]);
 }
+
