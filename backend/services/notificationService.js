@@ -109,10 +109,29 @@ if (!admin.apps.length) {
 } else {
   console.log('[INIT] Firebase Admin already initialized');
 }
+// ⬇️ REPLACE your sendToToken with this version
 const sendToToken = async (token, { title, body, data = {} }) => {
+  // Ensure data values are strings
+  const dataStr = Object.fromEntries(
+    Object.entries(data).map(([k, v]) => [k, String(v)])
+  );
+
   const message = {
     token,
-    // For web you should prefer the webpush envelope
+
+    // ✅ ANDROID APP (native FCM in WebView)
+    // This is what makes msg.notification non-null in your Dart code
+    notification: {
+      title,
+      body,
+    },
+    android: {
+      priority: 'high',
+      // Optional: uncomment if you want to force the same channel as Dart
+      // notification: { channelId: 'driver_general' },
+    },
+
+    // ✅ WEBSITE (Service Worker)
     webpush: {
       notification: {
         title,
@@ -120,13 +139,15 @@ const sendToToken = async (token, { title, body, data = {} }) => {
         icon: '/logo.jpg',
       },
       fcmOptions: {
-        link: '/business-orders', // where you want to land when user clicks
+        link: '/business-orders',
       },
     },
+
+    // ✅ SHARED DATA (must be strings)
     data: {
-      ...data,
-      // keep data values as strings
+      ...dataStr,
       link: '/business-orders',
+      click_action: 'FLUTTER_NOTIFICATION_CLICK',
     },
   };
 
@@ -139,6 +160,7 @@ const sendToToken = async (token, { title, body, data = {} }) => {
     return { ok: false, err };
   }
 };
+
 // Update to only use the array approach
 const sendToManyTokens = async (tokens, payload, shopId) => {
   if (!tokens || tokens.length === 0) return;
@@ -271,6 +293,7 @@ module.exports = {
   notifyNewShipment,
   notifyShopNewOrder, 
 };
+
 
 
 
