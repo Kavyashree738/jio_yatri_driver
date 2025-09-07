@@ -1367,7 +1367,7 @@
 
 /* Suggestions Dropdown */
 .suggestions-dropdown-container {
-  position: absolute;
+  position: relative;
   width: 100%;
   /* background: white; */
   border-radius: 0 0 8px 8px;
@@ -1377,6 +1377,8 @@
   border-top: none;
   margin-top: -2px;
   overflow: visible;
+  max-height:250px;
+  overflow-y:auto;
 }
 
 .suggestions-dropdown {
