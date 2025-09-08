@@ -339,6 +339,7 @@
 @media (max-width: 768px) {
   .item-manager-content-card {
     padding: 1rem;
+    margin-bottom: 25px;
   }
   
   .item-manager-title {
