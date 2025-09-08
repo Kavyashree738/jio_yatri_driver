@@ -474,23 +474,39 @@ const ShopDetails = () => {
   };
 
   const openWhatsApp = (phone, shopName) => {
-    if (!phone) {
-      alert("Phone number is missing");
-      return;
-    }
-    const rawPhone = phone.replace(/\D/g, "");
-    const phoneNumber = rawPhone.startsWith("91") ? rawPhone : "91" + rawPhone;
-    const message = encodeURIComponent(
-      `Hi, I found your business "${shopName}" on JioYatri.`
-    );
+  if (!phone) {
+    alert("Phone number is missing");
+    return;
+  }
+
+  const rawPhone = phone.replace(/\D/g, "");
+  const phoneNumber = rawPhone.startsWith("91") ? rawPhone : "91" + rawPhone;
+  const message = encodeURIComponent(
+    `Hi, I found your business "${shopName}" on JioYatri.`
+  );
+
+  // Detect WebView
+  const isInWebView =
+    navigator.userAgent.includes("wv") || // Android WebView
+    window.ReactNativeWebView !== undefined; // React Native WebView
+
+  if (isInWebView) {
+    // ✅ In WebView → use deep link to open WhatsApp app
+    window.location.href = `whatsapp://send?phone=${phoneNumber}&text=${message}`;
+  } else {
+    // ✅ In normal browser → use wa.me (mobile) or web.whatsapp.com (desktop)
     const isMobile = /Android|iPhone|iPad|iPod|Windows Phone/i.test(
       navigator.userAgent
     );
+
     const url = isMobile
       ? `https://wa.me/${phoneNumber}?text=${message}`
       : `https://web.whatsapp.com/send?phone=${phoneNumber}&text=${message}`;
+
     window.open(url, "_blank");
-  };
+  }
+};
+
 
   const filteredItems = () => {
     if (!shop?.itemsWithUrls?.length && !shop?.items?.length) return [];
