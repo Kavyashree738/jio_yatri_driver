@@ -177,9 +177,7 @@ const shareNative = async () => {
 
             <div className="share-section">
               <div className="share-buttons">
-                <button className="share-button whatsapp" onClick={shareViaWhatsApp}>
-                  <FaWhatsapp className="button-icon" /> WhatsApp
-                </button>
+            
                 <button className="share-button other" onClick={shareNative}>
                   <FaShareAlt className="button-icon" /> Share
                 </button>
