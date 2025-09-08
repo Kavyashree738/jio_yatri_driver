@@ -69,47 +69,54 @@ const shareNative = async () => {
 
   const message = `${referral.shareLink}|${referral.referralCode}`;
 
-  try {
-    // Flutter WebView bridge
-    if (window.NativeShare && typeof window.NativeShare.postMessage === 'function') {
-      window.NativeShare.postMessage(message);
-    } 
-    // Android WebView bridge
-    else if (window.Android && typeof window.Android.share === 'function') {
-      window.Android.share(referral.shareLink, referral.referralCode);
-    }
-    // iOS WebView bridge
-    else if (
-      window.webkit &&
-      window.webkit.messageHandlers &&
-      window.webkit.messageHandlers.NativeShare
-    ) {
-      window.webkit.messageHandlers.NativeShare.postMessage(message);
-    }
-    // Mobile browser Web Share API
-    else if (navigator.share) {
+  // 1️⃣ Flutter WebView bridge
+  if (window.NativeShare && typeof window.NativeShare.postMessage === 'function') {
+    console.log("📤 Sending to Flutter:", message);
+    window.NativeShare.postMessage(message);
+  } 
+  // 2️⃣ Android WebView bridge
+  else if (window.Android && typeof window.Android.share === 'function') {
+    console.log("📤 Sending to Android bridge:", message);
+    window.Android.share(referral.shareLink, referral.referralCode);
+  } 
+  // 3️⃣ iOS WebView bridge
+  else if (
+    window.webkit &&
+    window.webkit.messageHandlers &&
+    window.webkit.messageHandlers.NativeShare
+  ) {
+    console.log("📤 Sending to iOS bridge:", message);
+    window.webkit.messageHandlers.NativeShare.postMessage(message);
+  } 
+  // 4️⃣ Mobile browser Web Share API
+  else if (navigator.share) {
+    try {
       await navigator.share({
         title: 'Join and get ₹10 cashback!',
         text: `Use my shop referral code ${referral.referralCode} to get ₹10 cashback!`,
         url: referral.shareLink,
       });
-    } 
-    // WhatsApp fallback (if installed)
-    else if (/Android|iPhone|iPad/i.test(navigator.userAgent)) {
-      const waMsg = `Join using my shop referral code ${referral.referralCode} and get ₹10 cashback! ${referral.shareLink}`;
-      window.open(`https://wa.me/?text=${encodeURIComponent(waMsg)}`, '_blank');
-    } 
-    // Final fallback: copy to clipboard
-    else {
-      navigator.clipboard.writeText(`${referral.shareLink} (Code: ${referral.referralCode})`);
-      alert(`Referral link copied to clipboard:\n${referral.shareLink}`);
+    } catch (err) {
+      console.log('Web Share API failed:', err);
+      fallbackToClipboard();
     }
-  } catch (e) {
-    // If any error occurs, fallback to clipboard
+  } 
+  // 5️⃣ WhatsApp fallback for mobile
+  else if (/Android|iPhone|iPad/i.test(navigator.userAgent)) {
+    const waMsg = `Join using my shop referral code ${referral.referralCode} and get ₹10 cashback! ${referral.shareLink}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(waMsg)}`, '_blank');
+  } 
+  // 6️⃣ Final fallback: clipboard
+  else {
+    fallbackToClipboard();
+  }
+
+  function fallbackToClipboard() {
     navigator.clipboard.writeText(`${referral.shareLink} (Code: ${referral.referralCode})`);
-    alert(`Referral link copied to clipboard:\n${referral.shareLink}`);
+    alert('Referral link copied to clipboard!');
   }
 };
+
 
 
 
