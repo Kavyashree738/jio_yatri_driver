@@ -74,15 +74,19 @@ const shareNative = async () => {
     if (window.NativeShare && typeof window.NativeShare.postMessage === 'function') {
       window.NativeShare.postMessage(message);
     } 
-    // Android bridge
+    // Android WebView bridge
     else if (window.Android && typeof window.Android.share === 'function') {
       window.Android.share(referral.shareLink, referral.referralCode);
     }
-    // iOS bridge
-    else if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.NativeShare) {
+    // iOS WebView bridge
+    else if (
+      window.webkit &&
+      window.webkit.messageHandlers &&
+      window.webkit.messageHandlers.NativeShare
+    ) {
       window.webkit.messageHandlers.NativeShare.postMessage(message);
     }
-    // Web Share API
+    // Mobile browser Web Share API
     else if (navigator.share) {
       await navigator.share({
         title: 'Join and get ₹10 cashback!',
@@ -90,19 +94,23 @@ const shareNative = async () => {
         url: referral.shareLink,
       });
     } 
-    // Final fallback: clipboard
+    // WhatsApp fallback (if installed)
+    else if (/Android|iPhone|iPad/i.test(navigator.userAgent)) {
+      const waMsg = `Join using my shop referral code ${referral.referralCode} and get ₹10 cashback! ${referral.shareLink}`;
+      window.open(`https://wa.me/?text=${encodeURIComponent(waMsg)}`, '_blank');
+    } 
+    // Final fallback: copy to clipboard
     else {
       navigator.clipboard.writeText(`${referral.shareLink} (Code: ${referral.referralCode})`);
       alert(`Referral link copied to clipboard:\n${referral.shareLink}`);
     }
   } catch (e) {
     // If any error occurs, fallback to clipboard
-    if (referral.shareLink) {
-      navigator.clipboard.writeText(`${referral.shareLink} (Code: ${referral.referralCode})`);
-      alert(`Referral link copied to clipboard:\n${referral.shareLink}`);
-    }
+    navigator.clipboard.writeText(`${referral.shareLink} (Code: ${referral.referralCode})`);
+    alert(`Referral link copied to clipboard:\n${referral.shareLink}`);
   }
 };
+
 
 
 
