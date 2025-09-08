@@ -65,21 +65,43 @@ const ReferralShareShop = () => {
   };
 
 const shareNative = async () => {
-    if (!referral) return;
-    try {
-      if (navigator.share) {
-        await navigator.share({
-          title: 'Join and get ₹10 cashback!',
-          text: `Use my shop referral code ${referral.referralCode} to get ₹10 cashback!`,
-          url: referral.shareLink
-        });
-      } else {
-        copyToClipboard();
-      }
-    } catch (e) {
-      // ignore cancel
+  if (!referral) return;
+
+  const message = `${referral.shareLink}|${referral.referralCode}`;
+
+  try {
+    // Flutter WebView bridge
+    if (window.NativeShare && typeof window.NativeShare.postMessage === 'function') {
+      window.NativeShare.postMessage(message);
+    } 
+    // Android bridge
+    else if (window.Android && typeof window.Android.share === 'function') {
+      window.Android.share(referral.shareLink, referral.referralCode);
     }
-  };
+    // iOS bridge
+    else if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.NativeShare) {
+      window.webkit.messageHandlers.NativeShare.postMessage(message);
+    }
+    // Web Share API
+    else if (navigator.share) {
+      await navigator.share({
+        title: 'Join and get ₹10 cashback!',
+        text: `Use my shop referral code ${referral.referralCode} to get ₹10 cashback!`,
+        url: referral.shareLink,
+      });
+    } 
+    // Fallback to clipboard
+    else {
+      navigator.clipboard.writeText(`${referral.shareLink} (Code: ${referral.referralCode})`);
+      alert('Link copied to clipboard!');
+    }
+  } catch (e) {
+    // ignore cancel or errors, fallback to clipboard
+    navigator.clipboard.writeText(`${referral.shareLink} (Code: ${referral.referralCode})`);
+    alert('Link copied to clipboard!');
+  }
+};
+
 
   if (loading) {
     return (
