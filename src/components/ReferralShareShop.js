@@ -65,7 +65,7 @@ const ReferralShareShop = () => {
   };
 
 const shareNative = async () => {
-  if (!referral) return;
+  if (!referral || !referral.shareLink) return;
 
   const message = `${referral.shareLink}|${referral.referralCode}`;
 
@@ -90,17 +90,20 @@ const shareNative = async () => {
         url: referral.shareLink,
       });
     } 
-    // Fallback to clipboard
+    // Final fallback: clipboard
     else {
       navigator.clipboard.writeText(`${referral.shareLink} (Code: ${referral.referralCode})`);
-      alert('Link copied to clipboard!');
+      alert(`Referral link copied to clipboard:\n${referral.shareLink}`);
     }
   } catch (e) {
-    // ignore cancel or errors, fallback to clipboard
-    navigator.clipboard.writeText(`${referral.shareLink} (Code: ${referral.referralCode})`);
-    alert('Link copied to clipboard!');
+    // If any error occurs, fallback to clipboard
+    if (referral.shareLink) {
+      navigator.clipboard.writeText(`${referral.shareLink} (Code: ${referral.referralCode})`);
+      alert(`Referral link copied to clipboard:\n${referral.shareLink}`);
+    }
   }
 };
+
 
 
   if (loading) {
