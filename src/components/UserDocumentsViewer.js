@@ -87,80 +87,24 @@ const DocumentViewer = () => {
 
     if (user?.uid) fetchDocumentsAndStatus();
   }, [user]);
-const handleView = async (filename, mimetype, download = false) => {
-  try {
-    const token = await user.getIdToken(true);
-    
-    // Detect if we're in a WebView
-    const isWebView = /wv|webview/i.test(navigator.userAgent);
-    
-    if (isWebView) {
-      // WebView-specific handling
-      if (download) {
-        // For WebView downloads, we need to use the blob approach
-        const response = await axios.get(
-          `https://jio-yatri-driver.onrender.com/api/upload/file/${filename}`,
-          { 
-            headers: { Authorization: `Bearer ${token}` },
-            responseType: 'blob'
-          }
-        );
-        
-        const blob = new Blob([response.data], { type: mimetype });
-        const url = URL.createObjectURL(blob);
-        
-        // Create download link
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        
-        // Clean up
-        setTimeout(() => URL.revokeObjectURL(url), 1000);
-      } else {
-        // For viewing in WebView, use base64 data URL
-        const response = await axios.get(
-          `https://jio-yatri-driver.onrender.com/api/upload/file/${filename}`,
-          { 
-            headers: { Authorization: `Bearer ${token}` },
-            responseType: 'blob'
-          }
-        );
-        
-        const blob = new Blob([response.data], { type: mimetype });
-        const reader = new FileReader();
-        
-        reader.onload = () => {
-          window.open(reader.result, '_blank');
-        };
-        
-        reader.readAsDataURL(blob);
-      }
-    } else {
-      // Regular browser handling (your original code)
-      let fileUrl = `https://jio-yatri-driver.onrender.com/api/upload/file/${filename}`;
-      
-      if (download) {
-        fileUrl += '?download=true';
-        const a = document.createElement('a');
-        a.href = fileUrl;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-      } else {
-        window.open(fileUrl, '_blank');
-      }
+
+  const handleView = async (filename, mimetype) => {
+    try {
+      const token = await user.getIdToken(true);
+      const response = await axios.get(
+        `https://jio-yatri-driver.onrender.com/api/upload/file/${filename}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+          responseType: 'blob'
+        }
+      );
+      const url = URL.createObjectURL(new Blob([response.data], { type: mimetype }));
+      window.open(url, '_blank');
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (err) {
+      setError('Failed to open document: ' + (err.message || 'Unknown error'));
     }
-    
-  } catch (err) {
-    setError('Failed to open document: ' + (err.message || 'Unknown error'));
-  }
-};
-
-
+  };
 
   const handleFileChange = (e, docType) => {
     if (e.target.files && e.target.files[0]) {
