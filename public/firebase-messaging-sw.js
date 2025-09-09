@@ -47,11 +47,15 @@ self.addEventListener('notificationclick', (event) => {
   const data = event.notification.data || {};
   console.log('[SW] Notification click data:', data);
 
-  const origin = self.location.origin;
-  let url = origin;
+ const origin = 'https://driver.jioyatri.com'; // Replace with your deployed domain
+let url = origin; // default
 
-  if (data.type === 'NEW_SHIPMENT') url = origin + '/orders';
-  else if (data.type === 'NEW_ORDER') url = origin + '/business-orders';
+if (data.type === 'NEW_SHIPMENT') {
+  url = origin + '/orders';
+} else if (data.type === 'NEW_ORDER') {
+  url = origin + '/business-orders';
+}
+
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
@@ -64,6 +68,7 @@ self.addEventListener('notificationclick', (event) => {
     })
   );
 });
+
 
 
 
