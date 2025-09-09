@@ -44,21 +44,31 @@ messaging.onBackgroundMessage((payload) => {
 // Notification click handler
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  
-  // Open the app and navigate to shipments
+  const data = event.notification.data || {};
+
+  // Default to home
+  let url = '/';
+
+  // Decide route based on type
+  if (data.type === 'NEW_SHIPMENT') {
+    url = '/orders';             // driver notification
+  } else if (data.type === 'NEW_ORDER') {
+    url = '/business-orders';    // business/shop notification
+  }
+
   event.waitUntil(
-    clients.matchAll({ type: 'window' }).then((clientList) => {
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
       for (const client of clientList) {
-        if (client.url === '/' && 'focus' in client) {
+        if (client.url.includes(url) && 'focus' in client) {
           return client.focus();
         }
       }
       if (clients.openWindow) {
-        return clients.openWindow('/orders');
+        return clients.openWindow(url);
       }
     })
   );
-
 });
+
 
 
