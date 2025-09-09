@@ -89,22 +89,46 @@ const DocumentViewer = () => {
   }, [user]);
 
   const handleView = async (filename, mimetype) => {
-    try {
-      const token = await user.getIdToken(true);
-      const response = await axios.get(
-        `https://jio-yatri-driver.onrender.com/api/upload/file/${filename}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-          responseType: 'blob'
-        }
-      );
-      const url = URL.createObjectURL(new Blob([response.data], { type: mimetype }));
+  try {
+    const token = await user.getIdToken(true);
+
+    // Get file as arraybuffer
+    const response = await axios.get(
+      `https://jio-yatri-driver.onrender.com/api/upload/file/${filename}`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+        responseType: 'arraybuffer' // change from 'blob' to 'arraybuffer'
+      }
+    );
+
+    // Convert arraybuffer to base64
+    const base64String = btoa(
+      new Uint8Array(response.data)
+        .reduce((data, byte) => data + String.fromCharCode(byte), '')
+    );
+
+    const dataUrl = `data:${mimetype};base64,${base64String}`;
+
+    // Detect if running in WebView (Flutter) or browser
+    if (window.AuthBridge) {
+      // Send to Flutter
+      window.AuthBridge.postMessage(JSON.stringify({
+        filename,
+        mimetype,
+        base64: dataUrl
+      }));
+    } else {
+      // Open in regular browser
+      const blob = new Blob([response.data], { type: mimetype });
+      const url = URL.createObjectURL(blob);
       window.open(url, '_blank');
       setTimeout(() => URL.revokeObjectURL(url), 1000);
-    } catch (err) {
-      setError('Failed to open document: ' + (err.message || 'Unknown error'));
     }
-  };
+  } catch (err) {
+    setError('Failed to open document: ' + (err.message || 'Unknown error'));
+  }
+};
+
 
   const handleFileChange = (e, docType) => {
     if (e.target.files && e.target.files[0]) {
