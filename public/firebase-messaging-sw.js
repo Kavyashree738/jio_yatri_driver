@@ -45,30 +45,27 @@ messaging.onBackgroundMessage((payload) => {
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   const data = event.notification.data || {};
+  console.log('[SW] Notification click data:', data);
 
-  // Default to home
-  let url = '/';
+  const origin = self.location.origin;
+  let url = origin;
 
-  // Decide route based on type
-  if (data.type === 'NEW_SHIPMENT') {
-    url = '/orders';             // driver notification
-  } else if (data.type === 'NEW_ORDER') {
-    url = '/business-orders';    // business/shop notification
-  }
+  if (data.type === 'NEW_SHIPMENT') url = origin + '/orders';
+  else if (data.type === 'NEW_ORDER') url = origin + '/business-orders';
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
       for (const client of clientList) {
-        if (client.url.includes(url) && 'focus' in client) {
+        if (client.url === url && 'focus' in client) {
           return client.focus();
         }
       }
-      if (clients.openWindow) {
-        return clients.openWindow(url);
-      }
+      return clients.openWindow(url);
     })
   );
 });
+
+
 
 
 
