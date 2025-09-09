@@ -205,7 +205,7 @@
 // src/context/AuthContext.js
 import { createContext, useContext, useState, useEffect } from 'react';
 import { auth } from '../firebase';
-import { onIdTokenChanged } from 'firebase/auth';
+import { onIdTokenChanged,signOut } from 'firebase/auth';
 
 const AuthContext = createContext();
 
@@ -221,6 +221,11 @@ export function AuthProvider({ children }) {
   const [softSignedOut, setSoftSignedOut] = useState(false);
 
   const logout = () => {
+    try {
+    await signOut(auth);
+  } catch (err) {
+    console.error("Error signing out:", err);
+  }
     setUser(null);
     setToken(null);
     setUserRole(null);
@@ -233,6 +238,11 @@ export function AuthProvider({ children }) {
 
   // Keep Firebase session, but reset app state
   const softLogout = () => {
+     try {
+     await signOut(auth);
+  } catch (err) {
+     console.error("Error signing out:", err);
+  }
     setUser(null);
     setToken(null);
     setUserRole(null);
