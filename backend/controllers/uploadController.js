@@ -95,16 +95,28 @@ exports.getFile = async (req, res) => {
       return res.status(404).json({ error: 'File not found' });
     }
 
-    if (files[0].metadata?.userId !== req.user?.uid) {
+    // Check file ownership (unless it's an admin request)
+    if (req.path.includes('/admin/')) {
+      // Skip ownership check for admin routes
+    } else if (files[0].metadata?.userId !== req.user?.uid) {
       return res.status(403).json({ error: 'Unauthorized access' });
     }
 
-    const readStream = gfs.openDownloadStreamByName(filename);
-
+    // Set appropriate headers
     if (files[0].metadata?.mimetype) {
       res.set('Content-Type', files[0].metadata.mimetype);
     }
+    
+    // Handle download parameter
+    if (req.query.download === 'true') {
+      const originalName = files[0].metadata?.originalName || files[0].filename;
+      res.set('Content-Disposition', `attachment; filename="${originalName}"`);
+    } else {
+      res.set('Content-Disposition', 'inline');
+    }
 
+    // Stream the file
+    const readStream = gfs.openDownloadStreamByName(filename);
     readStream.pipe(res);
 
     readStream.on('error', (err) => {
