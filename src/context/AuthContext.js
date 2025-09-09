@@ -220,7 +220,7 @@ export function AuthProvider({ children }) {
   const [isRegistered, setIsRegistered] = useState(false); // boolean
   const [softSignedOut, setSoftSignedOut] = useState(false);
 
-  const logout = () => {
+  const logout =async () => {
     try {
     await signOut(auth);
   } catch (err) {
@@ -237,7 +237,7 @@ export function AuthProvider({ children }) {
   };
 
   // Keep Firebase session, but reset app state
-  const softLogout = () => {
+  const softLogout =async () => {
      try {
      await signOut(auth);
   } catch (err) {
