@@ -88,19 +88,35 @@ const DocumentViewer = () => {
     if (user?.uid) fetchDocumentsAndStatus();
   }, [user]);
 const handleView = async (filename, mimetype) => {
-  const token = await user.getIdToken(true);
-  const response = await axios.get(
-    `https://jio-yatri-driver.onrender.com/api/upload/file/${filename}`,
-    { headers: { Authorization: `Bearer ${token}` }, responseType: 'blob' }
-  );
+  try {
+    const token = await user.getIdToken(true);
+    const response = await axios.get(
+      `https://jio-yatri-driver.onrender.com/api/upload/file/${filename}`,
+      { headers: { Authorization: `Bearer ${token}` }, responseType: 'blob' }
+    );
 
-  const reader = new FileReader();
-  reader.onload = () => {
-    const dataUrl = reader.result; // "data:application/pdf;base64,..."
-    window.open(dataUrl, '_blank'); // WebView can open this
-  };
-  reader.readAsDataURL(new Blob([response.data], { type: mimetype }));
+    const blob = new Blob([response.data], { type: mimetype });
+
+    // Detect WebView (simplest check, you can improve)
+    const isWebView = /wv|webview/i.test(navigator.userAgent);
+
+    if (isWebView) {
+      // Base64 for WebView
+      const reader = new FileReader();
+      reader.onload = () => window.open(reader.result, '_blank');
+      reader.readAsDataURL(blob);
+    } else {
+      // Blob URL for browser
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+  } catch (err) {
+    setError('Failed to open document: ' + (err.message || 'Unknown error'));
+  }
 };
+
 
 
   const handleFileChange = (e, docType) => {
