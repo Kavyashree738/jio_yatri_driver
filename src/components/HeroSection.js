@@ -161,7 +161,7 @@ const HeroSection = () => {
     //     return () => unsub();
     // }, [softSignedOut, location.pathname]); // include pathname so it re-evaluates on Home clicks
 
-  useEffect(() => {
+    useEffect(() => {
   const run = async () => {
     if (softSignedOut || !auth.currentUser) {
       setIsRegistered(false);
@@ -170,49 +170,51 @@ const HeroSection = () => {
     }
 
     const { isRegistered, role } = await checkRegistrationStatus();
-    setIsRegistered(isRegistered);
-    setUserRole(role);
+    setIsRegistered(!!isRegistered);
+    setUserRole(role || null);
 
     const onHome = location.pathname === '/' || location.pathname === '/home';
 
-    // Business flow
-    if (role === 'business') {
-      if (!isRegistered && location.pathname !== '/register') {
-        if (!hasRoutedRef.current) {
-          hasRoutedRef.current = true;
-          navigate('/register', { replace: true });
-        }
-        return;
+    // ✅ Business: not registered → force /register
+    if (role === 'business' && !isRegistered && location.pathname !== '/register') {
+      if (!hasRoutedRef.current) {
+        hasRoutedRef.current = true;
+        navigate('/register', { replace: true });
       }
-      if (isRegistered && !onHome) {
-        if (!hasRoutedRef.current) {
-          hasRoutedRef.current = true;
-          navigate('/business-dashboard', { replace: true });
-        }
-        return;
-      }
-      setRegistrationStep(isRegistered ? 4 : 1); // 1 = business registration
       return;
     }
 
-    // Driver flow
-    if (role === 'driver') {
-      setRegistrationStep(isRegistered ? 4 : 2); // 2 = driver wizard
-      if (isRegistered && !onHome && !hasRoutedRef.current) {
+    // ✅ Business: registered → dashboard (unless already on home)
+    if (role === 'business' && isRegistered && !onHome) {
+      if (!hasRoutedRef.current) {
+        hasRoutedRef.current = true;
+        navigate('/business-dashboard', { replace: true });
+      }
+      return;
+    }
+
+    // ✅ Driver: registered → orders
+    if (role === 'driver' && isRegistered && !onHome) {
+      if (!hasRoutedRef.current) {
         hasRoutedRef.current = true;
         navigate('/orders', { replace: true });
       }
       return;
     }
 
-    // Generic fallback
+    // ✅ Driver: not registered → show driver wizard on Home
+    if (role === 'driver') {
+      setRegistrationStep(isRegistered ? 4 : 2);
+      return;
+    }
+
+    // ✅ Generic fallback
     setRegistrationStep(isRegistered ? 4 : 0);
   };
 
   const unsub = auth.onAuthStateChanged(run);
   return () => unsub();
 }, [softSignedOut, location.pathname, navigate]);
-
 
 
     const variants = {
@@ -664,72 +666,52 @@ const HeroSection = () => {
     //         return false;
     //     }
     // };
-    
-  const checkRegistrationStatus = async () => {
-  try {
-    const u = auth.currentUser;
-    if (!u) return { isRegistered: false, role: null };
+    const checkRegistrationStatus = async () => {
+        try {
+            const u = auth.currentUser;
+            if (!u) return { isRegistered: false, role: null };
 
-    const token = await u.getIdToken();
-    const res = await fetch(
-      `https://jio-yatri-driver.onrender.com/api/user/check-registration/${u.uid}`,
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-    if (!res.ok) return { isRegistered: false, role: null };
+            const token = await u.getIdToken();
+            const res = await fetch(
+                `https://jio-yatri-driver.onrender.com/api/user/check-registration/${u.uid}`,
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
 
-    const json = await res.json();
-    if (!json.success) return { isRegistered: false, role: null };
+            if (!res.ok) return { isRegistered: false, role: null };
+            const json = await res.json();
+            if (!json.success) return { isRegistered: false, role: null };
 
-    const { role, isRegistered: backendRegistered } = json.data;
-    let computedRegistered = backendRegistered;
+            const { isRegistered, role } = json.data;
 
-    // Driver: check all required docs
-    let driverProfile = null;
-    if (role === 'driver') {
-      const profileRes = await fetch(
-        `https://jio-yatri-driver.onrender.com/api/driver/profile/${u.uid}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      if (profileRes.ok) {
-        driverProfile = await profileRes.json();
-        const d = driverProfile.driver || {};
-        computedRegistered =
-          d.aadharFileId &&
-          d.panFileId &&
-          d.licenseFileId &&
-          d.rcFileId &&
-          d.insuranceFileId;
+            // Persist unified flags
+            setIsRegistered(!!isRegistered);
+            localStorage.setItem('isRegistered', isRegistered ? '1' : '0');
+            localStorage.setItem('userRole', role || '');
 
-        setDriverData(prev => ({
-          ...prev,
-          name: d.name || u.displayName || '',
-          phone: d.phone || u.phoneNumber || '',
-          vehicleType: d.vehicleType || '',
-          vehicleNumber: d.vehicleNumber || '',
-          aadharFileId: d.aadharFileId || null,
-          panFileId: d.panFileId || null,
-          licenseFileId: d.licenseFileId || null,
-          rcFileId: d.rcFileId || null,
-          insuranceFileId: d.insuranceFileId || null,
-        }));
-      } else {
-        computedRegistered = false;
-      }
-    }
+            // OPTIONAL: if you want to prefill driver fields after a positive check:
+            if (isRegistered && role === 'driver') {
+                const res2 = await fetch(
+                    `https://jio-yatri-driver.onrender.com/api/driver/profile/${u.uid}`, // or your existing driver GET endpoint
+                    { headers: { Authorization: `Bearer ${token}` } }
+                );
+                if (res2.ok) {
+                    const d = await res2.json();
+                    setDriverData(prev => ({
+                        ...prev,
+                        name: d.driver?.name || u.displayName || '',
+                        phone: d.driver?.phone || u.phoneNumber || '',
+                        vehicleType: d.driver?.vehicleType || '',
+                        vehicleNumber: d.driver?.vehicleNumber || ''
+                    }));
+                }
+            }
 
-    setIsRegistered(!!computedRegistered);
-    setUserRole(role || null);
-    localStorage.setItem('isRegistered', computedRegistered ? '1' : '0');
-    localStorage.setItem('userRole', role || '');
-
-    return { isRegistered: !!computedRegistered, role, driverProfile };
-  } catch (error) {
-    console.error('Error checking registration:', error);
-    return { isRegistered: false, role: null };
-  }
-};
-
-
+            return { isRegistered, role };
+        } catch (error) {
+            console.error('Error checking registration:', error);
+            return { isRegistered: false, role: null };
+        }
+    };
 
 
 
@@ -775,62 +757,58 @@ const HeroSection = () => {
     // }, []);
 
     const submitDriverRegistration = async () => {
-  try {
-    setIsSubmitting(true);
-    setMessage({ text: 'Registering your account...', isError: false });
+        try {
+            setIsSubmitting(true);
+            setMessage({ text: 'Registering your account...', isError: false });
 
-    const token = await auth.currentUser.getIdToken();
-    const userId = auth.currentUser.uid;
+            const token = await auth.currentUser.getIdToken();
+            const userId = auth.currentUser.uid;
 
-    const response = await fetch(
-      'https://jio-yatri-driver.onrender.com/api/driver/register',
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          userId,
-          name: driverData.name,
-          phone: driverData.phone,
-          aadharFileId: driverData.aadharFileId,
-          panFileId: driverData.panFileId,
-          vehicleType: driverData.vehicleType,
-          vehicleNumber: driverData.vehicleNumber,
-          licenseFileId: driverData.licenseFileId,
-          rcFileId: driverData.rcFileId,
-          insuranceFileId: driverData.insuranceFileId,
-          referralCode: referralCode || undefined,
-        }),
-      }
-    );
+            const response = await fetch('https://jio-yatri-driver.onrender.com/api/driver/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    userId: userId,
+                    name: driverData.name,
+                    phone: driverData.phone,
+                    aadharFileId: driverData.aadharFileId,
+                    panFileId: driverData.panFileId,
+                    vehicleType: driverData.vehicleType,
+                    vehicleNumber: driverData.vehicleNumber,
+                    licenseFileId: driverData.licenseFileId,
+                    rcFileId: driverData.rcFileId,
+                    insuranceFileId: driverData.insuranceFileId,
+                    referralCode: referralCode || undefined
+                })
+            });
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || 'Registration failed');
-    }
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Registration failed');
+            }
 
-    const meta = await checkRegistrationStatus();
-    setIsRegistered(meta.isRegistered);
-    setRegistrationStep(meta.isRegistered ? 4 : 2);
-    setMessage({ text: 'Registration successful!', isError: false });
-
-    if (!hasRoutedRef.current) hasRoutedRef.current = true;
-    navigate('/orders', { replace: true });
-  } catch (error) {
-    if (error.message.includes('duplicate key')) {
-      setIsRegistered(true);
-      setRegistrationStep(4);
-      setMessage({ text: 'You are already registered!', isError: true });
-    } else {
-      setMessage({ text: error.message, isError: true });
-    }
-  } finally {
-    setIsSubmitting(false);
-  }
-};
-
+            localStorage.setItem(`driverRegistered_${userId}`, 'true');
+            setIsRegistered(true);
+            setMessage({ text: 'Registration successful!', isError: false });
+            if (!hasRoutedRef.current) hasRoutedRef.current = true;     // optional guard
+            navigate('/orders', { replace: true });
+            setRegistrationStep(4);
+        } catch (error) {
+            if (error.message.includes('duplicate key')) {
+                localStorage.setItem(`driverRegistered_${auth.currentUser.uid}`, 'true');
+                setIsRegistered(true);
+                setRegistrationStep(4);
+                setMessage({ text: 'You are already registered!', isError: true });
+            } else {
+                setMessage({ text: error.message, isError: true });
+            }
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
 
     const handleLogout = async () => {
         try {
@@ -901,7 +879,7 @@ const HeroSection = () => {
                         setRegistrationStep(1);
                     }}
                 >
-                   
+                  
                   
                     <img src={driver} style={{ width: "50px" ,height:"50px" ,marginBottom:"10px" }} alt="Driver" />
                     <span>Driver</span>
@@ -914,7 +892,7 @@ const HeroSection = () => {
                         setRegistrationStep(1);
                     }}
                 >
-                  
+                   
             
                         <img src={partner} style={{ width: "80px" ,height:"60px" ,marginBottom:"10px" }} alt="Partner" />
                     <span>Business Partner</span>
