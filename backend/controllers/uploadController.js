@@ -46,30 +46,17 @@ exports.uploadFile = async (req, res) => {
 
     writeStream.end(req.file.buffer);
 
-    writeStream.on('finish', async () => {
+    writeStream.on('finish', () => {
       const fileId = writeStream.id;
 
-      try {
-        await Driver.updateOne(
-          { userId: req.user.uid },
-          {
-            $set: {
-              [`documents.${req.body.docType}`]: fileId, // ✅ only ObjectId
-              [`documentVerification.${req.body.docType}`]: 'pending'
-            }
-          }
-        );
-
-        res.status(201).json({
-          success: true,
-          fileId,
-          filename: writeStream.filename,
-          metadata: writeStream.options.metadata
-        });
-      } catch (updateError) {
-        console.error('Error updating driver document:', updateError);
-        res.status(500).json({ error: 'File uploaded, but failed to update driver document.' });
-      }
+      // ✅ Do not touch Driver model here
+      // Just return fileId
+      res.status(201).json({
+        success: true,
+        fileId,
+        filename: writeStream.filename,
+        metadata: writeStream.options.metadata
+      });
     });
 
     writeStream.on('error', (err) => {
