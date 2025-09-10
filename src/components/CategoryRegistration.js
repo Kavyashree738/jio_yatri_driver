@@ -10,7 +10,7 @@ import { MdLocalDining } from 'react-icons/md';
 import axios from 'axios';
 import AddressAutocomplete from '../components/AddressAutocomplete';
 import '../styles/CategoryRegistration.css';
-import { useAuth } from '../context/AuthContext';
+import { useAuth , sendUpdatedShopIdToFlutter} from '../context/AuthContext';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 
