@@ -688,6 +688,15 @@ exports.verifyDriver = async (req, res) => {
       });
     }
 
+    const allDocsVerified = Object.values(driver.documentVerification).every(v => v === 'verified');
+
+if (allDocsVerified) {
+  await User.updateOne(
+    { userId: driverId },
+    { $set: { isRegistered: true, hasKyc: true } }
+  );
+}
+
     res.status(200).json({
       success: true,
       data: driver
