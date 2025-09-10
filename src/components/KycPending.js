@@ -6,11 +6,12 @@ import { useAuth } from '../context/AuthContext';
 import { FaCheckCircle, FaClock, FaTimesCircle, FaSync, FaUpload, FaSignOutAlt } from 'react-icons/fa';
 import '../styles/KycPending.css';
 import Header from './Header';
-import Footer from './Footer'
+import Footer from './Footer';
+
 const apiBase = 'https://jio-yatri-driver.onrender.com';
 
 export default function KycPending() {
-  const { user, softLogout } = useAuth();
+  const { user, softLogout, userRole } = useAuth(); // ⬅️ userRole from context
   const nav = useNavigate();
   const [status, setStatus] = useState('none'); // none|submitted|verified|rejected
   const [info, setInfo] = useState(null);
@@ -23,11 +24,8 @@ export default function KycPending() {
   const [panNew, setPanNew] = useState(null);
   const [uploading, setUploading] = useState(false);
 
-
   const handleSoftLogout = () => {
-    // clear app auth state, keep Firebase session
     softLogout();
-    // send them to your entry/auth page
     nav('/home', { replace: true, state: { from: '/kyc-pending' } });
   };
 
@@ -47,17 +45,14 @@ export default function KycPending() {
     }
   };
 
-  // Poll every 5s; clear on unmount
   useEffect(() => {
-    fetchKyc(); // initial
+    fetchKyc();
     timerRef.current = setInterval(() => setTick(t => t + 1), 5000);
     return () => clearInterval(timerRef.current);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
-  useEffect(() => { fetchKyc(); /* eslint-disable */ }, [tick]);
+  useEffect(() => { fetchKyc(); }, [tick]);
 
-  // Redirect immediately when verified
   useEffect(() => {
     if (status === 'verified') {
       nav('/business-dashboard', { replace: true });
@@ -92,7 +87,7 @@ export default function KycPending() {
 
       const k = res.data?.data || {};
       setInfo(k);
-      setStatus('submitted'); // immediately flip to submitted
+      setStatus('submitted');
       setAadhaarNew(null);
       setPanNew(null);
     } catch (e) {
@@ -132,9 +127,25 @@ export default function KycPending() {
           </>
         )}
 
-        {status === 'none' && (
+        {/* 🚨 Special case: Driver already registered but no business yet */}
+        {status === 'none' && userRole === 'driver' && (
           <>
-          <Header/>
+            <div className="kyc-state waiting">
+              <FaClock /> Your number is already registered as a <b>Driver</b>.
+            </div>
+            <p className="kyc-sub">
+              If you also want to run a shop, please register as a <b>Business</b>.
+            </p>
+            <button className="btn" onClick={() => nav('/register-shop')}>
+              Register as Business
+            </button>
+          </>
+        )}
+
+        {/* Default case: normal KYC pending */}
+        {status === 'none' && userRole !== 'driver' && (
+          <>
+            <Header />
             <div className="kyc-state waiting">
               <FaClock /> We haven’t received your KYC yet.
             </div>
@@ -211,8 +222,8 @@ export default function KycPending() {
           </button>
 
           <button className="btn" onClick={handleSoftLogout} title="Sign out">
-               <FaSignOutAlt /> Sign out
-              </button>
+            <FaSignOutAlt /> Sign out
+          </button>
         </div>
 
         {err && <div className="kyc-error">{err}</div>}
