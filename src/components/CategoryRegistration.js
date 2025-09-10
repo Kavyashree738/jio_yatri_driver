@@ -440,6 +440,12 @@ async function uploadKycDocs({ token, aadhaarFile, panFile }) {
     setSuccess('Registration successful!');
     try { if (refreshUserMeta) await refreshUserMeta(user); } catch (_) {}
 
+    try {
+  if (user) await sendUpdatedShopIdToFlutter(user);
+} catch (e) {
+  console.warn("Failed to send updated shopId to Flutter:", e);
+}
+
     // 3) Decide navigation
     if (kycWasSubmittedNow) {
       navigate('/kyc-pending', { replace: true });
