@@ -205,7 +205,7 @@
 // src/context/AuthContext.js
 import { createContext, useContext, useState, useEffect } from 'react';
 import { auth } from '../firebase';
-import { onIdTokenChanged,signOut } from 'firebase/auth';
+import { onIdTokenChanged, signOut } from 'firebase/auth';
 
 const AuthContext = createContext();
 
@@ -215,17 +215,17 @@ export function AuthProvider({ children }) {
   const [message, setMessage] = useState({ text: '', isError: false });
   const [loading, setLoading] = useState(true);
 
-  // Role/registration state (as you had)
+  // Role/registration state
   const [userRole, setUserRole] = useState(null);          // 'driver' | 'business' | null
   const [isRegistered, setIsRegistered] = useState(false); // boolean
   const [softSignedOut, setSoftSignedOut] = useState(false);
 
-  const logout =async () => {
+  const logout = async () => {
     try {
-    await signOut(auth);
-  } catch (err) {
-    console.error("Error signing out:", err);
-  }
+      await signOut(auth);
+    } catch (err) {
+      console.error("Error signing out:", err);
+    }
     setUser(null);
     setToken(null);
     setUserRole(null);
@@ -236,13 +236,12 @@ export function AuthProvider({ children }) {
     setMessage({ text: '', isError: false });
   };
 
-
-  const softLogout =async () => {
-     try {
-     await signOut(auth);
-  } catch (err) {
-     console.error("Error signing out:", err);
-  }
+  const softLogout = async () => {
+    try {
+      await signOut(auth);
+    } catch (err) {
+      console.error("Error signing out:", err);
+    }
     setUser(null);
     setToken(null);
     setUserRole(null);
@@ -253,11 +252,10 @@ export function AuthProvider({ children }) {
     setMessage({ text: '', isError: false });
     setSoftSignedOut(true);
   };
+  
   const endSoftLogout = () => setSoftSignedOut(false);
 
-  // -----------------------------
-  // Load role + registration (NO change to your API)
-  // -----------------------------
+  // Load role + registration from API
   const refreshUserMeta = async (firebaseUser) => {
     const idToken = await firebaseUser.getIdToken();
     const res = await fetch(
@@ -271,12 +269,10 @@ export function AuthProvider({ children }) {
       localStorage.setItem('userRole', json.data.role || '');
       localStorage.setItem('isRegistered', json.data.isRegistered ? '1' : '0');
     }
-    return json.data; // { role, isRegistered, ... }
+    return json.success ? json.data : {}; // Return the data from API
   };
 
-  // -----------------------------
-  // Get first shop _id for business owner (NO API change)
-  // -----------------------------
+  // Get first shop _id for business owner
   const fetchShopIdForOwner = async (firebaseUser) => {
     const idToken = await firebaseUser.getIdToken();
     const res = await fetch(
@@ -284,16 +280,13 @@ export function AuthProvider({ children }) {
       { headers: { Authorization: `Bearer ${idToken}` } }
     );
     const json = await res.json();
-    // Expecting: { success: true, data: [ { _id, ... }, ... ] }
     if (json?.success && Array.isArray(json.data) && json.data.length > 0) {
-      return json.data[0]?._id || null; // Use the Shop document’s _id as shopId
+      return json.data[0]?._id || null;
     }
     return null;
   };
 
-  // -----------------------------
   // Keep app state in sync with Firebase
-  // -----------------------------
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (currentUser) => {
       try {
@@ -320,9 +313,7 @@ export function AuthProvider({ children }) {
     return () => unsubscribe();
   }, [softSignedOut]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // -----------------------------
   // Send {idToken, uid, role, shopId} to Flutter WebView via AuthBridge
-  // -----------------------------
   useEffect(() => {
     const unsub = onIdTokenChanged(auth, async (firebaseUser) => {
       if (!firebaseUser) return;
@@ -330,9 +321,10 @@ export function AuthProvider({ children }) {
         // 1) Fresh ID token
         const idToken = await firebaseUser.getIdToken(true);
 
-        // 2) Get role/isRegistered (no API change)
+        // 2) Get role/isRegistered directly from API (NOT from state)
         const meta = await refreshUserMeta(firebaseUser);
         const role = meta?.role || null;
+        const isRegisteredFromAPI = !!meta?.isRegistered; // Get directly from API response
 
         // 3) If business, fetch first shop _id as shopId
         let shopId = null;
@@ -350,9 +342,9 @@ export function AuthProvider({ children }) {
             type: 'auth',
             idToken,
             uid: firebaseUser.uid,
-            role,   // 'driver' | 'business' | null
-            shopId, // null for driver; Shop _id for business
-             isRegistered: meta?.isRegistered || false, 
+            role,   // From API response
+            shopId, // From API
+            isRegistered: isRegisteredFromAPI, // From API response, NOT state
           };
           window.AuthBridge.postMessage(JSON.stringify(payload));
           console.log('✅ Sent ID token + role + shopId to Flutter via AuthBridge', payload);
