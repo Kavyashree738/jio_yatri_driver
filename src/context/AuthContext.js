@@ -352,6 +352,7 @@ export function AuthProvider({ children }) {
             uid: firebaseUser.uid,
             role,   // 'driver' | 'business' | null
             shopId, // null for driver; Shop _id for business
+             isRegistered: meta?.isRegistered || false, 
           };
           window.AuthBridge.postMessage(JSON.stringify(payload));
           console.log('✅ Sent ID token + role + shopId to Flutter via AuthBridge', payload);
