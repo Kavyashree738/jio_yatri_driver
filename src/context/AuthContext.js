@@ -341,6 +341,11 @@ export function AuthProvider({ children }) {
           }
         }
 
+        
+        
+        console.log(
+  `🌐 Web Auth Meta (before bridge) -> uid=${firebaseUser.uid}, role=${role}, isRegistered=${isRegisteredFromAPI}, shopId=${shopId}`
+);
         // Send to Flutter WebView via AuthBridge
         if (window.AuthBridge && typeof window.AuthBridge.postMessage === 'function') {
           const payload = {
