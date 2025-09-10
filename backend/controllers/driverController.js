@@ -280,7 +280,7 @@ exports.registerDriver = async (req, res) => {
 
     await User.updateOne(
       { userId },
-      { $set: { role: 'driver', isRegistered: true, phone } },
+     { $set: { role: 'driver', isRegistered: false, phone, hasKyc: false } },
       { upsert: true }
     );
 
