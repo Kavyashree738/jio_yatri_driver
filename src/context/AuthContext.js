@@ -220,6 +220,7 @@ export function AuthProvider({ children }) {
   const [isRegistered, setIsRegistered] = useState(false); // boolean
   const [softSignedOut, setSoftSignedOut] = useState(false);
 
+  const logout = () => {
   const logout =async () => {
     try {
     await signOut(auth);
@@ -237,6 +238,7 @@ export function AuthProvider({ children }) {
   };
 
   // Keep Firebase session, but reset app state
+  const softLogout = () => {
   const softLogout =async () => {
      try {
      await signOut(auth);
@@ -345,19 +347,17 @@ export function AuthProvider({ children }) {
         }
 
         // 4) Post to Flutter (AuthBridge)
-    if (window.AuthBridge && typeof window.AuthBridge.postMessage === 'function') {
-  const payload = {
-    type: 'auth',
-    idToken,
-    uid: firebaseUser.uid,
-    role,          // 'driver' | 'business'
-    shopId,        // null for driver
-    isRegistered,  // <-- send registration status
-  };
-  window.AuthBridge.postMessage(JSON.stringify(payload));
-  console.log('✅ Sent ID token + role + shopId + isRegistered to Flutter', payload);
-}
- else {
+        if (window.AuthBridge && typeof window.AuthBridge.postMessage === 'function') {
+          const payload = {
+            type: 'auth',
+            idToken,
+            uid: firebaseUser.uid,
+            role,   // 'driver' | 'business' | null
+            shopId, // null for driver; Shop _id for business
+          };
+          window.AuthBridge.postMessage(JSON.stringify(payload));
+          console.log('✅ Sent ID token + role + shopId to Flutter via AuthBridge', payload);
+        } else {
           console.log('ℹ️ AuthBridge not available (normal browser)');
         }
       } catch (err) {
