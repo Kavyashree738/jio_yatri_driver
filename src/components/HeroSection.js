@@ -418,91 +418,70 @@ const HeroSection = () => {
 
 
     const verifyOtp = async () => {
-    if (!userRole) {
-        setMessage({ text: 'Please select a role first.', isError: true });
-        return;
-    }
-    if (!otp || otp.length !== 4) {
-        setMessage({ text: 'Please enter a 4-digit code', isError: true });
-        return;
-    }
+        if (!userRole) {
+            setMessage({ text: 'Please select a role first.', isError: true });
+            return;
+        }
+        if (!otp || otp.length !== 4) {
+            setMessage({ text: 'Please enter a 4-digit code', isError: true });
+            return;
+        }
 
-    try {
-        setIsLoading(true);
-        const data = await handleApiRequest(`https://jio-yatri-driver.onrender.com/api/auth/verify-otp`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                phoneNumber,
-                otp: phoneNumber === TEST_PHONE ? TEST_OTP : otp,
-                referralCode: referralCode || undefined,
-                role: userRole,
-            })
-        });
+        try {
+            setIsLoading(true);
+            const data = await handleApiRequest(`https://jio-yatri-driver.onrender.com/api/auth/verify-otp`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    phoneNumber,
+                    otp: phoneNumber === TEST_PHONE ? TEST_OTP : otp,
+                    referralCode: referralCode || undefined,
+                    role: userRole,// Include the user role in the verification
 
-        const userCredential = await signInWithCustomToken(auth, data.token);
-        setMessage({ text: 'Verification successful!', isError: false });
-        
-        // Persist the role we selected on the server
-        await persistRole(userRole);
+                })
+            });
 
-        // Reload role + registration into context
-        const meta = await refreshUserMeta(auth.currentUser);
-        
-        // For webview, we need to handle the flow differently
-        if (window.AuthBridge && typeof window.AuthBridge.postMessage === 'function') {
-            // Webview environment - don't navigate, let the app handle it
+            const userCredential = await signInWithCustomToken(auth, data.token);
+            setMessage({ text: 'Verification successful!', isError: false });
             setShowOtpComponent(false);
-            endSoftLogout();
-            
-            // Send auth data to Flutter
-            const idToken = await auth.currentUser.getIdToken(true);
-            const payload = {
-                type: 'auth',
-                idToken,
-                uid: auth.currentUser.uid,
-                role: meta.role,
-                shopId: null, // Will be set later for business
-                isRegistered: meta.isRegistered,
-                registrationInProgress: true // NEW: Signal that registration is in progress
-            };
-            window.AuthBridge.postMessage(JSON.stringify(payload));
-            
-            // For driver registration, show the wizard
-            if (meta.role === 'driver' && !meta.isRegistered) {
-                setRegistrationStep(2);
-                setDriverData(prev => ({ ...prev, phone: phoneNumber }));
-            }
-        } else {
-            // Web environment - use existing navigation logic
+
+            // Redirect business partners to their registration
+            // Persist the role we selected on the server
+            await persistRole(userRole);
+
+            // Reload role + registration into context+   await refreshUserMeta(auth.currentUser);
+            const meta = await refreshUserMeta(auth.currentUser);
+
             endSoftLogout();
 
+            // Navigate based on role/registration
             if (meta.role === 'business') {
                 if (referralCode) {
                     localStorage.setItem('shopReferralCode', referralCode.toUpperCase());
                 }
                 navigate(meta.isRegistered ? '/business-dashboard' : '/register', { replace: true });
+                return;
             } else {
                 setUserRole('driver');
                 if (meta.isRegistered) {
+                    if (!hasRoutedRef.current) hasRoutedRef.current = true;
                     navigate('/orders', { replace: true });
-                } else {
-                    setShowOtpComponent(false);
-                    setIsRegistered(!!meta.isRegistered);
-                    setRegistrationStep(2);
-                    setDriverData(prev => ({ ...prev, phone: phoneNumber }));
+                    return;
                 }
-            }
+                setShowOtpComponent(false);
+                setIsRegistered(!!meta.isRegistered);
+                setRegistrationStep(meta.isRegistered ? 4 : 2); // 2 shows your wizard
+                setDriverData(prev => ({ ...prev, phone: phoneNumber }));
+            } // optional prefill
+        } catch (error) {
+            setMessage({
+                text: error.message || 'OTP verification failed',
+                isError: true
+            });
+        } finally {
+            setIsLoading(false);
         }
-    } catch (error) {
-        setMessage({
-            text: error.message || 'OTP verification failed',
-            isError: true
-        });
-    } finally {
-        setIsLoading(false);
-    }
-};
+    };
 
     // after verifyOtp()
 
@@ -777,75 +756,60 @@ const HeroSection = () => {
     //     return () => unsubscribe();
     // }, []);
 
-   const submitDriverRegistration = async () => {
-    try {
-        setIsSubmitting(true);
-        setMessage({ text: 'Registering your account...', isError: false });
+    const submitDriverRegistration = async () => {
+        try {
+            setIsSubmitting(true);
+            setMessage({ text: 'Registering your account...', isError: false });
 
-        const token = await auth.currentUser.getIdToken();
-        const userId = auth.currentUser.uid;
+            const token = await auth.currentUser.getIdToken();
+            const userId = auth.currentUser.uid;
 
-        const response = await fetch('https://jio-yatri-driver.onrender.com/api/driver/register', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({
-                userId: userId,
-                name: driverData.name,
-                phone: driverData.phone,
-                aadharFileId: driverData.aadharFileId,
-                panFileId: driverData.panFileId,
-                vehicleType: driverData.vehicleType,
-                vehicleNumber: driverData.vehicleNumber,
-                licenseFileId: driverData.licenseFileId,
-                rcFileId: driverData.rcFileId,
-                insuranceFileId: driverData.insuranceFileId,
-                referralCode: referralCode || undefined
-            })
-        });
+            const response = await fetch('https://jio-yatri-driver.onrender.com/api/driver/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    userId: userId,
+                    name: driverData.name,
+                    phone: driverData.phone,
+                    aadharFileId: driverData.aadharFileId,
+                    panFileId: driverData.panFileId,
+                    vehicleType: driverData.vehicleType,
+                    vehicleNumber: driverData.vehicleNumber,
+                    licenseFileId: driverData.licenseFileId,
+                    rcFileId: driverData.rcFileId,
+                    insuranceFileId: driverData.insuranceFileId,
+                    referralCode: referralCode || undefined
+                })
+            });
 
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Registration failed');
-        }
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Registration failed');
+            }
 
-        localStorage.setItem(`driverRegistered_${userId}`, 'true');
-        setIsRegistered(true);
-        setMessage({ text: 'Registration successful!', isError: false });
-        
-        // Send updated auth status to Flutter webview
-        if (window.AuthBridge && typeof window.AuthBridge.postMessage === 'function') {
-            const idToken = await auth.currentUser.getIdToken(true);
-            const payload = {
-                type: 'auth',
-                idToken,
-                uid: auth.currentUser.uid,
-                role: 'driver',
-                shopId: null,
-                isRegistered: true,
-                registrationComplete: true // NEW: Signal that registration is complete
-            };
-            window.AuthBridge.postMessage(JSON.stringify(payload));
-        }
-        
-        if (!hasRoutedRef.current) hasRoutedRef.current = true;
-        navigate('/orders', { replace: true });
-        setRegistrationStep(4);
-    } catch (error) {
-        if (error.message.includes('duplicate key')) {
-            localStorage.setItem(`driverRegistered_${auth.currentUser.uid}`, 'true');
+            localStorage.setItem(`driverRegistered_${userId}`, 'true');
             setIsRegistered(true);
+            setMessage({ text: 'Registration successful!', isError: false });
+            if (!hasRoutedRef.current) hasRoutedRef.current = true;     // optional guard
+            navigate('/orders', { replace: true });
             setRegistrationStep(4);
-            setMessage({ text: 'You are already registered!', isError: true });
-        } else {
-            setMessage({ text: error.message, isError: true });
+        } catch (error) {
+            if (error.message.includes('duplicate key')) {
+                localStorage.setItem(`driverRegistered_${auth.currentUser.uid}`, 'true');
+                setIsRegistered(true);
+                setRegistrationStep(4);
+                setMessage({ text: 'You are already registered!', isError: true });
+            } else {
+                setMessage({ text: error.message, isError: true });
+            }
+        } finally {
+            setIsSubmitting(false);
         }
-    } finally {
-        setIsSubmitting(false);
-    }
-};
+    };
+
     const handleLogout = async () => {
         try {
             await signOut(auth);
@@ -915,6 +879,7 @@ const HeroSection = () => {
                         setRegistrationStep(1);
                     }}
                 >
+                    // <MdDirectionsCar className="role-icon" />
                   
                     <img src={driver} style={{ width: "50px" ,height:"50px" ,marginBottom:"10px" }} alt="Driver" />
                     <span>Driver</span>
@@ -927,6 +892,7 @@ const HeroSection = () => {
                         setRegistrationStep(1);
                     }}
                 >
+                    // <FaStore className="role-icon" />
             
                         <img src={partner} style={{ width: "80px" ,height:"60px" ,marginBottom:"10px" }} alt="Partner" />
                     <span>Business Partner</span>
