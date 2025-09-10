@@ -150,6 +150,9 @@ export default function KycPending() {
               <FaClock /> We haven’t received your KYC yet.
             </div>
             <p className="kyc-sub">Please submit Aadhaar and PAN in the registration form.</p>
+             <button className="btn" onClick={() => nav('/register')}>
+      Shop Registration
+    </button>
           </>
         )}
 
