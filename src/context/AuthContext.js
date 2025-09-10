@@ -254,6 +254,30 @@ export function AuthProvider({ children }) {
 
   const endSoftLogout = () => setSoftSignedOut(false);
 
+  // 🔹 Call this after a shop is created so Flutter gets updated shopId
+const sendUpdatedShopIdToFlutter = async (firebaseUser) => {
+  try {
+    const idToken = await firebaseUser.getIdToken();
+    const shopId = await fetchShopIdForOwner(firebaseUser);
+
+    if (window.AuthBridge && typeof window.AuthBridge.postMessage === 'function') {
+      const payload = {
+        type: 'auth',
+        idToken,
+        uid: firebaseUser.uid,
+        role: 'business',
+        shopId,
+        isRegistered: true, // now they have shop, so considered registered
+      };
+      window.AuthBridge.postMessage(JSON.stringify(payload));
+      console.log("✅ Re-sent updated shopId to Flutter via AuthBridge", payload);
+    }
+  } catch (err) {
+    console.error("❌ Failed to send updated shopId to Flutter:", err);
+  }
+};
+
+
   // 🔹 Always fetch latest role/isRegistered from backend
   const refreshUserMeta = async (firebaseUser) => {
     const idToken = await firebaseUser.getIdToken();
@@ -381,6 +405,7 @@ export function AuthProvider({ children }) {
     softSignedOut,
     softLogout,
     endSoftLogout,
+    sendUpdatedShopIdToFlutter,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
