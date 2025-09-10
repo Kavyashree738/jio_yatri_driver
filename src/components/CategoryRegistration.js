@@ -10,7 +10,7 @@ import { MdLocalDining } from 'react-icons/md';
 import axios from 'axios';
 import AddressAutocomplete from '../components/AddressAutocomplete';
 import '../styles/CategoryRegistration.css';
-import { useAuth , sendUpdatedShopIdToFlutter} from '../context/AuthContext';
+import { useAuth} from '../context/AuthContext';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 
@@ -85,7 +85,7 @@ const CategoryRegistration = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [sp] = useSearchParams();
-  const { user, loading: authLoading, refreshUserMeta } = useAuth();
+  const { user, loading: authLoading, refreshUserMeta , sendUpdatedShopIdToFlutter } = useAuth();
 
   const [needKyc, setNeedKyc] = useState(false);
   const [aadhaarFile, setAadhaarFile] = useState(null);
