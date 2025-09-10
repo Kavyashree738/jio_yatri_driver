@@ -5,7 +5,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { FaCheckCircle, FaClock, FaTimesCircle, FaSync, FaUpload, FaSignOutAlt } from 'react-icons/fa';
 import '../styles/KycPending.css';
-
+import Header from './Header';
+import Footer from './Footer'
 const apiBase = 'https://jio-yatri-driver.onrender.com';
 
 export default function KycPending() {
@@ -133,6 +134,7 @@ export default function KycPending() {
 
         {status === 'none' && (
           <>
+          <Header/>
             <div className="kyc-state waiting">
               <FaClock /> We haven’t received your KYC yet.
             </div>
