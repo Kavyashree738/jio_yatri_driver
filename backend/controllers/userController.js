@@ -44,26 +44,28 @@ exports.checkRegistration = async (req, res) => {
     console.log('[checkRegistration] params:', req.params);
     const { userId } = req.params;
 
-    if (!userId) return res.status(400).json({ success: false, error: 'userId param is required' });
+    if (!userId) {
+      return res.status(400).json({ success: false, error: 'userId param is required' });
+    }
 
     const user = await User.findOne({ userId }).lean();
     if (!user) {
       return res.json({ success: true, data: { isRegistered: false, role: null } });
     }
 
-    let isRegistered = false;
-    if (user.role === 'driver') {
-      isRegistered = !!(await Driver.findOne({ userId }).lean());
-    } else if (user.role === 'business') {
-      isRegistered = !!(await Shop.findOne({ userId }).lean());
-    }
+    // ✅ Only trust the User collection
+    const isRegistered = !!user.isRegistered;
 
-    res.json({ success: true, data: { isRegistered, role: user.role } });
+    res.json({
+      success: true,
+      data: { isRegistered, role: user.role }
+    });
   } catch (error) {
     console.error('[checkRegistration] error:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 };
+
 
 let gfs;
 const initGridFS = () =>
