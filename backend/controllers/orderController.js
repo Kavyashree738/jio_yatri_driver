@@ -356,8 +356,9 @@ async function createShipmentForOrder(orderDoc) {
     throw new Error('Missing coordinates for shop or customer.');
   }
 
-  // Build GeoJSON pickup point for proximity search
+  // ✅ Convert to GeoJSON
   const pickupPoint = toPointFromLatLng(origin.lat, origin.lng);
+  const dropPoint   = toPointFromLatLng(destination.lat, destination.lng);
 
   const km = await distanceKm(origin, destination);
   const cost = deliveryCost(km, orderDoc.vehicleType);
@@ -374,8 +375,7 @@ async function createShipmentForOrder(orderDoc) {
       phone: shop.phone,
       address: {
         addressLine1: shop?.address?.address || '',
-        // keep {lat,lng} — your Shipment schema accepts this
-        coordinates: origin
+        coordinates: pickupPoint   // ✅ GeoJSON Point
       }
     },
     receiver: {
@@ -383,7 +383,7 @@ async function createShipmentForOrder(orderDoc) {
       phone: orderDoc.customer?.phone || '',
       address: {
         addressLine1: orderDoc.customer?.address?.line || '',
-        coordinates: destination
+        coordinates: dropPoint    // ✅ GeoJSON Point
       }
     },
     parcel: { description: parcelDesc, images: [] },
@@ -401,13 +401,14 @@ async function createShipmentForOrder(orderDoc) {
   await fanOutShipmentToNearbyDrivers({
     shipment,
     vehicleType: shipment.vehicleType,
-    pickupPoint,            // GeoJSON Point at the shop
-    radiusMeters: 10_000    // 10 km
+    pickupPoint,
+    radiusMeters: 10_000
   });
 
   await Order.findByIdAndUpdate(orderDoc._id, { $set: { shipmentId: shipment._id } });
   return shipment;
 }
+
 
 // --------------------------- owner → all shops' orders ---------------------------
 exports.getOrdersByOwner = async (req, res) => {
