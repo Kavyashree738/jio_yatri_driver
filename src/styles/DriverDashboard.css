@@ -1455,6 +1455,8 @@
 @media (max-width: 768px) {
   .verify-card {
     padding: 20px;
+    margin-bottom: 41px;
+    margin-top: 35px;
   }
   .verify-container {
     margin-top: 0px;
