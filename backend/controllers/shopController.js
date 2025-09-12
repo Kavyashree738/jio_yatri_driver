@@ -96,10 +96,17 @@ exports.registerShop = async (req, res) => {
 
     await newShop.save();
 
-    await User.updateOne(
+   await User.updateOne(
       { userId: shopData.userId },
-      { $set: { role: 'business', isRegistered: true, phone: shopData.phone } },
-      { upsert: true });
+      {
+        $set: {
+          role: 'business',
+          businessRegistered: true,   // 👈 new flag
+          phone: shopData.phone
+        }
+      },
+      { upsert: true }
+    );
 
 
     if (referralCode) {

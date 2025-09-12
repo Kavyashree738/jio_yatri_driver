@@ -27,7 +27,8 @@ const userSchema = new mongoose.Schema({
     default: 'driver',
     required: true
   },
-  isRegistered: { type: Boolean, default: false },
+  driverRegistered: { type: Boolean, default: false },
+  businessRegistered: { type: Boolean, default: false },
 
   // NEW: avatar photo stored in GridFS
   photo: { type: mongoose.Schema.Types.ObjectId, default: null },

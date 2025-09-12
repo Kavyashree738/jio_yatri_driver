@@ -6,19 +6,19 @@ const User = require('../models/UserRole');
 // Check if driver exists before registration
 exports.checkDriverExists = async (req, res) => {
   try {
-    
+
     const { userId } = req.params;
     const driver = await Driver.findOne({ userId });
-    
+
     res.status(200).json({
       exists: !!driver,
       isRegistered: !!driver,
       driver: driver || null
     });
   } catch (err) {
-    res.status(500).json({ 
-      success: false, 
-      error: 'Server error while checking driver status' 
+    res.status(500).json({
+      success: false,
+      error: 'Server error while checking driver status'
     });
   }
 };
@@ -37,7 +37,7 @@ exports.checkDriverExists = async (req, res) => {
 //       rcFileId,
 //       insuranceFileId
 //     } = req.body;
-    
+
 //     // Validate required fields
 //     if (!userId || !name || !phone || !aadharFileId || !panFileId || 
 //         !vehicleType || !vehicleNumber || !licenseFileId || !rcFileId || !insuranceFileId) {
@@ -83,7 +83,7 @@ exports.checkDriverExists = async (req, res) => {
 //     });
 
 //     await driver.save();
-    
+
 //     res.status(201).json({ 
 //       success: true, 
 //       data: driver 
@@ -118,7 +118,7 @@ exports.checkDriverExists = async (req, res) => {
 //       rcFileId,
 //       insuranceFileId,
 //     } = req.body;
-    
+
 //     // Validate required fields
 //     if (!userId || !name || !phone || !aadharFileId || !panFileId || 
 //         !vehicleType || !vehicleNumber || !licenseFileId || !rcFileId || !insuranceFileId) {
@@ -164,7 +164,7 @@ exports.checkDriverExists = async (req, res) => {
 //     });
 
 //     await driver.save();
-    
+
 //     res.status(201).json({ 
 //       success: true, 
 //       data: driver 
@@ -280,9 +280,10 @@ exports.registerDriver = async (req, res) => {
 
     await User.updateOne(
       { userId },
-     { $set: { role: 'driver', isRegistered: false, phone, hasKyc: false } },
+      { $set: { role: 'driver', driverRegistered: true, phone } },
       { upsert: true }
     );
+
 
     // console.log('[Registration] Saving driver to database:', driver);
     await driver.save();
@@ -382,19 +383,19 @@ exports.getDriver = async (req, res) => {
   try {
     const driver = await Driver.findOne({ userId: req.params.userId });
     if (!driver) {
-      return res.status(404).json({ 
-        success: false, 
-        error: 'Driver not found' 
+      return res.status(404).json({
+        success: false,
+        error: 'Driver not found'
       });
     }
-    res.status(200).json({ 
-      success: true, 
-      data: driver 
+    res.status(200).json({
+      success: true,
+      data: driver
     });
   } catch (err) {
-    res.status(500).json({ 
-      success: false, 
-      error: 'Server error' 
+    res.status(500).json({
+      success: false,
+      error: 'Server error'
     });
   }
 };
@@ -471,11 +472,11 @@ exports.getDriverLocation = async (req, res) => {
   try {
     const driver = await Driver.findOne({ userId: req.user.uid })
       .select('location isLocationActive -_id');
-    
+
     if (!driver) {
-      return res.status(404).json({ 
-        success: false, 
-        error: 'Driver not found' 
+      return res.status(404).json({
+        success: false,
+        error: 'Driver not found'
       });
     }
 
@@ -487,9 +488,9 @@ exports.getDriverLocation = async (req, res) => {
       }
     });
   } catch (err) {
-    res.status(500).json({ 
-      success: false, 
-      error: 'Server error while fetching location' 
+    res.status(500).json({
+      success: false,
+      error: 'Server error while fetching location'
     });
   }
 };
@@ -510,7 +511,7 @@ exports.updateDriverLocation = async (req, res) => {
       // Additional coordinate validation
       const [lng, lat] = req.body.coordinates;
       if (typeof lng !== 'number' || typeof lat !== 'number' ||
-          lng < -180 || lng > 180 || lat < -90 || lat > 90) {
+        lng < -180 || lng > 180 || lat < -90 || lat > 90) {
         return res.status(400).json({
           success: false,
           error: 'Invalid coordinates. Longitude must be [-180,180] and latitude [-90,90]'
@@ -519,30 +520,30 @@ exports.updateDriverLocation = async (req, res) => {
     }
 
     const update = req.body.isLocationActive === false
-      ? { 
-          isLocationActive: false,
-          'location.lastUpdated': Date.now()
-        }
+      ? {
+        isLocationActive: false,
+        'location.lastUpdated': Date.now()
+      }
       : {
-          location: {
-            type: 'Point',
-            coordinates: req.body.coordinates,
-            lastUpdated: Date.now(),
-            address: req.body.address || ''
-          },
-          isLocationActive: true
-        };
+        location: {
+          type: 'Point',
+          coordinates: req.body.coordinates,
+          lastUpdated: Date.now(),
+          address: req.body.address || ''
+        },
+        isLocationActive: true
+      };
 
     const driver = await Driver.findOneAndUpdate(
       { userId: req.user.uid },
       { $set: update },
       { new: true, runValidators: true }
     );
-    
+
     if (!driver) {
-      return res.status(404).json({ 
-        success: false, 
-        error: 'Driver not found' 
+      return res.status(404).json({
+        success: false,
+        error: 'Driver not found'
       });
     }
 
@@ -558,9 +559,9 @@ exports.updateDriverLocation = async (req, res) => {
     });
   } catch (err) {
     console.error('Error updating location:', err);
-    res.status(500).json({ 
-      success: false, 
-      error: err.message || 'Failed to update location' 
+    res.status(500).json({
+      success: false,
+      error: err.message || 'Failed to update location'
     });
   }
 };
@@ -569,11 +570,11 @@ exports.registerFCMToken = async (req, res) => {
   try {
     const { token } = req.body;
     const userId = req.user.uid;
-    
+
     if (!token) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         success: false,
-        error: 'FCM token is required' 
+        error: 'FCM token is required'
       });
     }
 
@@ -604,7 +605,7 @@ exports.incrementCompletedDeliveries = async (req, res) => {
   try {
     const driver = await Driver.findOneAndUpdate(
       { userId: req.user.uid },
-      { 
+      {
         $inc: { completedDeliveries: 1 },
         $set: { lastUpdated: Date.now() }
       },
@@ -687,15 +688,6 @@ exports.verifyDriver = async (req, res) => {
         error: 'Driver not found'
       });
     }
-
-    const allDocsVerified = Object.values(driver.documentVerification).every(v => v === 'verified');
-
-if (allDocsVerified) {
-  await User.updateOne(
-    { userId: driverId },
-    { $set: { isRegistered: true, hasKyc: true } }
-  );
-}
 
     res.status(200).json({
       success: true,
@@ -1258,7 +1250,7 @@ exports.getReferralCode = async (req, res, next) => {
       // console.log(`[Referral] Existing referral code found: ${driver.referralCode}`);
     }
 
-    const shareLink = `https://play.google.com/store/apps/details?id=com.matspl.jioyatripartner&driver_ref=${driver.referralCode}`;
+    const shareLink = `https://play.google.com/store/apps/details?id=com.matspl.jioyatripartner?driver_ref=${driver.referralCode}`;
     // console.log(`[Referral] Generated share link: ${shareLink}`);
 
     // Send response
@@ -1325,100 +1317,11 @@ exports.getReferralLeaderboard = async (req, res, next) => {
   }
 };
 
-// Add this NEW endpoint to driverController.js
-// Add this to your driverController.js - PUT THIS WITH YOUR OTHER EXPORTS
-exports.updateDriverLocationRegular = async (req, res) => {
-  try {
-    const { coordinates, isLocationActive = true } = req.body;
-
-    if (!coordinates || !Array.isArray(coordinates) || coordinates.length !== 2) {
-      return res.status(400).json({
-        success: false,
-        message: 'Valid coordinates array [longitude, latitude] is required'
-      });
-    }
-
-    const [longitude, latitude] = coordinates;
-    
-    // Validate coordinates
-    if (longitude < -180 || longitude > 180 || latitude < -90 || latitude > 90) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid coordinates'
-      });
-    }
-
-    const driver = await Driver.findOneAndUpdate(
-      { userId: req.user.uid },
-      {
-        $set: {
-          'location.coordinates': coordinates,
-          'location.lastUpdated': new Date(),
-          isLocationActive: isLocationActive
-        }
-      },
-      { new: true }
-    );
-
-    if (!driver) {
-      return res.status(404).json({
-        success: false,
-        message: 'Driver not found'
-      });
-    }
-
-    res.json({
-      success: true,
-      message: 'Location updated successfully',
-      coordinates: driver.location.coordinates
-    });
-
-  } catch (err) {
-    console.error('Error updating driver location:', err);
-    res.status(500).json({
-      success: false,
-      message: 'Server error'
-    });
-  }
-};
-
-// Add this status endpoint to driverController.js
-exports.getLocationStatus = async (req, res) => {
-  try {
-    const driver = await Driver.findOne({ userId: req.user.uid });
-    
-    if (!driver) {
-      return res.status(404).json({ status: 'Driver not found' });
-    }
-
-    if (!driver.isLocationActive) {
-      return res.json({ status: '📍 Location not shared' });
-    }
-
-    const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
-    const isRecent = driver.location.lastUpdated > thirtyMinutesAgo;
-
-    if (isRecent) {
-      const timeLeft = Math.round((driver.location.lastUpdated.getTime() + 30 * 60 * 1000 - Date.now()) / 60000);
-      return res.json({ 
-        status: `✅ Location active (expires in ${timeLeft} minutes)`,
-        coordinates: driver.location.coordinates
-      });
-    } else {
-      return res.json({ status: '📍 Location expired - share again' });
-    }
-
-  } catch (error) {
-    console.error('Error getting location status:', error);
-    res.status(500).json({ status: 'Error checking location status' });
-  }
-};
-
 exports.updateLastKnownLocation = async (req, res) => {
   try {
     const { coords } = req.body; // [lng, lat]
     if (!Array.isArray(coords) || coords.length !== 2 ||
-        typeof coords[0] !== 'number' || typeof coords[1] !== 'number') {
+      typeof coords[0] !== 'number' || typeof coords[1] !== 'number') {
       return res.status(400).json({ success: false, error: 'coords must be [lng,lat]' });
     }
 

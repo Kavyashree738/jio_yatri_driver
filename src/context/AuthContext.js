@@ -255,27 +255,27 @@ export function AuthProvider({ children }) {
   const endSoftLogout = () => setSoftSignedOut(false);
 
   // 🔹 Call this after a shop is created so Flutter gets updated shopId
-const sendUpdatedShopIdToFlutter = async (firebaseUser) => {
-  try {
-    const idToken = await firebaseUser.getIdToken();
-    const shopId = await fetchShopIdForOwner(firebaseUser);
+  const sendUpdatedShopIdToFlutter = async (firebaseUser) => {
+    try {
+      const idToken = await firebaseUser.getIdToken();
+      const shopId = await fetchShopIdForOwner(firebaseUser);
 
-    if (window.AuthBridge && typeof window.AuthBridge.postMessage === 'function') {
-      const payload = {
-        type: 'auth',
-        idToken,
-        uid: firebaseUser.uid,
-        role: 'business',
-        shopId,
-        isRegistered: true, // now they have shop, so considered registered
-      };
-      window.AuthBridge.postMessage(JSON.stringify(payload));
-      console.log("✅ Re-sent updated shopId to Flutter via AuthBridge", payload);
+      if (window.AuthBridge && typeof window.AuthBridge.postMessage === 'function') {
+        const payload = {
+          type: 'auth',
+          idToken,
+          uid: firebaseUser.uid,
+          role: 'business',
+          shopId,
+          isRegistered: true, // now they have shop, so considered registered
+        };
+        window.AuthBridge.postMessage(JSON.stringify(payload));
+        console.log("✅ Re-sent updated shopId to Flutter via AuthBridge", payload);
+      }
+    } catch (err) {
+      console.error("❌ Failed to send updated shopId to Flutter:", err);
     }
-  } catch (err) {
-    console.error("❌ Failed to send updated shopId to Flutter:", err);
-  }
-};
+  };
 
 
   // 🔹 Always fetch latest role/isRegistered from backend
@@ -288,16 +288,23 @@ const sendUpdatedShopIdToFlutter = async (firebaseUser) => {
     const json = await res.json();
 
     if (json.success) {
-      setUserRole(json.data.role);
-      setIsRegistered(!!json.data.isRegistered);
+      const role = json.data.role;
+      const driverRegistered = !!json.data.driverRegistered;
+      const businessRegistered = !!json.data.businessRegistered;
 
-      // keep role in storage for UI convenience
-      localStorage.setItem('userRole', json.data.role || '');
-      // ❌ do NOT cache isRegistered in localStorage anymore
+      setUserRole(role);
+      setIsRegistered(
+        role === 'driver' ? driverRegistered : businessRegistered
+      );
+
+      localStorage.setItem('userRole', role || '');
+
+      return { role, driverRegistered, businessRegistered };
     }
 
-    return json.success ? json.data : {}; // Always return backend truth
+    return {};
   };
+
 
   // 🔹 For business owners, fetch first shop _id
   const fetchShopIdForOwner = async (firebaseUser) => {
@@ -365,20 +372,24 @@ const sendUpdatedShopIdToFlutter = async (firebaseUser) => {
           }
         }
 
-        
-        
+
+
         console.log(
-  `🌐 Web Auth Meta (before bridge) -> uid=${firebaseUser.uid}, role=${role}, isRegistered=${isRegisteredFromAPI}, shopId=${shopId}`
-);
+          `🌐 Web Auth Meta (before bridge) -> uid=${firebaseUser.uid}, role=${role}, isRegistered=${isRegisteredFromAPI}, shopId=${shopId}`
+        );
         // Send to Flutter WebView via AuthBridge
         if (window.AuthBridge && typeof window.AuthBridge.postMessage === 'function') {
           const payload = {
             type: 'auth',
             idToken,
             uid: firebaseUser.uid,
-            role,          // backend truth
-            shopId,        // backend truth
-            isRegistered: isRegisteredFromAPI, // backend truth
+            role,              // backend truth
+            shopId,            // backend truth
+            driverRegistered: meta?.driverRegistered || false,
+            businessRegistered: meta?.businessRegistered || false,
+            isRegistered: role === 'driver'
+              ? !!meta?.driverRegistered
+              : !!meta?.businessRegistered, // backward compatibility
           };
           window.AuthBridge.postMessage(JSON.stringify(payload));
           console.log('✅ Sent ID token + role + shopId + isRegistered to Flutter via AuthBridge', payload);

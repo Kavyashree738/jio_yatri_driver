@@ -459,21 +459,20 @@ const HeroSection = () => {
                 if (referralCode) {
                     localStorage.setItem('shopReferralCode', referralCode.toUpperCase());
                 }
-                navigate(meta.isRegistered ? '/business-dashboard' : '/register', { replace: true });
-                return;
-            } else {
+                navigate(meta.businessRegistered ? '/business-dashboard' : '/register', { replace: true });
+            } else if (meta.role === 'driver') {
                 setUserRole('driver');
-                if (meta.isRegistered) {
+                if (meta.driverRegistered) {
                     if (!hasRoutedRef.current) hasRoutedRef.current = true;
                     navigate('/orders', { replace: true });
-                    return;
+                } else {
+                    setShowOtpComponent(false);
+                    setIsRegistered(false);
+                    setRegistrationStep(2); // show driver wizard
+                    setDriverData(prev => ({ ...prev, phone: phoneNumber }));
                 }
-                setShowOtpComponent(false);
-                setIsRegistered(!!meta.isRegistered);
-                setRegistrationStep(meta.isRegistered ? 4 : 2); // 2 shows your wizard
-                setDriverData(prev => ({ ...prev, phone: phoneNumber }));
-            } // optional prefill
-        } catch (error) {
+            }
+        }  catch (error) {
             setMessage({
                 text: error.message || 'OTP verification failed',
                 isError: true
@@ -681,10 +680,16 @@ const HeroSection = () => {
             const json = await res.json();
             if (!json.success) return { isRegistered: false, role: null };
 
-            const { isRegistered, role } = json.data;
+            const { role, driverRegistered, businessRegistered } = json.data;
 
-            // Persist unified flags
-            setIsRegistered(!!isRegistered);
+            let isRegistered = false;
+            if (role === 'driver') {
+                isRegistered = !!driverRegistered;
+            } else if (role === 'business') {
+                isRegistered = !!businessRegistered;
+            }
+
+            setIsRegistered(isRegistered);
             localStorage.setItem('isRegistered', isRegistered ? '1' : '0');
             localStorage.setItem('userRole', role || '');
 

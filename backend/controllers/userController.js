@@ -54,12 +54,15 @@ exports.checkRegistration = async (req, res) => {
     }
 
     // ✅ Only trust the User collection
-    const isRegistered = !!user.isRegistered;
-
     res.json({
-      success: true,
-      data: { isRegistered, role: user.role }
-    });
+  success: true,
+  data: {
+    role: user.role,
+    driverRegistered: !!user.driverRegistered,
+    businessRegistered: !!user.businessRegistered
+  }
+});
+
   } catch (error) {
     console.error('[checkRegistration] error:', error);
     res.status(500).json({ success: false, error: error.message });
