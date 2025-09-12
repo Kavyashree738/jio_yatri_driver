@@ -18,7 +18,7 @@ export default function ShopMenuManager() {
   const [error, setError] = useState('');
   const [msg, setMsg] = useState('');
 
-  const apiBase = 'https://jio-yatri-driver.onrender';
+  const apiBase = 'https://jio-yatri-driver.onrender.com';
   const baseImg = (id) => `${apiBase}/api/shops/images/${id}`;
 
   // helpers

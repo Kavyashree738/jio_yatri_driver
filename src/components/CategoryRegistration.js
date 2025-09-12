@@ -107,7 +107,7 @@ const CategoryRegistration = () => {
         const checkNeedKyc = async () => {
             if (!user?.uid) return;
 
-            const apiBase = 'https://jio-yatri-driver.onrender';
+            const apiBase = 'https://jio-yatri-driver.onrender.com';
 
             try {
                 const shopsRes = await axios.get(`${apiBase}/api/shops/owner/${user.uid}`);

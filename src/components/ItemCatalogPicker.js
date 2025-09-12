@@ -64,7 +64,7 @@ export default function ItemCatalogPicker({ category, onAdd }) {
   useEffect(() => {
     const run = async () => {
       if (!category) return;
-      const apiBase = 'https://jio-yatri-driver.onrender';
+      const apiBase = 'https://jio-yatri-driver.onrender.com';
       const res = await axios.get(`${apiBase}/api/catalog/${category}`);
       setList(Array.isArray(res?.data?.data) ? res.data.data : []);
     };

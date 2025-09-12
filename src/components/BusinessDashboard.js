@@ -47,7 +47,7 @@ const OwnerShops = () => {
         if (!user?.uid) return;
 
         const res = await axios.get(
-          `https://jio-yatri-driver.onrender/api/shops/owner/${user.uid}`
+          `https://jio-yatri-driver.onrender.com/api/shops/owner/${user.uid}`
         );
         setShops(res.data.data);
         setLoading(false);
@@ -88,7 +88,7 @@ const OwnerShops = () => {
     e.stopPropagation();
     try {
       await axios.delete(
-        `https://jio-yatri-driver.onrender/api/shops/${shopId}`,
+        `https://jio-yatri-driver.onrender.com/api/shops/${shopId}`,
         { data: { userId: user.uid } }
       );
       setShops(shops.filter(shop => shop._id !== shopId));

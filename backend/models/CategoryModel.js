@@ -104,7 +104,7 @@ const baseShopSchema = new mongoose.Schema({
 baseShopSchema.virtual('shopImageUrls').get(function () {
   if (!this.shopImages || this.shopImages.length === 0) return [];
   return this.shopImages.map(img =>
-    `https://jio-yatri-driver.onrender/api/shops/images/${img}`
+    `https://jio-yatri-driver.onrender.com/api/shops/images/${img}`
   );
 });
 
@@ -161,7 +161,7 @@ grocerySchema.virtual('itemsWithUrls').get(function () {
   return this.items.map(item => ({
     ...item.toObject(),
     imageUrl: item.image ?
-      `https://jio-yatri-driver.onrender/api/shops/images/${item.image}` :
+      `https://jio-yatri-driver.onrender.com/api/shops/images/${item.image}` :
       null
   }));
 });
@@ -184,7 +184,7 @@ vegetableSchema.virtual('itemsWithUrls').get(function () {
   return this.items.map(item => ({
     ...item.toObject(),
     imageUrl: item.image ?
-      `https://jio-yatri-driver.onrender/api/shops/images/${item.image}` :
+      `https://jio-yatri-driver.onrender.com/api/shops/images/${item.image}` :
       null
   }));
 });
@@ -208,7 +208,7 @@ provisionSchema.virtual('itemsWithUrls').get(function () {
   return this.items.map(item => ({
     ...item.toObject(),
     imageUrl: item.image ?
-      `https://jio-yatri-driver.onrender/api/shops/images/${item.image}` :
+      `https://jio-yatri-driver.onrender.com/api/shops/images/${item.image}` :
       null
   }));
 });
@@ -232,7 +232,7 @@ medicalSchema.virtual('itemsWithUrls').get(function () {
   return this.items.map(item => ({
     ...item.toObject(),
     imageUrl: item.image ?
-      `https://jio-yatri-driver.onrender/api/shops/images/${item.image}` :
+      `https://jio-yatri-driver.onrender.com/api/shops/images/${item.image}` :
       null
   }));
 });
@@ -312,7 +312,7 @@ hotelSchema.virtual('itemsWithUrls').get(function () {
   if (!this.items) return [];
   return this.items.map(item => ({
     ...item.toObject(),
-    imageUrl: `https://jio-yatri-driver.onrender/api/shops/images/${item.image}`
+    imageUrl: `https://jio-yatri-driver.onrender.com/api/shops/images/${item.image}`
   }));
 });
 
@@ -327,7 +327,7 @@ const bakerySchema = new mongoose.Schema({
 }, { toJSON: { virtuals: true }, toObject: { virtuals: true }});
 
 bakerySchema.virtual('itemsWithUrls').get(function () {
-  const base = 'https://jio-yatri-driver.onrender';
+  const base = 'https://jio-yatri-driver.onrender.com';
   return (this.items || []).map(item => ({
     ...item.toObject(),
     imageUrl: `${base}/api/shops/images/${item.image}`
@@ -345,7 +345,7 @@ const cafeSchema = new mongoose.Schema({
 }, { toJSON: { virtuals: true }, toObject: { virtuals: true }});
 
 cafeSchema.virtual('itemsWithUrls').get(function () {
-  const base = 'https://jio-yatri-driver.onrender';
+  const base = 'https://jio-yatri-driver.onrender.com';
   return (this.items || []).map(item => ({
     ...item.toObject(),
     imageUrl: `${base}/api/shops/images/${item.image}`
