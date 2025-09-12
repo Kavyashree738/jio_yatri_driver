@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { registerDriver, checkDriverExists, getDriver, updateDriverStatus, getDriverStatus, updateDriverLocation, getDriverLocation, getAvailableShipments, registerFCMToken, incrementCompletedDeliveries, getAllDriversWithDocuments, verifyDriver,getDocumentStatus,getOwnerDashboard,getDailySummary ,settlePayment,bulkSettlePayments, applyReferral,
   getReferralCode,
-  getReferralStats,updateDriverLocationRegular,getLocationStatus,updateLastKnownLocation,
+  getReferralStats,updateLastKnownLocation,
   getReferralLeaderboard} = require('../controllers/driverController');
 const verifyFirebaseToken = require('../middleware/verifyFirebaseToken');
 
@@ -49,11 +49,6 @@ router.get('/:driverId/referral-stats', verifyFirebaseToken, getReferralStats);
 router.get('/referrals/leaderboard', verifyFirebaseToken, getReferralLeaderboard);
 
 
-// In your driverRoutes.js
-router.put('/location/regular', verifyFirebaseToken, updateDriverLocationRegular);
-
-// In your driverRoutes.js - ADD THESE ROUTE
-router.get('/location/status', verifyFirebaseToken,getLocationStatus);
 
 router.post('/heartbeat', verifyFirebaseToken,updateLastKnownLocation);
 
