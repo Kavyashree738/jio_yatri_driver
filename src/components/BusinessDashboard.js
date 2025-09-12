@@ -47,7 +47,7 @@ const OwnerShops = () => {
         if (!user?.uid) return;
 
         const res = await axios.get(
-          `https://jio-yatri-driver.onrender/api/shops/owner/${user.uid}`
+          `https://jio-yatri-driver.onrender.com/api/shops/owner/${user.uid}`
         );
         setShops(res.data.data);
         setLoading(false);
