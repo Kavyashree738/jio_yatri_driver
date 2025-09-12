@@ -2271,7 +2271,7 @@ input[type="tel"] {
   border-radius: 6px;
   font-size: 1rem;
   resize: vertical;
-  min-height: 100px;
+  min-height: 10px;
 }
 
 .image-upload-label {
@@ -2297,7 +2297,8 @@ input[type="tel"] {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
-  margin-top: 15px;
+  margin-top: 5px;
+  margin-left:5px;
 }
 
 .image-preview {
@@ -2319,6 +2320,10 @@ input[type="tel"] {
   background-color: #f8f9fa;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  display:flex;
+  gap:10px;
+  align-items: center;
+  flex: 1;
 }
 
 .section-title {
@@ -2336,7 +2341,7 @@ input[type="tel"] {
   border-radius: 6px;
   font-size: 0.9rem;
   resize: vertical;
-  min-height: 80px;
+  min-height: 10px;
   transition: border-color 0.3s ease;
 }
 
@@ -2354,7 +2359,7 @@ input[type="tel"] {
 .image-upload-label {
   display: inline-block;
   padding: 8px 15px;
-  background-color: #4a90e2;
+  /* background-color: #4a90e2; */
   color: white;
   border-radius: 4px;
   font-size: 0.9rem;
@@ -2362,16 +2367,16 @@ input[type="tel"] {
   transition: background-color 0.2s ease;
 }
 
-.image-upload-label:hover {
+/* .image-upload-label:hover {
   background-color: #3a7bc8;
-}
+} */
 
 /* Image Preview Container */
 .image-preview-container {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
-  margin-top: 15px;
+  margin-bottom: 5px;
 }
 
 .image-preview-item {
@@ -2424,9 +2429,9 @@ input[type="tel"] {
 
 /* Responsive Adjustments */
 @media (max-width: 768px) {
-  .parcel-section {
+  /* .parcel-section {
     padding: 12px;
-  }
+  } */
   
   .section-title {
     font-size: 1rem;
@@ -2440,5 +2445,55 @@ input[type="tel"] {
   .image-upload-label {
     padding: 6px 12px;
     font-size: 0.85rem;
+    
   }
+}
+
+
+.parcel-section {
+  margin: 0px 0;
+  padding-inline: 15px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+/* textarea container grows */
+.input-groups {
+  flex: 1; /* take remaining space */
+}
+
+/* textarea full width */
+.form-textarea {
+  width: 100%;
+  min-height: 40px;
+  resize: none;
+  padding: 8px 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+/* upload button fixed size */
+.image-upload-section {
+  flex: 0 0 auto; /* don’t grow/shrink */
+}
+
+.image-upload-label {
+  cursor: pointer;
+  font-size: 20px;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:white;
+  border-radius: 50%;
+  transition: background 0.2s;
+}
+.parcel-section{
+    padding-block:5px;
 }
