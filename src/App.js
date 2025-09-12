@@ -63,10 +63,12 @@ import CartPage from './components/Cart';
 import OrderConfirmation from './components/OrderConfirmation';
 import BusinessOrders from './components/BusinessOrders';
 
-
+import ShopMenuManager from './components/ShopMenuManager';
 import KycPending from './components/KycPending';
 import RequireKycVerified from './components/RequireKycVerified';
 import OwnerDocumentViews from './components/OwnerDocumentViews';
+
+
 
 // Smart landing
 function LandingRedirect() {
@@ -107,6 +109,8 @@ const App = () => {
           // <Route path="/" element={<SplashScreen />} />
           <Route path="/" element={<LandingRedirect />} />
           <Route path="/home" element={<Home />} />
+
+          <Route path="/shop/:shopId/menu" element={<ShopMenuManager />} />
 
           {/* DRIVER-ONLY */}
           <Route path="/orders" element={
@@ -176,6 +180,8 @@ const App = () => {
           <Route path="/register" element={
             <RequireAuth><RoleGuard allow="business"><OnlyIfNotRegistered><CategoryRegistration /></OnlyIfNotRegistered></RoleGuard></RequireAuth>
           } />
+
+         
 
            <Route
             path="/owner-documents"

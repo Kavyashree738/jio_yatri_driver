@@ -5,7 +5,7 @@ import {
   FaClock, FaMapMarkerAlt, FaChevronLeft, FaChevronRight,
   FaMotorcycle, FaPlus, FaUtensils, FaStore, FaCarrot,
   FaBoxes, FaMedkit, FaEdit, FaTrash, FaYoutube,
-  FaHamburger, FaPrescriptionBottleAlt, FaBreadSlice, FaShareAlt
+  FaHamburger, FaPrescriptionBottleAlt, FaBreadSlice, FaShareAlt, FaCoffee,
 } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
@@ -26,7 +26,9 @@ const OwnerShops = () => {
     grocery: <FaStore />,
     vegetable: <FaCarrot />,
     provision: <FaBoxes />,
-    medical: <FaMedkit />
+    medical: <FaMedkit />,
+    bakery: <FaBreadSlice />, // ← NEW
+    cafe: <FaCoffee />,
   };
 
   const categoryNames = {
@@ -34,7 +36,9 @@ const OwnerShops = () => {
     grocery: 'Grocery Store',
     vegetable: 'Vegetable Vendor',
     provision: 'Provision Store',
-    medical: 'Medical Store'
+    medical: 'Medical Store',
+    bakery: 'Bakery',   // ← NEW
+    cafe: 'Cafe',
   };
 
   useEffect(() => {
@@ -43,7 +47,7 @@ const OwnerShops = () => {
         if (!user?.uid) return;
 
         const res = await axios.get(
-          `https://jio-yatri-driver.onrender.com/api/shops/owner/${user.uid}`
+          `https://jio-yatri-driver.onrender/api/shops/owner/${user.uid}`
         );
         setShops(res.data.data);
         setLoading(false);
@@ -84,7 +88,7 @@ const OwnerShops = () => {
     e.stopPropagation();
     try {
       await axios.delete(
-        `https://jio-yatri-driver.onrender.com/api/shops/${shopId}`,
+        `https://jio-yatri-driver.onrender/api/shops/${shopId}`,
         { data: { userId: user.uid } }
       );
       setShops(shops.filter(shop => shop._id !== shopId));
@@ -97,6 +101,8 @@ const OwnerShops = () => {
     switch (category) {
       case 'hotel':
         return <FaHamburger />;
+        case 'bakery':    return <FaBreadSlice />;
+            case 'cafe':      return <FaCoffee />;    
       case 'grocery':
         return <FaShoppingBag />;
       case 'vegetable':

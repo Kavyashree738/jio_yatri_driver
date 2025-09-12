@@ -1,0 +1,277 @@
+/* src/styles/ShopMenuManager.css */
+.menu-manager-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: #333;
+  margin-top:50px;
+}
+
+.menu-manager-back-btn {
+  background: #f1f1f1;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-bottom: 20px;
+  font-size: 14px;
+  transition: background 0.2s;
+}
+
+.menu-manager-back-btn:hover {
+  background: #e1e1e1;
+}
+
+.menu-manager-header {
+  margin-bottom: 30px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #eee;
+}
+
+.menu-manager-title {
+  font-size: 28px;
+  margin: 0 0 8px 0;
+  color: #2c3e50;
+}
+
+.menu-manager-details {
+  color: #7f8c8d;
+  font-size: 14px;
+}
+
+.menu-manager-catalog-section {
+  margin-bottom: 30px;
+}
+
+.menu-manager-items-section {
+  margin-top: 30px;
+}
+
+.menu-manager-subtitle {
+  font-size: 20px;
+  margin-bottom: 15px;
+  color: #34495e;
+}
+
+.menu-manager-empty-state {
+  text-align: center;
+  padding: 30px;
+  color: #95a5a6;
+  font-style: italic;
+  background: #f9f9f9;
+  border-radius: 8px;
+}
+
+.menu-manager-items-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  margin-bottom: 30px;
+}
+
+.menu-manager-item-card {
+  display: flex;
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s, box-shadow 0.2s;
+  position: relative;
+}
+
+.menu-manager-item-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.menu-manager-item-image-container {
+  width: 80px;
+  min-width: 80px;
+  height: 80px;
+  overflow: hidden;
+}
+
+.menu-manager-item-image {
+  width: 100%;
+  height: 100%;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.menu-manager-item-details {
+  padding: 12px;
+  flex-grow: 1;
+}
+
+.menu-manager-item-name {
+  font-weight: 600;
+  margin-bottom: 6px;
+  font-size: 14px;
+  line-height: 1.3;
+}
+
+.menu-manager-item-properties {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.menu-manager-veg-indicator {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 10px;
+  font-weight: bold;
+}
+
+.menu-manager-veg-indicator.veg {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.menu-manager-veg-indicator.non-veg {
+  background: #ffebee;
+  color: #c62828;
+}
+
+.menu-manager-item-category,
+.menu-manager-organic-badge,
+.menu-manager-prescription-badge {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 10px;
+  background: #f1f1f1;
+  color: #555;
+}
+
+.menu-manager-spice-level {
+  display: flex;
+  align-items: center;
+}
+
+.menu-manager-spice-dot {
+  color: #ff6b00;
+  font-size: 16px;
+  margin-right: 2px;
+}
+
+.menu-manager-item-price {
+  font-weight: bold;
+  color: #e91e63;
+  font-size: 14px;
+}
+
+.menu-manager-remove-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.9);
+  color: #e74c3c;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  transition: background 0.2s;
+}
+
+.menu-manager-remove-btn:hover {
+  background: #ffebe9;
+}
+
+.menu-manager-error-msg {
+  background: #ffebee;
+  color: #c62828;
+  padding: 12px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+}
+
+.menu-manager-success-msg {
+  background: #e8f5e9;
+  color: #2e7d32;
+  padding: 12px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+}
+
+.menu-manager-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.menu-manager-cancel-btn {
+  padding: 10px 20px;
+  background: #f5f5f5;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.2s;
+}
+
+.menu-manager-cancel-btn:hover {
+  background: #e8e8e8;
+}
+
+.menu-manager-save-btn {
+  padding: 10px 20px;
+  background: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.2s;
+}
+
+.menu-manager-save-btn:hover:not(.disabled) {
+  background: #388e3c;
+}
+
+.menu-manager-save-btn.disabled {
+  background: #a5d6a7;
+  cursor: not-allowed;
+}
+
+.menu-manager-loading,
+.menu-manager-login-prompt,
+.menu-manager-loading-shop {
+  text-align: center;
+  padding: 40px;
+  font-size: 18px;
+}
+
+.menu-manager-error-text {
+  color: #e74c3c;
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+  .menu-manager-container {
+    padding: 15px;
+    margin-bottom:80px;
+  }
+  
+  .menu-manager-items-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .menu-manager-actions {
+    flex-direction: column;
+  }
+  
+  .menu-manager-cancel-btn,
+  .menu-manager-save-btn {
+    width: 100%;
+  }
+}

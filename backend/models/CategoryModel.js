@@ -19,16 +19,7 @@ const baseShopSchema = new mongoose.Schema({
       message: props => `${props.value} is not a valid phone number!`
     }
   },
-  phonePeNumber: {
-    type: String,
-    required: true,
-    validate: {
-      validator: function (v) {
-        return /^[0-9]{10}$/.test(v);
-      },
-      message: props => `${props.value} is not a valid PhonePe number!`
-    }
-  },
+
   upiId: {
     type: String,
     required: true,        // make mandatory for shops that accept UPI
@@ -37,6 +28,16 @@ const baseShopSchema = new mongoose.Schema({
     validate: {
       validator: v => vpaRegex.test(v || ''),
       message: p => `${p.value} is not a valid UPI ID`
+    }
+  },
+  phonePeNumber: {
+    type: String,
+    required: true,
+    validate: {
+      validator: function (v) {
+        return /^[0-9]{10}$/.test(v);
+      },
+      message: props => `${props.value} is not a valid PhonePe number!`
     }
   },
   email: {
@@ -65,7 +66,7 @@ const baseShopSchema = new mongoose.Schema({
   category: {
     type: String,
     required: true,
-    enum: ['grocery', 'vegetable', 'provision', 'medical', 'hotel']
+    enum: ['grocery', 'vegetable', 'provision', 'medical', 'hotel','bakery','cafe']
   },
   referralCode: {
     type: String,
@@ -103,7 +104,7 @@ const baseShopSchema = new mongoose.Schema({
 baseShopSchema.virtual('shopImageUrls').get(function () {
   if (!this.shopImages || this.shopImages.length === 0) return [];
   return this.shopImages.map(img =>
-    `https://jio-yatri-driver.onrender.com/api/shops/images/${img}`
+    `https://jio-yatri-driver.onrender/api/shops/images/${img}`
   );
 });
 
@@ -160,7 +161,7 @@ grocerySchema.virtual('itemsWithUrls').get(function () {
   return this.items.map(item => ({
     ...item.toObject(),
     imageUrl: item.image ?
-      `https://jio-yatri-driver.onrender.com/api/shops/images/${item.image}` :
+      `https://jio-yatri-driver.onrender/api/shops/images/${item.image}` :
       null
   }));
 });
@@ -183,7 +184,7 @@ vegetableSchema.virtual('itemsWithUrls').get(function () {
   return this.items.map(item => ({
     ...item.toObject(),
     imageUrl: item.image ?
-      `https://jio-yatri-driver.onrender.com/api/shops/images/${item.image}` :
+      `https://jio-yatri-driver.onrender/api/shops/images/${item.image}` :
       null
   }));
 });
@@ -207,7 +208,7 @@ provisionSchema.virtual('itemsWithUrls').get(function () {
   return this.items.map(item => ({
     ...item.toObject(),
     imageUrl: item.image ?
-      `https://jio-yatri-driver.onrender.com/api/shops/images/${item.image}` :
+      `https://jio-yatri-driver.onrender/api/shops/images/${item.image}` :
       null
   }));
 });
@@ -231,7 +232,7 @@ medicalSchema.virtual('itemsWithUrls').get(function () {
   return this.items.map(item => ({
     ...item.toObject(),
     imageUrl: item.image ?
-      `https://jio-yatri-driver.onrender.com/api/shops/images/${item.image}` :
+      `https://jio-yatri-driver.onrender/api/shops/images/${item.image}` :
       null
   }));
 });
@@ -311,9 +312,46 @@ hotelSchema.virtual('itemsWithUrls').get(function () {
   if (!this.items) return [];
   return this.items.map(item => ({
     ...item.toObject(),
-    imageUrl: `https://jio-yatri-driver.onrender.com/api/shops/images/${item.image}`
+    imageUrl: `https://jio-yatri-driver.onrender/api/shops/images/${item.image}`
   }));
 });
+
+const bakerySchema = new mongoose.Schema({
+  items: [{
+    name: { type: String, required: [true, 'Item name is required'], trim: true },
+    price: { type: Number, required: [true, 'Price is required'], min: [1, 'Price must be at least 1'] },
+    veg: { type: Boolean, default: true },
+    image: { type: mongoose.Schema.Types.ObjectId, required: [true, 'Image is required for each item'] },
+    available: { type: Boolean, default: true }
+  }]
+}, { toJSON: { virtuals: true }, toObject: { virtuals: true }});
+
+bakerySchema.virtual('itemsWithUrls').get(function () {
+  const base = 'https://jio-yatri-driver.onrender';
+  return (this.items || []).map(item => ({
+    ...item.toObject(),
+    imageUrl: `${base}/api/shops/images/${item.image}`
+  }));
+});
+
+// Cafe (same as hotel, but NO description, NO spiceLevel)
+const cafeSchema = new mongoose.Schema({
+  items: [{
+    name: { type: String, required: [true, 'Item name is required'], trim: true },
+    price: { type: Number, required: [true, 'Price is required'], min: [1, 'Price must be at least 1'] },
+    image: { type: mongoose.Schema.Types.ObjectId, required: [true, 'Image is required for each item'] },
+    available: { type: Boolean, default: true }
+  }]
+}, { toJSON: { virtuals: true }, toObject: { virtuals: true }});
+
+cafeSchema.virtual('itemsWithUrls').get(function () {
+  const base = 'https://jio-yatri-driver.onrender';
+  return (this.items || []).map(item => ({
+    ...item.toObject(),
+    imageUrl: `${base}/api/shops/images/${item.image}`
+  }));
+});
+
 
 // 4. Register discriminators
 Shop.discriminator('grocery', grocerySchema);
@@ -321,5 +359,7 @@ Shop.discriminator('vegetable', vegetableSchema);
 Shop.discriminator('provision', provisionSchema);
 Shop.discriminator('medical', medicalSchema);
 Shop.discriminator('hotel', hotelSchema);
+Shop.discriminator('bakery', bakerySchema); // 👈 added
+Shop.discriminator('cafe', cafeSchema);
 
 module.exports = Shop;

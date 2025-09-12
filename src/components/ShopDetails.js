@@ -394,25 +394,30 @@
 // export default ShopDetails;
 
 // src/components/ShopDetails.jsx
+// src/pages/ShopDetails.jsx
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   FaStar, FaClock, FaMapMarkerAlt, FaChevronLeft,
   FaChevronRight, FaPhone, FaWhatsapp, FaUtensils,
-  FaStore, FaCarrot, FaBoxes, FaMedkit, FaFire
+  FaStore, FaCarrot, FaBoxes, FaMedkit, FaFire,
+  FaBreadSlice, FaCoffee
 } from "react-icons/fa";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import "../styles/ShopDetails.css";
 import { useCart } from "../context/CartContext";
+import { useAuth } from "../context/AuthContext";
 
 const categoryIcons = {
   hotel: <FaUtensils />,
   grocery: <FaStore />,
   vegetable: <FaCarrot />,
   provision: <FaBoxes />,
-  medical: <FaMedkit />
+  medical: <FaMedkit />,
+  bakery: <FaBreadSlice />,
+  cafe: <FaCoffee />
 };
 
 const ShopDetails = () => {
@@ -427,7 +432,10 @@ const ShopDetails = () => {
   const [filter, setFilter] = useState("all");
   const [vegFilter, setVegFilter] = useState("all");
 
-  // Cart
+  // auth (to show owner actions)
+  const { user } = useAuth();
+
+  // Cart (kept as in your codebase)
   const { addItem, cart } = useCart();
   const shopCartItems = shop ? (cart?.[shop._id]?.items || []) : [];
   const cartCount = shopCartItems.reduce((s, it) => s + (it.quantity || 0), 0);
@@ -444,7 +452,7 @@ const ShopDetails = () => {
     const fetchShop = async () => {
       try {
         const res = await axios.get(
-          `https://jio-yatri-driver.onrender.com/api/shops/${id}`
+          `https://jio-yatri-driver.onrender/api/shops/${id}`
         );
         setShop(res.data.data);
       } catch (err) {
@@ -474,52 +482,45 @@ const ShopDetails = () => {
   };
 
   const openWhatsApp = (phone, shopName) => {
-  if (!phone) {
-    alert("Phone number is missing");
-    return;
-  }
-
-  const rawPhone = phone.replace(/\D/g, "");
-  const phoneNumber = rawPhone.startsWith("91") ? rawPhone : "91" + rawPhone;
-  const message = encodeURIComponent(
-    `Hi, I found your business "${shopName}" on JioYatri.`
-  );
-
-  // Detect WebView
-  const isInWebView =
-    navigator.userAgent.includes("wv") || // Android WebView
-    window.ReactNativeWebView !== undefined; // React Native WebView
-
-  if (isInWebView) {
-    // ✅ In WebView → use deep link to open WhatsApp app
-    window.location.href = `whatsapp://send?phone=${phoneNumber}&text=${message}`;
-  } else {
-    // ✅ In normal browser → use wa.me (mobile) or web.whatsapp.com (desktop)
+    if (!phone) {
+      alert("Phone number is missing");
+      return;
+    }
+    const rawPhone = phone.replace(/\D/g, "");
+    const phoneNumber = rawPhone.startsWith("91") ? rawPhone : "91" + rawPhone;
+    const message = encodeURIComponent(
+      `Hi, I found your business "${shopName}" on JioYatri.`
+    );
     const isMobile = /Android|iPhone|iPad|iPod|Windows Phone/i.test(
       navigator.userAgent
     );
-
     const url = isMobile
       ? `https://wa.me/${phoneNumber}?text=${message}`
       : `https://web.whatsapp.com/send?phone=${phoneNumber}&text=${message}`;
-
     window.open(url, "_blank");
-  }
-};
+  };
 
-
+  // Apply filters intelligently:
+  // - Category filter applies only for hotel (because only hotel items have category like breakfast/lunch…)
+  // - Veg/Non-veg applies for hotel & bakery (cafe doesn't have veg flag)
   const filteredItems = () => {
     if (!shop?.itemsWithUrls?.length && !shop?.items?.length) return [];
     const items = shop.itemsWithUrls || shop.items;
 
+    const supportsVeg = ["hotel", "bakery"].includes(shop.category);
+    const isHotel = shop.category === "hotel";
+
     return items.filter((item) => {
       const categoryMatch =
+        !isHotel || // non-hotel: ignore category filter
         filter === "all" ||
         (item.category && item.category.toLowerCase() === filter);
-      const vegMatch =
-        vegFilter === "all" ||
-        (vegFilter === "veg" && item.veg) ||
-        (vegFilter === "nonveg" && !item.veg);
+
+      let vegMatch = true;
+      if (vegFilter !== "all" && supportsVeg) {
+        if (vegFilter === "veg") vegMatch = item.veg === true;
+        if (vegFilter === "nonveg") vegMatch = item.veg === false;
+      }
       return categoryMatch && vegMatch;
     });
   };
@@ -554,6 +555,8 @@ const ShopDetails = () => {
       </div>
     );
   }
+
+  const isOwner = user && String(user.uid) === String(shop.userId);
 
   return (
     <>
@@ -600,8 +603,7 @@ const ShopDetails = () => {
               <div className="sd-thumbnail-container">
                 {shop.shopImageUrls.map((img, index) => (
                   <div
-                    className={`sd-thumbnail ${index === currentImageIndex ? "sd-active" : ""
-                      }`}
+                    className={`sd-thumbnail ${index === currentImageIndex ? "sd-active" : ""}`}
                     key={index}
                     onClick={() => handleThumbnailClick(index)}
                   >
@@ -636,14 +638,19 @@ const ShopDetails = () => {
                 </div>
               </div>
             </div>
+
             <div className="sd-action-container">
-              {/* <div className="sd-rating">
-                <FaStar className="sd-star-icon" />
-                <span>{shop.averageRating?.toFixed(1) || "4.5"}</span>
-                <span className="sd-rating-count">
-                  ({shop.ratingCount || "0"} ratings)
-                </span>
-              </div> */}
+              {/* Owner-only Add/Edit button */}
+              {isOwner && (
+                <button
+                  className="sd-manage-menu-btn"
+                  onClick={() => navigate(`/shop/${shop._id}/menu`)}
+                  title="Add or edit items"
+                >
+                  + Add / Edit Items
+                </button>
+              )}
+
               <div className="sd-contact-actions">
                 {showPhone ? (
                   <a href={`tel:${shop.phone}`} className="sd-call-btn">
@@ -667,26 +674,28 @@ const ShopDetails = () => {
           {/* Products Section */}
           <div className="sd-products-section">
             <h2 className="sd-section-title">
-              {shop.category === "hotel" ? "Menu Items" : "Products"}
+              {["hotel", "bakery", "cafe"].includes(shop.category) ? "Menu Items" : "Products"}
             </h2>
 
-            {/* Filters for Hotel/Food Items */}
-            {shop.category === "hotel" && (
+            {/* Filters: full (category + veg) for hotel; veg-only for bakery */}
+            {["hotel", "bakery"].includes(shop.category) && (
               <div className="sd-filters-container">
-                <div className="sd-filter-group">
-                  <h4>Category:</h4>
-                  <div className="sd-filter-buttons">
-                    {["all", "breakfast", "lunch", "dinner", "snacks"].map((c) => (
-                      <button
-                        key={c}
-                        className={filter === c ? "active" : ""}
-                        onClick={() => setFilter(c)}
-                      >
-                        {c.charAt(0).toUpperCase() + c.slice(1)}
-                      </button>
-                    ))}
+                {shop.category === "hotel" && (
+                  <div className="sd-filter-group">
+                    <h4>Category:</h4>
+                    <div className="sd-filter-buttons">
+                      {["all", "breakfast", "lunch", "dinner", "snacks"].map((c) => (
+                        <button
+                          key={c}
+                          className={filter === c ? "active" : ""}
+                          onClick={() => setFilter(c)}
+                        >
+                          {c.charAt(0).toUpperCase() + c.slice(1)}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
 
                 <div className="sd-filter-group">
                   <h4>Type:</h4>
@@ -726,16 +735,17 @@ const ShopDetails = () => {
                         />
                       ) : (
                         <div className="sd-product-image-placeholder">
-                          {shop.category === "hotel" ? (
-                            <FaUtensils className="sd-placeholder-icon" />
-                          ) : (
+                          {shop.category === "hotel" && <FaUtensils className="sd-placeholder-icon" />}
+                          {shop.category === "bakery" && <FaBreadSlice className="sd-placeholder-icon" />}
+                          {shop.category === "cafe" && <FaCoffee className="sd-placeholder-icon" />}
+                          {["grocery", "vegetable", "provision", "medical"].includes(shop.category) && (
                             <FaBoxes className="sd-placeholder-icon" />
                           )}
                         </div>
                       )}
 
-                      {/* Veg/Non-Veg Badge */}
-                      {shop.category === "hotel" && (
+                      {/* Veg/Non-Veg badge for hotel & bakery only */}
+                      {["hotel", "bakery"].includes(shop.category) && typeof item.veg === "boolean" && (
                         <div className={`sd-veg-badge ${item.veg ? "veg" : "nonveg"}`}>
                           {item.veg ? "Veg" : "Non-Veg"}
                         </div>
@@ -748,13 +758,14 @@ const ShopDetails = () => {
                         <p className="sd-product-price">₹{item.price}</p>
                       </div>
 
-                      {/* Food Category */}
+                      {/* Category label only for hotel menu items */}
                       {shop.category === "hotel" && item.category && (
                         <p className="sd-food-category">
                           {item.category.charAt(0).toUpperCase() + item.category.slice(1)}
                         </p>
                       )}
-                      {/* Provision items meta */}
+
+                      {/* Provision meta */}
                       {shop.category === "provision" && (item.brand || item.weight) && (
                         <div className="sd-provision-meta">
                           {item.brand && (
@@ -770,12 +781,11 @@ const ShopDetails = () => {
                         </div>
                       )}
 
-
                       {item.description && (
                         <p className="sd-product-desc">{item.description}</p>
                       )}
 
-                      {/* Tags Section */}
+                      {/* Tags */}
                       <div className="sd-product-tags">
                         {item.organic && (
                           <span className="sd-product-tag organic">Organic</span>
@@ -791,61 +801,20 @@ const ShopDetails = () => {
                           </span>
                         )}
                       </div>
-
-                      {/* ✅ Add to Cart */}
-                      {/* <div className="sd-card-actions">
-                        <button
-                          className="sd-add-btn"
-                          onClick={() => {
-                            addItem(
-                              {
-                                _id: shop._id,
-                                shopName: shop.shopName,
-                                category: shop.category,
-                                phone: shop.phone,
-                                phonePeNumber: shop.phonePeNumber,
-                              },
-                              {
-                                itemId: item._id || item.id,
-                                name: item.name,
-                                price: Number(item.price) || 0,
-                                imageUrl: item.imageUrl || null,
-                                veg:
-                                  typeof item.veg === "boolean" ? item.veg : null,
-                                category: item.category || null,
-                              }
-                            );
-                          }}
-                        >
-                          + Add
-                        </button>
-                      </div> */}
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
               <p className="sd-no-products">
-                {shop.category === "hotel"
+                {["hotel", "bakery"].includes(shop.category)
                   ? "No menu items match your filters"
                   : "No products available"}
               </p>
             )}
           </div>
         </div>
-
-        {/* ✅ Floating Cart Button */}
-        {/* <button
-          className="sd-cart-fab"
-          onClick={() => navigate(`/cart/${shop._id}`, { state: { shop } })}
-          aria-label="View Cart"
-          title="View Cart"
-        >
-          🛒
-          {cartCount > 0 && <span className="sd-cart-badge">{cartCount}</span>}
-        </button> */}
       </div>
-
       <Footer />
     </>
   );

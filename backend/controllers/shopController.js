@@ -19,34 +19,176 @@ const initGridFS = () => {
 };
 const gfsPromise = initGridFS();
 
+// const uploadFiles = async (files) => {
+//   return await Promise.all(
+//     files.map(file => {
+//       return new Promise((resolve, reject) => {
+//         const uploadStream = gfs.openUploadStream(file.originalname);
+//         uploadStream.end(file.buffer);
+//         uploadStream.on('finish', () => resolve(uploadStream.id));
+//         uploadStream.on('error', reject);
+//       });
+//     })
+//   );
+// };
+
 const uploadFiles = async (files) => {
-  return await Promise.all(
-    files.map(file => {
-      return new Promise((resolve, reject) => {
-        const uploadStream = gfs.openUploadStream(file.originalname);
-        uploadStream.end(file.buffer);
-        uploadStream.on('finish', () => resolve(uploadStream.id));
-        uploadStream.on('error', reject);
-      });
-    })
-  );
+  return Promise.all(files.map(file => new Promise((resolve, reject) => {
+    const uploadStream = gfs.openUploadStream(file.originalname, {
+      contentType: file.mimetype,
+      metadata: {
+        uploadedAt: new Date(),
+        originalName: file.originalname,
+      }
+    });
+    uploadStream.on('finish', () => resolve(uploadStream.id));
+    uploadStream.on('error', reject);
+    uploadStream.end(file.buffer);
+  })));
 };
+
+
+// exports.registerShop = async (req, res) => {
+//   try {
+//     await gfsPromise;
+//     const { category, ...shopData } = req.body;
+//     if (!category || !['grocery', 'vegetable', 'provision', 'medical', 'hotel'].includes(category)) {
+//       return res.status(400).json({ success: false, error: 'Valid category is required' });
+//     }
+
+//     const referralCode = (shopData.referralCode || '').toString().trim().toUpperCase();
+//     delete shopData.referralCode; // prevent overriding this shop's own referralCode
+
+//     // Handle shop images upload
+//     let shopImageIds = [];
+//     if (req.files['shopImages']) {
+//       shopImageIds = await uploadFiles(req.files['shopImages']);
+//     }
+
+//     // Handle items for ALL categories (including hotel)
+//     let items = [];
+//     if (req.body.items) {
+//       items = JSON.parse(req.body.items);
+
+//       // Process item images
+//       if (req.files['itemImages']) {
+//         const itemImages = req.files['itemImages'];
+//         for (let i = 0; i < items.length && i < itemImages.length; i++) {
+//           const fileId = await new Promise((resolve, reject) => {
+//             const uploadStream = gfs.openUploadStream(itemImages[i].originalname);
+//             uploadStream.end(itemImages[i].buffer);
+//             uploadStream.on('finish', () => resolve(uploadStream.id));
+//             uploadStream.on('error', reject);
+//           });
+//           items[i].image = fileId;
+//         }
+//       }
+
+//       // Validate required fields for hotel items
+//       if (category === 'hotel') {
+//         for (const item of items) {
+//           if (!item.image) {
+//             return res.status(400).json({
+//               success: false,
+//               error: 'Image is required for each food item'
+//             });
+//           }
+//         }
+//       }
+//     }
+
+//     const parsedAddress = typeof shopData.address === 'string'
+//       ? JSON.parse(shopData.address)
+//       : shopData.address;
+
+//     // Create the shop document
+//     const newShop = new Shop({
+//       ...shopData,
+//       address: parsedAddress,
+//       category,
+//       shopImages: shopImageIds,
+//       items // Include items for ALL categories
+//     });
+
+//     await newShop.save();
+
+//     await User.updateOne(
+//       { userId: shopData.userId },
+//       { $set: { role: 'business', isRegistered: true, phone: shopData.phone } },
+//       { upsert: true });
+
+
+//     if (referralCode) {
+//       try {
+//         const referrer = await Shop.findOne({ referralCode }).select('_id userId shopName referralCode');
+//         if (referrer && String(referrer.userId) !== String(newShop.userId)) {
+//           const reward = {
+//             amount: 20,
+//             description: `Referred shop ${newShop.shopName} (${newShop._id})`,
+//             referredShopId: String(newShop._id)
+//           };
+
+//           await Shop.updateOne(
+//             { _id: referrer._id },
+//             {
+//               $push: { referralRewards: reward },
+//               $inc: { totalReferrals: 1, referralEarnings: reward.amount }
+//             }
+//           );
+
+//           // store who referred this new shop
+//           await Shop.updateOne(
+//             { _id: newShop._id },
+//             { $set: { referredBy: referralCode } }
+//           );
+//         }
+//         // invalid/self referral => no credit, no block
+//       } catch (refErr) {
+//         console.error('[Shop Referral] credit error:', refErr);
+//         // do not fail registration for referral issues
+//       }
+//     }
+
+//     res.status(201).json({
+//       success: true,
+//       data: newShop
+//     });
+//   } catch (error) {
+//     res.status(400).json({
+//       success: false,
+//       error: error.message
+//     });
+//   }
+// };
 
 exports.registerShop = async (req, res) => {
   try {
     await gfsPromise;
+
     const { category, ...shopData } = req.body;
-    if (!category || !['grocery', 'vegetable', 'provision', 'medical', 'hotel'].includes(category)) {
+    if (!category || !['grocery', 'vegetable', 'provision', 'medical', 'hotel', 'bakery', 'cafe'].includes(category)) {
       return res.status(400).json({ success: false, error: 'Valid category is required' });
     }
 
     const referralCode = (shopData.referralCode || '').toString().trim().toUpperCase();
     delete shopData.referralCode; // prevent overriding this shop's own referralCode
 
-    // Handle shop images upload
+    // Handle shop images upload (via uploadFiles)
     let shopImageIds = [];
-    if (req.files['shopImages']) {
+    if (req.files && req.files['shopImages']) {
       shopImageIds = await uploadFiles(req.files['shopImages']);
+    }
+
+    // KYC: Aadhaar & PAN (optional) — also via uploadFiles
+    let aadhaarId = null;
+    let panId = null;
+    if (req.files && req.files['aadhaar'] && req.files['aadhaar'].length) {
+      const [id] = await uploadFiles(req.files['aadhaar']); // maxCount:1
+      aadhaarId = id;
+    }
+    if (req.files && req.files['pan'] && req.files['pan'].length) {
+      const [id] = await uploadFiles(req.files['pan']); // maxCount:1
+      panId = id;
     }
 
     // Handle items for ALL categories (including hotel)
@@ -54,21 +196,15 @@ exports.registerShop = async (req, res) => {
     if (req.body.items) {
       items = JSON.parse(req.body.items);
 
-      // Process item images
-      if (req.files['itemImages']) {
-        const itemImages = req.files['itemImages'];
-        for (let i = 0; i < items.length && i < itemImages.length; i++) {
-          const fileId = await new Promise((resolve, reject) => {
-            const uploadStream = gfs.openUploadStream(itemImages[i].originalname);
-            uploadStream.end(itemImages[i].buffer);
-            uploadStream.on('finish', () => resolve(uploadStream.id));
-            uploadStream.on('error', reject);
-          });
-          items[i].image = fileId;
+      // Process item images (use uploadFiles helper)
+      if (req.files && req.files['itemImages']) {
+        const uploadedIds = await uploadFiles(req.files['itemImages']);
+        for (let i = 0; i < items.length && i < uploadedIds.length; i++) {
+          items[i].image = uploadedIds[i];
         }
       }
 
-      // Validate required fields for hotel items
+      // Validate required fields for hotel items (image required)
       if (category === 'hotel') {
         for (const item of items) {
           if (!item.image) {
@@ -96,19 +232,30 @@ exports.registerShop = async (req, res) => {
 
     await newShop.save();
 
-   await User.updateOne(
+    // Basic user flags
+  await User.updateOne(
       { userId: shopData.userId },
-      {
-        $set: {
-          role: 'business',
-          businessRegistered: true,   // 👈 new flag
-          phone: shopData.phone
+      { $set: { role: 'business', isRegistered: true, phone: shopData.phone } },
+      { upsert: true });
+
+
+    // If any KYC doc was provided, store its IDs on the user
+    if (aadhaarId || panId) {
+      await User.updateOne(
+        { userId: shopData.userId },
+        {
+          $set: {
+            hasKyc: true,
+            'kyc.aadhaarFile': aadhaarId || null,
+            'kyc.panFile': panId || null,
+            'kyc.status': 'submitted',
+            'kyc.submittedAt': new Date()
+          }
         }
-      },
-      { upsert: true }
-    );
+      );
+    }
 
-
+    // Referral credit (unchanged)
     if (referralCode) {
       try {
         const referrer = await Shop.findOne({ referralCode }).select('_id userId shopName referralCode');
@@ -152,11 +299,6 @@ exports.registerShop = async (req, res) => {
   }
 };
 
-// Initialize GridFS connection
-
-// Shop registration controller
-
-
 // Get shops by category
 exports.getShopsByCategory = async (req, res) => {
   try {
@@ -166,7 +308,7 @@ exports.getShopsByCategory = async (req, res) => {
     const shops = await Shop.find({ category }).sort({ createdAt: -1 }).lean();
 
     // Generate image URLs
-    const baseUrl = 'https://jio-yatri-driver.onrender.com';
+    const baseUrl = 'https://jio-yatri-driver.onrender';
     const shopsWithUrls = shops.map(shop => ({
       ...shop,
       shopImageUrls: shop.shopImages?.map(imgId =>
@@ -207,7 +349,7 @@ exports.getShopById = async (req, res) => {
     }
 
     // Generate image URLs
-    const baseUrl = 'https://jio-yatri-driver.onrender.com';
+    const baseUrl = 'https://jio-yatri-driver.onrender';
     const response = {
       ...shop,
       shopImageUrls: shop.shopImages?.map(imgId =>
@@ -359,7 +501,11 @@ exports.updateShop = async (req, res) => {
           if (it.description) out.description = String(it.description);
           if (it.spiceLevel) out.spiceLevel = String(it.spiceLevel);
           break;
-
+        case 'bakery':
+          out.veg = toBool(it.veg);
+          break;
+        case 'cafe':
+          break;
         case 'grocery':
           if (it.description) out.description = String(it.description);
           break;
@@ -399,7 +545,7 @@ exports.updateShop = async (req, res) => {
 
     const saved = await shop.save();
 
-    const baseUrl = 'https://jio-yatri-driver.onrender.com';
+    const baseUrl = 'https://jio-yatri-driver.onrender';
     const data = {
       ...saved.toObject(),
       shopImageUrls: (saved.shopImages || []).map(id => `${baseUrl}/api/shops/images/${id}`),
@@ -479,18 +625,18 @@ exports.getShopsByCategory = async (req, res) => {
     const shopsWithUrls = shops.map(shop => ({
       ...shop,
       shopImageUrls: shop.shopImages?.map(imgId =>
-        `https://jio-yatri-driver.onrender.com/api/shops/images/${imgId}`
+        `https://jio-yatri-driver.onrender/api/shops/images/${imgId}`
       ) || [],
       items: shop.items?.map(item => ({
         ...item,
         imageUrl: item.image ?
-          `https://jio-yatri-driver.onrender.com/api/shops/images/${item.image}` :
+          `https://jio-yatri-driver.onrender/api/shops/images/${item.image}` :
           null
       })) || [],
       rooms: shop.rooms?.map(room => ({
         ...room,
         imageUrls: room.images?.map(imgId =>
-          `https://jio-yatri-driver.onrender.com/api/shops/images/${imgId}`
+          `https://jio-yatri-driver.onrender/api/shops/images/${imgId}`
         ) || []
       })) || []
     }));
@@ -512,12 +658,12 @@ exports.getShopById = async (req, res) => {
     const response = {
       ...shop,
       shopImageUrls: shop.shopImages?.map(imgId =>
-        `https://jio-yatri-driver.onrender.com/api/shops/images/${imgId}`
+        `https://jio-yatri-driver.onrender/api/shops/images/${imgId}`
       ) || [],
       items: shop.items?.map(item => ({
         ...item,
         imageUrl: item.image ?
-          `https://jio-yatri-driver.onrender.com/api/shops/images/${item.image}` :
+          `https://jio-yatri-driver.onrender/api/shops/images/${item.image}` :
           null
       })) || []
     };
@@ -755,7 +901,7 @@ exports.getShopsByOwner = async (req, res) => {
     const { ownerId } = req.params;
     const shops = await Shop.find({ userId: ownerId }).sort({ createdAt: -1 }).lean();
 
-    const baseUrl = 'https://jio-yatri-driver.onrender.com';
+    const baseUrl = 'https://jio-yatri-driver.onrender';
     const shopsWithUrls = shops.map(shop => ({
       ...shop,
       shopImageUrls: shop.shopImages?.map(imgId =>
@@ -832,7 +978,7 @@ exports.getShopReferralCode = async (req, res) => {
       await shop.save();
     }
 
-    const shareLink = `https://play.google.com/store/apps/details?id=com.matspl.jioyatripartner&shop_ref=${shop.referralCode}`;
+    const shareLink = `https://play.google.com/store/apps/details?id=com.matspl.jioyatripartner?shop_ref=${shop.referralCode}`;
 
     return res.json({
       success: true,

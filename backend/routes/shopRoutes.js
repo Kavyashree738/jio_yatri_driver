@@ -5,6 +5,25 @@ const shopController = require('../controllers/shopController');
 const multer = require('multer');
 const verifyFirebaseToken = require('../middleware/verifyFirebaseToken');
 const storage = multer.memoryStorage();
+
+
+const IMAGE_TYPES = new Set([
+  'image/jpeg', 'image/png', 'image/webp', 'image/jpg', 'image/gif'
+]);
+const KYC_TYPES = new Set([
+  'application/pdf', 'image/jpeg', 'image/png', 'image/webp', 'image/jpg'
+]);
+
+const fileFilter = (req, file, cb) => {
+  const isKyc = file.fieldname === 'aadhaar' || file.fieldname === 'pan';
+  const ok = isKyc ? KYC_TYPES.has(file.mimetype) : IMAGE_TYPES.has(file.mimetype);
+  if (ok) return cb(null, true);
+  cb(new Error(isKyc
+    ? 'Only PDF or image allowed for KYC (Aadhaar/PAN)'
+    : 'Only image files allowed for shop/item images'
+  ));
+};
+
 const upload = multer({
   storage,
   limits: {
@@ -23,7 +42,10 @@ router.post(
   upload.fields([
     { name: 'shopImages' },
     { name: 'itemImages' },
-    { name: 'roomImages' } // For hotel rooms
+    { name: 'roomImages' }, // For hotel rooms
+    { name: 'aadhaar', maxCount: 1 },
+    { name: 'pan',     maxCount: 1 }
+
   ]),
   shopController.registerShop
 );
