@@ -149,7 +149,7 @@ exports.createOrder = async (req, res) => {
       }
       const qty = Math.max(1, Number(cartItem.quantity || 1));
       const price = Number(itemFromDb.price) || 0;
-      const baseUrl = process.env.API_BASE_URL || 'http://localhost:5000';
+      const baseUrl = 'https://jio-yatri-driver.onrender.com';
       const imageUrl = itemFromDb.image ? `${baseUrl}/api/shops/images/${itemFromDb.image}` : null;
 
       normalized.push({
