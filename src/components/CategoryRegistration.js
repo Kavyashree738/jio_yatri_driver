@@ -536,14 +536,15 @@ const CategoryRegistration = () => {
                                         Shop Name <span className="hr-required">*</span>
                                     </label>
                                     <input
-                                        type="text"
-                                        name="shopName"
-                                        value={formData.shopName}
-                                        onChange={handleInputChange}
-                                        placeholder="Enter shop name"
-                                        className="hr-input"
-                                        required
-                                    />
+  type="text"
+  name="shopName"
+  value={formData.shopName}
+  onChange={handleInputChange}
+  placeholder="Enter shop name"
+  className="hr-input"
+  required={activeSection === 'basic'}   // ✅ only required in Basic step
+/>
+
                                 </div>
 
                                 <div className="hr-form-group">
@@ -568,32 +569,32 @@ const CategoryRegistration = () => {
                                         <FaWallet className="hr-input-icon" />
                                         PhonePe Number <span className="hr-required">*</span>
                                     </label>
-                                    <input
-                                        type="tel"
-                                        name="phonePeNumber"
-                                        value={formData.phonePeNumber}
-                                        onChange={handleInputChange}
-                                        placeholder="10-digit PhonePe number"
-                                        className="hr-input"
-                                        pattern="[0-9]{10}"
-                                        required
-                                    />
+                                   <input
+  type="tel"
+  name="phone"
+  value={formData.phone}
+  onChange={handleInputChange}
+  placeholder="10-digit phone number"
+  className="hr-input"
+  pattern="[0-9]{10}"
+  required={activeSection === 'basic'}   // ✅ only required when on Basic step
+/>
+
                                 </div>
                                 <div className="hr-form-group">
                                     <label className="hr-label">
                                         <FaWallet className="hr-input-icon" />
                                         UPI ID  <span className="hr-required">*</span>
                                     </label>
-                                    <input
-                                        type="text"
-                                        name="upiId"
-                                        value={formData.upiId}
-                                        onChange={handleInputChange}
-                                        placeholder="e.g., 9876543210@ybl"
-                                        className="hr-input"
-                                        required
-
-                                    />
+                                  <input
+  type="text"
+  name="upiId"
+  value={formData.upiId}
+  onChange={handleInputChange}
+  placeholder="e.g., 9876543210@ybl"
+  className="hr-input"
+  required={activeSection === 'basic'}   // ✅ only when Basic step is active
+/>
                                     {/* <small className="hr-hint">This is your UPI ID (like <code>name@bank</code>), not your phone number.</small> */}
                                 </div>
 
@@ -619,13 +620,13 @@ const CategoryRegistration = () => {
                                         Opening Time <span className="hr-required">*</span>
                                     </label>
                                     <input
-                                        type="time"
-                                        name="openingTime"
-                                        value={formData.openingTime}
-                                        onChange={handleInputChange}
-                                        className="hr-time-input"
-                                        required
-                                    />
+  type="time"
+  name="openingTime"
+  value={formData.openingTime}
+  onChange={handleInputChange}
+  className="hr-time-input"
+  required={activeSection === 'basic'}   // ✅ only when Basic step is active
+/>
                                 </div>
 
                                 <div className="hr-form-group hr-time-group">
@@ -633,14 +634,14 @@ const CategoryRegistration = () => {
                                         <FaClock className="hr-input-icon" />
                                         Closing Time <span className="hr-required">*</span>
                                     </label>
-                                    <input
-                                        type="time"
-                                        name="closingTime"
-                                        value={formData.closingTime}
-                                        onChange={handleInputChange}
-                                        className="hr-time-input"
-                                        required
-                                    />
+                                  <input
+  type="time"
+  name="closingTime"
+  value={formData.closingTime}
+  onChange={handleInputChange}
+  className="hr-time-input"
+  required={activeSection === 'basic'}   // ✅ only when Basic step is active
+/>
                                 </div>
                             </div>
 
@@ -740,25 +741,30 @@ const CategoryRegistration = () => {
                                         <div className="hr-form-group">
                                             <label className="hr-label">Name</label>
                                             <input
-                                                type="text"
-                                                value={item.name}
-                                                onChange={(e) => handleItemChange(index, 'name', e.target.value)}
-                                                className="hr-input"
-                                                required
-                                            />
+  type="text"
+  name={`item-name-${index}`}             // ✅ unique name
+  value={item.name}
+  onChange={(e) => handleItemChange(index, 'name', e.target.value)}
+  className="hr-input"
+  required={activeSection === 'items'}    // ✅ only when Items step is active
+/>
+
+
                                         </div>
 
                                         {/* Price */}
                                         <div className="hr-form-group">
                                             <label className="hr-label">Price (₹)</label>
-                                            <input
-                                                type="number"
-                                                min={['hotel', 'bakery', 'cafe'].includes(selectedCategory) ? 1 : 0}
-                                                value={item.price}
-                                                onChange={(e) => handleItemChange(index, 'price', e.target.value)}
-                                                className="hr-input"
-                                                required
-                                            />
+                                           <input
+  type="number"
+  name={`item-price-${index}`}                // ✅ give it a name
+  min={['hotel', 'bakery', 'cafe'].includes(selectedCategory) ? 1 : 0}
+  value={item.price}
+  onChange={(e) => handleItemChange(index, 'price', e.target.value)}
+  className="hr-input"
+  required={activeSection === 'items'}        // ✅ only required in Items step
+/>
+
                                         </div>
 
                                         {/* Dynamic per-category fields */}
@@ -782,11 +788,13 @@ const CategoryRegistration = () => {
 
                                                 {f.type === 'select' && (
                                                     <select
-                                                        value={item[f.key] ?? f.options?.[0]}
-                                                        onChange={(e) => handleItemChange(index, f.key, e.target.value)}
-                                                        className="hr-select"
-                                                        required
-                                                    >
+  name={`${f.key}-${index}`}              // ✅ add unique name
+  value={item[f.key] ?? f.options?.[0]}
+  onChange={(e) => handleItemChange(index, f.key, e.target.value)}
+  className="hr-select"
+  required={activeSection === 'items'}    // ✅ only required in Items step
+>
+
                                                         {f.options?.map((opt) => (
                                                             <option key={opt} value={opt}>
                                                                 {opt[0].toUpperCase() + opt.slice(1)}
@@ -797,12 +805,14 @@ const CategoryRegistration = () => {
 
                                                 {f.type === 'text' && (
                                                     <input
-                                                        type="text"
-                                                        value={item[f.key] || ''}
-                                                        onChange={(e) => handleItemChange(index, f.key, e.target.value)}
-                                                        className="hr-input"
-                                                        required
-                                                    />
+  type="text"
+  name={`${f.key}-${index}`}              // ✅ add this
+  value={item[f.key] || ''}
+  onChange={(e) => handleItemChange(index, f.key, e.target.value)}
+  className="hr-input"
+  required={activeSection === 'items'}    // ✅ conditional
+/>
+
                                                 )}
 
                                                 {f.type === 'textarea' && (
