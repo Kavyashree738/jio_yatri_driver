@@ -144,8 +144,10 @@ const sendToToken = async (token, { title, body, data = {} }) => {
     },
 
     // ✅ SHARED DATA (must be strings)
-    data: {
+     data: {
       ...dataStr,
+      title,   // 👈 now also added here
+      body,    // 👈 now also added here
       link: '/business-orders',
       click_action: 'FLUTTER_NOTIFICATION_CLICK',
     },
@@ -293,6 +295,7 @@ module.exports = {
   notifyNewShipment,
   notifyShopNewOrder, 
 };
+
 
 
 
