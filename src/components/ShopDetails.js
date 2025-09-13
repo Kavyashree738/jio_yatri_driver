@@ -766,7 +766,7 @@ const ShopDetails = () => {
                       )}
 
                       {/* Provision meta */}
-                      {shop.category === "provision" && (item.brand || item.weight) && (
+                      {["provision", "grocery"].includes(shop.category) && (item.brand || item.weight) && (
                         <div className="sd-provision-meta">
                           {item.brand && (
                             <span className="sd-provision-chip sd-provision-brand">
@@ -780,6 +780,7 @@ const ShopDetails = () => {
                           )}
                         </div>
                       )}
+
 
                       {item.description && (
                         <p className="sd-product-desc">{item.description}</p>

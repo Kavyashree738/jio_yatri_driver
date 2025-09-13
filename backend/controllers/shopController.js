@@ -233,7 +233,7 @@ exports.registerShop = async (req, res) => {
     await newShop.save();
 
     // Basic user flags
-  await User.updateOne(
+    await User.updateOne(
       { userId: shopData.userId },
       { $set: { role: 'business', isRegistered: true, phone: shopData.phone } },
       { upsert: true });
@@ -508,7 +508,10 @@ exports.updateShop = async (req, res) => {
           break;
         case 'grocery':
           if (it.description) out.description = String(it.description);
+          if (it.weight != null && it.weight !== '') out.weight = String(it.weight);  // ✅ add
+          if (it.brand != null && it.brand !== '') out.brand = String(it.brand);      // ✅ add
           break;
+
 
         case 'vegetable':
           if (it.organic !== undefined) out.organic = toBool(it.organic);

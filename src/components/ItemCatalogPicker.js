@@ -29,11 +29,13 @@ const FIELDS_BY_CATEGORY = {
     { key: 'price', label: 'Price (₹)', type: 'number', required: true, min: 1 },
     { key: 'available', label: 'Available', type: 'boolean', def: true },
   ],
-  grocery: [
-    { key: 'price', label: 'Price (₹)', type: 'number', required: true, min: 0 },
-    { key: 'description', label: 'Description', type: 'textarea' },
-    { key: 'available', label: 'Available', type: 'boolean', def: true },
-  ],
+grocery: [
+  { key: 'price', label: 'Price (₹)', type: 'number', required: true, min: 0 },
+  { key: 'description', label: 'Description', type: 'textarea' },
+  { key: 'weight', label: 'Weight (e.g., 1kg / 500g)', type: 'text' },  // ✅ add
+  { key: 'brand', label: 'Brand', type: 'text' },                      // ✅ add
+  { key: 'available', label: 'Available', type: 'boolean', def: true },
+],
   vegetable: [
     { key: 'price', label: 'Price (₹)', type: 'number', required: true, min: 0 },
     { key: 'organic', label: 'Organic', type: 'boolean', def: false },

@@ -22,9 +22,13 @@ const CATEGORY_CONFIG = {
         label: 'Groceries',
         color: '#4ECDC4',
         requireItemImage: false,
-        itemFields: [],
-        defaultItem: { description: '' },
+        itemFields: [
+            { key: 'weight', type: 'text', label: 'Weight (e.g., 1kg / 500g)' },
+            { key: 'brand', type: 'text', label: 'Brand' },
+        ],
+        defaultItem: { weight: '', brand: '', description: '' },
     },
+
     vegetable: {
         label: 'Vegetables',
         color: '#45B7D1',
@@ -158,7 +162,7 @@ const CategoryRegistration = () => {
     const [activeSection, setActiveSection] = useState('basic');
     const [progress, setProgress] = useState(25);
 
-    
+
 
     const { label: catLabel, requireItemImage, itemFields, defaultItem } =
         useMemo(() => (selectedCategory ? CATEGORY_CONFIG[selectedCategory] : {}), [selectedCategory]);
@@ -243,63 +247,63 @@ const CategoryRegistration = () => {
     };
 
     // Validation (price rule differs by category; image per item for hotel/bakery/cafe)
-const validateForm = () => {
-  let isValid = true;
-  let errorMessage = '';
-  
-  if (!selectedCategory) {
-    errorMessage = 'Please select a business category';
-    isValid = false;
-  } else if (!formData.shopName.trim()) {
-    errorMessage = 'Shop name is required';
-    isValid = false;
-  } else if (!/^[0-9]{10}$/.test(formData.phone || '')) {
-    errorMessage = 'Please enter a valid 10-digit phone number';
-    isValid = false;
-  } else if (!/^[0-9]{10}$/.test(formData.phonePeNumber || '')) {
-    errorMessage = 'Please enter a valid 10-digit PhonePe number';
-    isValid = false;
-  } else if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-    errorMessage = 'Please enter a valid email address';
-    isValid = false;
-  } else if (!vpaRegex.test(formData.upiId || '')) {
-    errorMessage = 'Please enter a valid UPI ID (e.g., name@bank)';
-    isValid = false;
-  } else if (!formData.address.address) {
-    errorMessage = 'Please select an address from the suggestions';
-    isValid = false;
-  } else if (!formData.openingTime || !formData.closingTime) {
-    errorMessage = 'Opening and closing times are required';
-    isValid = false;
-  } else if (!formData.items.length) {
-    errorMessage = 'Please add at least one item';
-    isValid = false;
-  } else {
-    const minPrice = ['hotel', 'bakery', 'cafe'].includes(selectedCategory) ? 1 : 0;
-    if (formData.items.some((it) => !it.name || it.price === '' || it.price === null || Number(it.price) < minPrice)) {
-      errorMessage = `Please fill all required fields for each item (name, price ≥ ${minPrice})`;
-      isValid = false;
-    } else if (requireItemImage && formData.items.some((it) => !it.image)) {
-      errorMessage = 'Please upload an image for each item';
-      isValid = false;
-    } else if (formData.items.some((it) => it.image instanceof File && it.image.size > 5 * 1024 * 1024)) {
-      errorMessage = 'Each item image must be 5MB or less';
-      isValid = false;
-    } else if (shopImages.some((f) => f.size > 5 * 1024 * 1024)) {
-      errorMessage = 'Each shop image must be 5MB or less';
-      isValid = false;
-    } else if (needKyc && (!aadhaarFile || !panFile)) {
-      errorMessage = 'Please upload both Aadhaar and PAN (PDF or image)';
-      isValid = false;
-    }
-  }
-  
-  if (errorMessage) {
-    setError(errorMessage);
-  }
-  
-  return isValid;
-};
+    const validateForm = () => {
+        let isValid = true;
+        let errorMessage = '';
+
+        if (!selectedCategory) {
+            errorMessage = 'Please select a business category';
+            isValid = false;
+        } else if (!formData.shopName.trim()) {
+            errorMessage = 'Shop name is required';
+            isValid = false;
+        } else if (!/^[0-9]{10}$/.test(formData.phone || '')) {
+            errorMessage = 'Please enter a valid 10-digit phone number';
+            isValid = false;
+        } else if (!/^[0-9]{10}$/.test(formData.phonePeNumber || '')) {
+            errorMessage = 'Please enter a valid 10-digit PhonePe number';
+            isValid = false;
+        } else if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+            errorMessage = 'Please enter a valid email address';
+            isValid = false;
+        } else if (!vpaRegex.test(formData.upiId || '')) {
+            errorMessage = 'Please enter a valid UPI ID (e.g., name@bank)';
+            isValid = false;
+        } else if (!formData.address.address) {
+            errorMessage = 'Please select an address from the suggestions';
+            isValid = false;
+        } else if (!formData.openingTime || !formData.closingTime) {
+            errorMessage = 'Opening and closing times are required';
+            isValid = false;
+        } else if (!formData.items.length) {
+            errorMessage = 'Please add at least one item';
+            isValid = false;
+        } else {
+            const minPrice = ['hotel', 'bakery', 'cafe'].includes(selectedCategory) ? 1 : 0;
+            if (formData.items.some((it) => !it.name || it.price === '' || it.price === null || Number(it.price) < minPrice)) {
+                errorMessage = `Please fill all required fields for each item (name, price ≥ ${minPrice})`;
+                isValid = false;
+            } else if (requireItemImage && formData.items.some((it) => !it.image)) {
+                errorMessage = 'Please upload an image for each item';
+                isValid = false;
+            } else if (formData.items.some((it) => it.image instanceof File && it.image.size > 5 * 1024 * 1024)) {
+                errorMessage = 'Each item image must be 5MB or less';
+                isValid = false;
+            } else if (shopImages.some((f) => f.size > 5 * 1024 * 1024)) {
+                errorMessage = 'Each shop image must be 5MB or less';
+                isValid = false;
+            } else if (needKyc && (!aadhaarFile || !panFile)) {
+                errorMessage = 'Please upload both Aadhaar and PAN (PDF or image)';
+                isValid = false;
+            }
+        }
+
+        if (errorMessage) {
+            setError(errorMessage);
+        }
+
+        return isValid;
+    };
 
 
     const [error, setError] = useState('');
@@ -588,7 +592,7 @@ const validateForm = () => {
                                         placeholder="e.g., 9876543210@ybl"
                                         className="hr-input"
                                         required
-                                        
+
                                     />
                                     {/* <small className="hr-hint">This is your UPI ID (like <code>name@bank</code>), not your phone number.</small> */}
                                 </div>
@@ -919,7 +923,7 @@ const validateForm = () => {
                                     <FaImages className="hr-input-icon" />
                                     Shop Images (up to 5)
                                 </label>
-                            
+
                                 <div className="hr-file-upload-container">
                                     <label className="hr-file-upload-label">
                                         <input
@@ -936,7 +940,7 @@ const validateForm = () => {
                                                 setShopImages(newImages);
                                             }}
                                         />
-                                
+
                                         <span className="hr-file-upload-text">
                                             {shopImages.length ? `${shopImages.length} file(s) selected` : 'No files selected'}
                                         </span>
@@ -1063,8 +1067,17 @@ const validateForm = () => {
                                                 {selectedCategory === 'hotel' && item.category && (
                                                     <span className="hr-item-category">({item.category})</span>
                                                 )}
+
+                                                {/* ✅ Show brand/weight for grocery + provision */}
+                                                {["grocery", "provision"].includes(selectedCategory) && (
+                                                    <span className="hr-item-meta">
+                                                        {item.brand && `Brand: ${item.brand}`}
+                                                        {item.weight && ` • ${item.weight}`}
+                                                    </span>
+                                                )}
                                             </div>
                                         ))}
+
                                         {formData.items.length > 3 && (
                                             <div className="hr-review-more-items">+ {formData.items.length - 3} more items</div>
                                         )}

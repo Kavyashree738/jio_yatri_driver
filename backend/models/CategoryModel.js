@@ -149,12 +149,15 @@ const grocerySchema = new mongoose.Schema({
     name: { type: String, required: true },
     price: { type: Number, required: true, min: 0 },
     description: { type: String },
-    image: { type: mongoose.Schema.Types.ObjectId } // Removed ref
+    weight: { type: String },  // ✅ add this
+    brand: { type: String },   // ✅ add this
+    image: { type: mongoose.Schema.Types.ObjectId }
   }]
 }, {
   toJSON: { virtuals: true },
   toObject: { virtuals: true }
 });
+
 
 grocerySchema.virtual('itemsWithUrls').get(function () {
   if (!this.items) return [];
