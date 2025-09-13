@@ -160,9 +160,7 @@ const CategoryRegistration = () => {
 
     const [shopImages, setShopImages] = useState([]);
     const [activeSection, setActiveSection] = useState('basic');
-    const [progress, setProgress] = useState(25);
-
-
+    const [progress, setProgress] = useState(0);
 
     const { label: catLabel, requireItemImage, itemFields, defaultItem } =
         useMemo(() => (selectedCategory ? CATEGORY_CONFIG[selectedCategory] : {}), [selectedCategory]);
@@ -187,19 +185,38 @@ const CategoryRegistration = () => {
         }));
     }, [selectedCategory, defaultItem]);
 
-    // progress
+    // progress calculation
     useEffect(() => {
         let completed = 0;
-        if (formData.shopName) completed += 10;
-        if (formData.phone) completed += 10;
-        if (formData.phonePeNumber) completed += 10;
-        if (formData.upiId) completed += 10;
-        if (formData.address.address) completed += 10;
+        
+        // Basic info (40%)
+        if (formData.shopName) completed += 8;
+        if (formData.phone) completed += 8;
+        if (formData.phonePeNumber) completed += 8;
+        if (formData.upiId) completed += 8;
+        if (formData.address.address) completed += 8;
+        
+        // Timing (10%)
         if (formData.openingTime && formData.closingTime) completed += 10;
-        if (formData.items.length > 0) completed += 30;
+        
+        // Items (30%)
+        if (formData.items.length > 0) {
+            completed += 10; // At least one item
+            
+            // Check if all items have required fields
+            const minPrice = ['hotel', 'bakery', 'cafe'].includes(selectedCategory) ? 1 : 0;
+            const allItemsValid = formData.items.every(item => 
+                item.name && item.price !== '' && Number(item.price) >= minPrice
+            );
+            
+            if (allItemsValid) completed += 20;
+        }
+        
+        // Images (20%)
         if (shopImages.length > 0) completed += 20;
+        
         setProgress(Math.min(100, completed));
-    }, [formData, shopImages]);
+    }, [formData, shopImages, selectedCategory]);
 
     const handleCategorySelect = (category) => {
         setSelectedCategory(category);
@@ -215,12 +232,14 @@ const CategoryRegistration = () => {
         const { name, value } = e.target;
         setFormData((prev) => ({ ...prev, [name]: value }));
     };
+    
     const handleAddressSelect = (addressData) => {
         setFormData((prev) => ({
             ...prev,
             address: { address: addressData.address, coordinates: addressData.coordinates },
         }));
     };
+    
     const handleItemChange = (index, field, value) => {
         setFormData((prev) => {
             const items = [...prev.items];
@@ -228,6 +247,7 @@ const CategoryRegistration = () => {
             return { ...prev, items };
         });
     };
+    
     const handleItemImageUpload = (index, file) => {
         setFormData((prev) => {
             const items = [...prev.items];
@@ -235,6 +255,7 @@ const CategoryRegistration = () => {
             return { ...prev, items };
         });
     };
+    
     const addItem = () => {
         if (!selectedCategory) return;
         setFormData((prev) => ({
@@ -242,6 +263,7 @@ const CategoryRegistration = () => {
             items: [...prev.items, { name: '', price: '', image: null, ...(defaultItem || {}) }],
         }));
     };
+    
     const removeItem = (index) => {
         setFormData((prev) => ({ ...prev, items: prev.items.filter((_, i) => i !== index) }));
     };
@@ -300,11 +322,12 @@ const CategoryRegistration = () => {
 
         if (errorMessage) {
             setError(errorMessage);
+            // Scroll to top to show error
+            window.scrollTo(0, 0);
         }
 
         return isValid;
     };
-
 
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
@@ -312,7 +335,9 @@ const CategoryRegistration = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setError(''); setSuccess('');
+        setError(''); 
+        setSuccess('');
+        
         if (!validateForm()) return;
         if (!user) return setError('You must be logged in to register');
 
@@ -354,7 +379,7 @@ const CategoryRegistration = () => {
             }
 
             const token = await user.getIdToken();
-            const apiBase = 'https://jio-yatri-driver.onrender';
+            const apiBase = 'https://jio-yatri-driver.onrender.com';
             const res = await axios.post(`${apiBase}/api/shops/register`, fd, {
                 headers: { 'Content-Type': 'multipart/form-data', Authorization: `Bearer ${token}` },
             });
@@ -370,6 +395,7 @@ const CategoryRegistration = () => {
                 ? 'A file is too large (max 5MB)'
                 : err?.response?.data?.error || err.message || 'Registration failed';
             setError(msg);
+            window.scrollTo(0, 0);
         } finally {
             setIsSubmitting(false);
         }
@@ -536,15 +562,14 @@ const CategoryRegistration = () => {
                                         Shop Name <span className="hr-required">*</span>
                                     </label>
                                     <input
-  type="text"
-  name="shopName"
-  value={formData.shopName}
-  onChange={handleInputChange}
-  placeholder="Enter shop name"
-  className="hr-input"
-  required={activeSection === 'basic'}   // ✅ only required in Basic step
-/>
-
+                                        type="text"
+                                        name="shopName"
+                                        value={formData.shopName}
+                                        onChange={handleInputChange}
+                                        placeholder="Enter shop name"
+                                        className="hr-input"
+                                        required
+                                    />
                                 </div>
 
                                 <div className="hr-form-group">
@@ -569,35 +594,34 @@ const CategoryRegistration = () => {
                                         <FaWallet className="hr-input-icon" />
                                         PhonePe Number <span className="hr-required">*</span>
                                     </label>
-                                   <input
-  type="tel"
-  name="phone"
-  value={formData.phone}
-  onChange={handleInputChange}
-  placeholder="10-digit phone number"
-  className="hr-input"
-  pattern="[0-9]{10}"
-  required={activeSection === 'basic'}   // ✅ only required when on Basic step
-/>
-
+                                    <input
+                                        type="tel"
+                                        name="phonePeNumber"
+                                        value={formData.phonePeNumber}
+                                        onChange={handleInputChange}
+                                        placeholder="10-digit PhonePe number"
+                                        className="hr-input"
+                                        pattern="[0-9]{10}"
+                                        required
+                                    />
                                 </div>
+                                
                                 <div className="hr-form-group">
                                     <label className="hr-label">
                                         <FaWallet className="hr-input-icon" />
-                                        UPI ID  <span className="hr-required">*</span>
+                                        UPI ID <span className="hr-required">*</span>
                                     </label>
-                                  <input
-  type="text"
-  name="upiId"
-  value={formData.upiId}
-  onChange={handleInputChange}
-  placeholder="e.g., 9876543210@ybl"
-  className="hr-input"
-  required={activeSection === 'basic'}   // ✅ only when Basic step is active
-/>
-                                    {/* <small className="hr-hint">This is your UPI ID (like <code>name@bank</code>), not your phone number.</small> */}
+                                    <input
+                                        type="text"
+                                        name="upiId"
+                                        value={formData.upiId}
+                                        onChange={handleInputChange}
+                                        placeholder="e.g., 9876543210@ybl"
+                                        className="hr-input"
+                                        required
+                                    />
+                                    <small className="hr-hint">This is your UPI ID (like <code>name@bank</code>), not your phone number.</small>
                                 </div>
-
 
                                 <div className="hr-form-group">
                                     <label className="hr-label">
@@ -620,13 +644,13 @@ const CategoryRegistration = () => {
                                         Opening Time <span className="hr-required">*</span>
                                     </label>
                                     <input
-  type="time"
-  name="openingTime"
-  value={formData.openingTime}
-  onChange={handleInputChange}
-  className="hr-time-input"
-  required={activeSection === 'basic'}   // ✅ only when Basic step is active
-/>
+                                        type="time"
+                                        name="openingTime"
+                                        value={formData.openingTime}
+                                        onChange={handleInputChange}
+                                        className="hr-time-input"
+                                        required
+                                    />
                                 </div>
 
                                 <div className="hr-form-group hr-time-group">
@@ -634,14 +658,14 @@ const CategoryRegistration = () => {
                                         <FaClock className="hr-input-icon" />
                                         Closing Time <span className="hr-required">*</span>
                                     </label>
-                                  <input
-  type="time"
-  name="closingTime"
-  value={formData.closingTime}
-  onChange={handleInputChange}
-  className="hr-time-input"
-  required={activeSection === 'basic'}   // ✅ only when Basic step is active
-/>
+                                    <input
+                                        type="time"
+                                        name="closingTime"
+                                        value={formData.closingTime}
+                                        onChange={handleInputChange}
+                                        className="hr-time-input"
+                                        required
+                                    />
                                 </div>
                             </div>
 
@@ -655,6 +679,7 @@ const CategoryRegistration = () => {
                                     initialValue={formData.address.address}
                                 />
                             </div>
+                            
                             {/* KYC for first-time business registration */}
                             {needKyc && (
                                 <div className="hr-form-group hr-full-width">
@@ -739,32 +764,27 @@ const CategoryRegistration = () => {
                                     <div className="hr-form-grid">
                                         {/* Name */}
                                         <div className="hr-form-group">
-                                            <label className="hr-label">Name</label>
+                                            <label className="hr-label">Name <span className="hr-required">*</span></label>
                                             <input
-  type="text"
-  name={`item-name-${index}`}             // ✅ unique name
-  value={item.name}
-  onChange={(e) => handleItemChange(index, 'name', e.target.value)}
-  className="hr-input"
-  required={activeSection === 'items'}    // ✅ only when Items step is active
-/>
-
-
+                                                type="text"
+                                                value={item.name}
+                                                onChange={(e) => handleItemChange(index, 'name', e.target.value)}
+                                                className="hr-input"
+                                                required
+                                            />
                                         </div>
 
                                         {/* Price */}
                                         <div className="hr-form-group">
-                                            <label className="hr-label">Price (₹)</label>
-                                           <input
-  type="number"
-  name={`item-price-${index}`}                // ✅ give it a name
-  min={['hotel', 'bakery', 'cafe'].includes(selectedCategory) ? 1 : 0}
-  value={item.price}
-  onChange={(e) => handleItemChange(index, 'price', e.target.value)}
-  className="hr-input"
-  required={activeSection === 'items'}        // ✅ only required in Items step
-/>
-
+                                            <label className="hr-label">Price (₹) <span className="hr-required">*</span></label>
+                                            <input
+                                                type="number"
+                                                min={['hotel', 'bakery', 'cafe'].includes(selectedCategory) ? 1 : 0}
+                                                value={item.price}
+                                                onChange={(e) => handleItemChange(index, 'price', e.target.value)}
+                                                className="hr-input"
+                                                required
+                                            />
                                         </div>
 
                                         {/* Dynamic per-category fields */}
@@ -788,13 +808,11 @@ const CategoryRegistration = () => {
 
                                                 {f.type === 'select' && (
                                                     <select
-  name={`${f.key}-${index}`}              // ✅ add unique name
-  value={item[f.key] ?? f.options?.[0]}
-  onChange={(e) => handleItemChange(index, f.key, e.target.value)}
-  className="hr-select"
-  required={activeSection === 'items'}    // ✅ only required in Items step
->
-
+                                                        value={item[f.key] ?? f.options?.[0]}
+                                                        onChange={(e) => handleItemChange(index, f.key, e.target.value)}
+                                                        className="hr-select"
+                                                        required={f.type === 'select'}
+                                                    >
                                                         {f.options?.map((opt) => (
                                                             <option key={opt} value={opt}>
                                                                 {opt[0].toUpperCase() + opt.slice(1)}
@@ -805,14 +823,12 @@ const CategoryRegistration = () => {
 
                                                 {f.type === 'text' && (
                                                     <input
-  type="text"
-  name={`${f.key}-${index}`}              // ✅ add this
-  value={item[f.key] || ''}
-  onChange={(e) => handleItemChange(index, f.key, e.target.value)}
-  className="hr-input"
-  required={activeSection === 'items'}    // ✅ conditional
-/>
-
+                                                        type="text"
+                                                        value={item[f.key] || ''}
+                                                        onChange={(e) => handleItemChange(index, f.key, e.target.value)}
+                                                        className="hr-input"
+                                                        required={f.type === 'text'}
+                                                    />
                                                 )}
 
                                                 {f.type === 'textarea' && (
@@ -920,7 +936,6 @@ const CategoryRegistration = () => {
                             </div>
                         </div>
 
-                        {/* Shop Images (unchanged) */}
                         {/* Shop Images */}
                         <div className={`hr-section ${activeSection !== 'images' ? 'hr-hidden' : ''}`}>
                             <h2 className="hr-section-title">
@@ -944,7 +959,8 @@ const CategoryRegistration = () => {
                                                 const files = Array.from(e.target.files || []);
                                                 const valid = files.filter((f) => f.size <= 5 * 1024 * 1024);
                                                 if (files.length !== valid.length) {
-                                                    alert('Some files were larger than 5MB and were skipped.');
+                                                    setError('Some files were larger than 5MB and were skipped.');
+                                                    window.scrollTo(0, 0);
                                                 }
                                                 const newImages = [...shopImages, ...valid].slice(0, 5);
                                                 setShopImages(newImages);
@@ -1016,8 +1032,6 @@ const CategoryRegistration = () => {
                             </h2>
 
                             <div className="hr-review-container">
-                                {/* Basic info (unchanged) */}
-
                                 <div className="hr-review-section">
                                     <h3 className="hr-review-subtitle">
                                         <FaStore className="hr-review-icon" />
@@ -1078,7 +1092,6 @@ const CategoryRegistration = () => {
                                                     <span className="hr-item-category">({item.category})</span>
                                                 )}
 
-                                                {/* ✅ Show brand/weight for grocery + provision */}
                                                 {["grocery", "provision"].includes(selectedCategory) && (
                                                     <span className="hr-item-meta">
                                                         {item.brand && `Brand: ${item.brand}`}
@@ -1112,8 +1125,6 @@ const CategoryRegistration = () => {
                                         </div>
                                     </div>
                                 </div>
-
-                                {/* Images summary (unchanged) */}
                             </div>
 
                             <div className="hr-section-actions">
