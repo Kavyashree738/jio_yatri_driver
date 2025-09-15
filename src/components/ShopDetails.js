@@ -395,6 +395,7 @@
 
 // src/components/ShopDetails.jsx
 // src/pages/ShopDetails.jsx
+// src/pages/ShopDetails.jsx
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useParams, useNavigate } from "react-router-dom";
@@ -766,7 +767,7 @@ const ShopDetails = () => {
                       )}
 
                       {/* Provision meta */}
-                      {["provision", "grocery"].includes(shop.category) && (item.brand || item.weight) && (
+                      {["provision", "grocery"].includes(shop.category) && (item.brand || item.weight || item.quantity !== undefined) && (
                         <div className="sd-provision-meta">
                           {item.brand && (
                             <span className="sd-provision-chip sd-provision-brand">
@@ -776,6 +777,11 @@ const ShopDetails = () => {
                           {item.weight && (
                             <span className="sd-provision-chip sd-provision-weight">
                               {item.weight}
+                            </span>
+                          )}
+                          {item.quantity !== undefined && (
+                            <span className="sd-provision-chip sd-provision-qty">
+                              Qty: {item.quantity}
                             </span>
                           )}
                         </div>
