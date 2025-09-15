@@ -4,55 +4,36 @@ import axios from 'axios';
 import '../styles/ItemCatalogPicker.css';
 
 const FIELDS_BY_CATEGORY = {
-  hotel: [
-    { key: 'price', label: 'Price (₹)', type: 'number', required: true, min: 1 },
-    { key: 'veg', label: 'Vegetarian', type: 'boolean', def: true },
-    // {
-    //   key: 'category', label: 'Menu Category', type: 'select', required: true,
-    //   options: ['main', 'breakfast', 'lunch', 'dinner', 'snacks', 'beverages'], def: 'main'
-    // },
-    // {
-    //   key: 'spiceLevel', label: 'Spice Level', type: 'select',
-    //   options: ['mild', 'medium', 'spicy'], def: 'medium'
-    // },
-    // { key: 'description', label: 'Description', type: 'textarea', maxLength: 100 },
-    // { key: 'available', label: 'Available', type: 'boolean', def: true },
-  ],
-  // NEW: Bakery — like hotel but no category/spice/description; has veg
-  bakery: [
-    { key: 'price', label: 'Price (₹)', type: 'number', required: true, min: 1 },
-    { key: 'veg', label: 'Vegetarian', type: 'boolean', def: true },
-    // { key: 'available', label: 'Available', type: 'boolean', def: true },
-  ],
-  // NEW: Cafe — simple: price + available (no veg/spice/description)
-  cafe: [
-    { key: 'price', label: 'Price (₹)', type: 'number', required: true, min: 1 },
-    // { key: 'available', label: 'Available', type: 'boolean', def: true },
-  ],
   grocery: [
     { key: 'price', label: 'Price (₹)', type: 'number', required: true, min: 0 },
-    // { key: 'description', label: 'Description', type: 'textarea' },
     { key: 'weight', label: 'Weight (e.g., 1kg / 500g)', type: 'text' },
     // { key: 'brand', label: 'Brand', type: 'text' },
-    { key: 'quantity', label: 'Quantity (stock available)', type: 'number', required: true, min: 0, def: 1 }, // 👈 NEW
-    // { key: 'available', label: 'Available', type: 'boolean', def: true },
-  ],
-  vegetable: [
-    { key: 'price', label: 'Price (₹)', type: 'number', required: true, min: 0 },
-    // { key: 'organic', label: 'Organic', type: 'boolean', def: false },
-    // { key: 'available', label: 'Available', type: 'boolean', def: true },
+    { key: 'quantity', label: 'Quantity (stock available)', type: 'number', required: true, min: 0, def: 1 },
   ],
   provision: [
     { key: 'price', label: 'Price (₹)', type: 'number', required: true, min: 0 },
     { key: 'weight', label: 'Weight (e.g., 1kg / 500g)', type: 'text' },
     // { key: 'brand', label: 'Brand', type: 'text' },
-    { key: 'quantity', label: 'Quantity (stock available)', type: 'number', required: true, min: 0, def: 1 }, // 👈 NEW
-    // { key: 'available', label: 'Available', type: 'boolean', def: true },
+    { key: 'quantity', label: 'Quantity (stock available)', type: 'number', required: true, min: 0, def: 1 },
+  ],
+  hotel: [
+    { key: 'price', label: 'Price (₹)', type: 'number', required: true, min: 1 },
+    { key: 'veg', label: 'Vegetarian', type: 'boolean', def: true },
+  ],
+  bakery: [
+    { key: 'price', label: 'Price (₹)', type: 'number', required: true, min: 1 },
+    { key: 'veg', label: 'Vegetarian', type: 'boolean', def: true },
+  ],
+  cafe: [
+    { key: 'price', label: 'Price (₹)', type: 'number', required: true, min: 1 },
+  ],
+  vegetable: [
+    { key: 'price', label: 'Price (₹)', type: 'number', required: true, min: 0 },
+    { key: 'organic', label: 'Organic', type: 'boolean', def: false },
   ],
   medical: [
     { key: 'price', label: 'Price (₹)', type: 'number', required: true, min: 0 },
     { key: 'prescriptionRequired', label: 'Prescription Required', type: 'boolean', def: false },
-    // { key: 'available', label: 'Available', type: 'boolean', def: true },
   ],
 };
 
@@ -84,7 +65,7 @@ export default function ItemCatalogPicker({ category, onAdd }) {
       else init[f.key] = '';
     });
     setForm(init);
-  }, [category]); // eslint-disable-line
+  }, [category]);
 
   const filtered = useMemo(() => {
     const s = q.trim().toLowerCase();
@@ -124,16 +105,14 @@ export default function ItemCatalogPicker({ category, onAdd }) {
       image: picked.imageId,
       ...form,
       price: form.price != null ? Number(form.price) : undefined,
-      available: form.available === true || form.available === 'true',
     };
 
-
-    // only add these if they exist in form
     if ('veg' in form) item.veg = form.veg === true || form.veg === 'true';
     if ('organic' in form) item.organic = form.organic === true || form.organic === 'true';
     if ('prescriptionRequired' in form) item.prescriptionRequired = form.prescriptionRequired === true || form.prescriptionRequired === 'true';
-     if ('quantity' in form) item.quantity = Number(form.quantity);
+    if ('quantity' in form) item.quantity = Number(form.quantity);
 
+    // 👇 Save directly via parent
     onAdd(item);
     setPicked(null);
   };
