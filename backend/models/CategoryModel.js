@@ -149,9 +149,10 @@ const grocerySchema = new mongoose.Schema({
     name: { type: String, required: true },
     price: { type: Number, required: true, min: 0 },
     description: { type: String },
+    image: { type: mongoose.Schema.Types.ObjectId } ,// Removed ref
     weight: { type: String },  // ✅ add this
     brand: { type: String },   // ✅ add this
-    image: { type: mongoose.Schema.Types.ObjectId }
+    quantity: { type: Number, default: 1, min: 0 } 
   }]
 }, {
   toJSON: { virtuals: true },
@@ -199,7 +200,8 @@ const provisionSchema = new mongoose.Schema({
     price: { type: Number, required: true, min: 0 },
     weight: { type: String },
     brand: { type: String },
-    image: { type: mongoose.Schema.Types.ObjectId }
+    image: { type: mongoose.Schema.Types.ObjectId },
+    quantity: { type: Number, default: 1, min: 0 } 
   }]
 }, {
   toJSON: { virtuals: true },
