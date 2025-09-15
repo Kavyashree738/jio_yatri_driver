@@ -510,6 +510,7 @@ exports.updateShop = async (req, res) => {
           if (it.description) out.description = String(it.description);
           if (it.weight != null && it.weight !== '') out.weight = String(it.weight);  // ✅ add
           if (it.brand != null && it.brand !== '') out.brand = String(it.brand);      // ✅ add
+          if (it.quantity != null && it.quantity !== '') out.quantity = Number(it.quantity); // 👈 new
           break;
 
 
@@ -520,6 +521,7 @@ exports.updateShop = async (req, res) => {
         case 'provision':
           if (it.weight != null && it.weight !== '') out.weight = String(it.weight);
           if (it.brand != null && it.brand !== '') out.brand = String(it.brand);
+           if (it.quantity != null && it.quantity !== '') out.quantity = Number(it.quantity); // 👈 new
           break;
 
         case 'medical':
