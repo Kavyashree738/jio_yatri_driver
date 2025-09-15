@@ -23,9 +23,10 @@ const CATEGORY_CONFIG = {
     itemFields: [
       { key: 'weight', type: 'text', label: 'Weight (e.g., 1kg / 500g)' },
       { key: 'brand', type: 'text', label: 'Brand' },
+      { key: 'quantity', type: 'number', label: 'Quantity (stock available)' }, // 👈 added
     ],
-    defaultItem: { weight: '', brand: '', description: '' },
-    keepKeys: ['name', 'price', 'weight', 'brand', 'description'],
+    defaultItem: { weight: '', brand: '', description: '', quantity: 1 }, // 👈 added
+    keepKeys: ['name', 'price', 'weight', 'brand', 'description', 'quantity'], // 👈 added
   },
   vegetable: {
     label: 'Vegetables',
@@ -42,9 +43,10 @@ const CATEGORY_CONFIG = {
     itemFields: [
       { key: 'weight', type: 'text', label: 'Weight (e.g., 1kg / 500g)' },
       { key: 'brand', type: 'text', label: 'Brand' },
+      { key: 'quantity', type: 'number', label: 'Quantity (stock available)' }, // 👈 added
     ],
-    defaultItem: { weight: '', brand: '', description: '' },
-    keepKeys: ['name', 'price', 'weight', 'brand', 'description'],
+    defaultItem: { weight: '', brand: '', description: '', quantity: 1 }, // 👈 added
+    keepKeys: ['name', 'price', 'weight', 'brand', 'description', 'quantity'], // 👈 added
   },
   medical: {
     label: 'Medical',
@@ -735,6 +737,16 @@ const EditShopRegistration = () => {
                             className="hr-input"
                           />
                         )}
+                        {f.type === 'number' && (
+                          <input
+                            type="number"
+                            min="0"
+                            value={item[f.key] || 0}
+                            onChange={(e) => handleItemChange(index, f.key, e.target.value)}
+                            className="hr-input"
+                            required
+                          />
+                        )}
 
                         {f.type === 'textarea' && (
                           <textarea
@@ -1038,12 +1050,14 @@ const EditShopRegistration = () => {
                         {selectedCategory === 'hotel' && item.category && (
                           <span className="hr-item-category">({item.category})</span>
                         )}
-                        {["grocery", "provision"].includes(selectedCategory) && (item.brand || item.weight) && (
+                        {["grocery", "provision"].includes(selectedCategory) && (
                           <span className="hr-item-meta">
                             {item.brand && `Brand: ${item.brand}`}
                             {item.weight && ` • ${item.weight}`}
+                            {item.quantity !== undefined && ` • Qty: ${item.quantity}`}
                           </span>
                         )}
+
                       </div>
                     ))}
                     {(formData.items || []).length > 3 && (
