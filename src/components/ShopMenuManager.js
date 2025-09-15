@@ -1,5 +1,5 @@
 // src/pages/ShopMenuManager.jsx
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import ItemCatalogPicker from './ItemCatalogPicker';
@@ -7,6 +7,7 @@ import { useAuth } from '../context/AuthContext';
 import '../styles/ShopMenuManager.css';
 import Header from './Header';
 import Footer from './Footer';
+
 export default function ShopMenuManager() {
   const { shopId } = useParams();
   const navigate = useNavigate();
@@ -14,108 +15,55 @@ export default function ShopMenuManager() {
 
   const [shop, setShop] = useState(null);
   const [items, setItems] = useState([]);
-  const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [msg, setMsg] = useState('');
 
-  const apiBase = 'https://jio-yatri-driver.onrender.com';
+  const apiBase ='https://jio-yatri-driver.onrender.com';
   const baseImg = (id) => `${apiBase}/api/shops/images/${id}`;
 
   // helpers
   const toNum = (v) => (typeof v === 'number' ? v : parseFloat(v));
   const imgUrlOf = (it) => (it?.image ? baseImg(it.image) : (it?.imageUrl || ''));
-  const SPICE_COUNT = { mild: 1, medium: 2, spicy: 3 };
 
   useEffect(() => {
     const run = async () => {
       if (!shopId) return;
-      const res = await axios.get(`${apiBase}/api/shops/${shopId}`);
-      if (!res?.data?.success) throw new Error('Failed to load shop');
+      try {
+        const res = await axios.get(`${apiBase}/api/shops/${shopId}`);
+        if (!res?.data?.success) throw new Error('Failed to load shop');
 
-      const s = res.data.data;
-      setShop(s);
+        const s = res.data.data;
+        setShop(s);
 
-      // normalize items (prevents NaN + missing image after save)
-      const normalized = (s.items || []).map((o) => ({
-        ...o,
-        price: o.price != null ? Number(o.price) : null,
-        quantity: o.quantity != null ? Number(o.quantity) : 0, // 👈 add this
-        image: o.image || null,
-        imageUrl: o.imageUrl || (o.image ? baseImg(o.image) : null),
-      }));
-
-      setItems(normalized);
+        // normalize items
+        const normalized = (s.items || []).map((o) => ({
+          ...o,
+          price: o.price != null ? Number(o.price) : null,
+          quantity: o.quantity != null ? Number(o.quantity) : 0,
+          image: o.image || null,
+          imageUrl: o.imageUrl || (o.image ? baseImg(o.image) : null),
+        }));
+        setItems(normalized);
+      } catch (e) {
+        setError(e.message || 'Failed to load');
+      }
     };
-    run().catch((e) => setError(e.message || 'Failed to load'));
-    // eslint-disable-next-line
+    run();
   }, [shopId]);
 
-  // Validation for all categories
-  // Validation for all categories
-  const canSave = useMemo(() => {
-    if (!shop) return false;
-
-    const isMenuType = ['hotel', 'bakery', 'cafe'].includes(shop.category);
-
-    if (isMenuType) {
-      return items.every((it) => {
-        const p = toNum(it.price);
-        const hasImg = !!(it.image || it.imageUrl);
-        const categoryOk = shop.category !== 'hotel' || !!it.category; // only hotel needs category
-        return it.name && Number.isFinite(p) && p >= 1 && hasImg && categoryOk;
-      });
-    }
-
-    // grocery, vegetable, provision, medical
-    return items.every((it) => {
-      const p = toNum(it.price);
-      return it.name && Number.isFinite(p) && p >= 0;
-    });
-  }, [items, shop]);
-
-  const removeItem = (idx) => {
-    setItems((prev) => prev.filter((_, i) => i !== idx));
-  };
-
-  // Called by ItemCatalogPicker when admin-provided item is chosen
-  const addFromCatalog = (newItem) => {
-    const exists = items.some(
-      (it) => (it.name || '').trim().toLowerCase() === newItem.name.trim().toLowerCase()
-    );
-    if (exists) {
-      setError('This item is already added.');
-      return;
-    }
-    setError('');
-    setItems((prev) => [
-      ...prev,
-      {
-        ...newItem,
-        price: newItem.price != null ? Number(newItem.price) : null,
-        image: newItem.image || null,
-        imageUrl: newItem.image ? baseImg(newItem.image) : (newItem.imageUrl || null),
-      },
-    ]);
-  };
-
-  const save = async () => {
-    if (!user) {
+  // ✅ Save a single item immediately
+  const saveSingleItem = async (newItem) => {
+    if (!user || !shop) {
       setError('You must be logged in.');
       return;
     }
-    if (!shop) return;
-
-    setSaving(true);
-    setError('');
-    setMsg('');
 
     try {
-      const payloadItems = items.map((o) => ({
-        ...o,
-        price: o.price != null ? Number(o.price) : null,
-        quantity: o.quantity != null ? Number(o.quantity) : 0, // 👈 add this
-      }));
-
+      const payloadItems = [...items, {
+        ...newItem,
+        price: newItem.price != null ? Number(newItem.price) : null,
+        quantity: newItem.quantity != null ? Number(newItem.quantity) : 0,
+      }];
 
       const fd = new FormData();
       fd.append('userId', user.uid);
@@ -129,20 +77,19 @@ export default function ShopMenuManager() {
 
       if (!res?.data?.success) throw new Error(res?.data?.error || 'Save failed');
 
-      setMsg('Menu saved');
-
-      // Normalize fresh items from response for consistent UI
+      // update UI
       const savedItems = (res.data.data.items || []).map((o) => ({
         ...o,
         price: o.price != null ? Number(o.price) : null,
+        quantity: o.quantity != null ? Number(o.quantity) : 0,
         image: o.image || null,
         imageUrl: o.imageUrl || (o.image ? baseImg(o.image) : null),
       }));
+
       setItems(savedItems);
+      setMsg('Item saved successfully');
     } catch (e) {
-      setError(e?.response?.data?.error || e.message || 'Failed to save');
-    } finally {
-      setSaving(false);
+      setError(e?.response?.data?.error || e.message || 'Failed to save item');
     }
   };
 
@@ -170,13 +117,13 @@ export default function ShopMenuManager() {
           </div>
         </div>
 
-        {/* Catalog Picker (admin-provided images + names) */}
+        {/* Catalog Picker */}
         <div className="menu-manager-catalog-section">
-          <ItemCatalogPicker category={shop.category} onAdd={addFromCatalog} />
+          <ItemCatalogPicker category={shop.category} onAdd={saveSingleItem} />
         </div>
 
         {/* Current items list */}
-        <div className="menu-manager-items-section">
+        {/* <div className="menu-manager-items-section">
           <h3 className="menu-manager-subtitle">Menu Items ({items.length})</h3>
           {!items.length && (
             <div className="menu-manager-empty-state">
@@ -202,55 +149,21 @@ export default function ShopMenuManager() {
                     <div className="menu-manager-item-name">{it.name}</div>
 
                     <div className="menu-manager-item-properties">
-                      {/* hotel */}
-                      {'veg' in it && (
-                        <span className={`menu-manager-veg-indicator ${it.veg ? 'veg' : 'non-veg'}`}>
-                          {it.veg ? 'Veg' : 'Non-Veg'}
-                        </span>
-                      )}
-                      {it.category && <span className="menu-manager-item-category">{it.category}</span>}
-                      {'spiceLevel' in it && it.spiceLevel && (
-                        <span className="menu-manager-spice-level">
-                          {'•'.repeat(SPICE_COUNT[it.spiceLevel] ?? 0)}
-                        </span>
-                      )}
-
-                      {/* vegetable */}
-                      {'organic' in it && it.organic && (
-                        <span className="menu-manager-organic-badge">Organic</span>
-                      )}
-
-                      {/* medical */}
-                      {'prescriptionRequired' in it && it.prescriptionRequired && (
-                        <span className="menu-manager-prescription-badge">Rx Required</span>
-                      )}
-
-                      {/* provision */}
                       {'weight' in it && it.weight && (
                         <span className="menu-manager-attr">Weight: {it.weight}</span>
                       )}
                       {'brand' in it && it.brand && (
                         <span className="menu-manager-attr">Brand: {it.brand}</span>
                       )}
-                      {/* provision & grocery quantity */}
                       {['grocery', 'provision'].includes(shop.category) && (
                         <span className="menu-manager-attr">Qty: {it.quantity}</span>
                       )}
                     </div>
 
-                    {/* grocery + hotel can send description */}
-                    {it.description && (
-                      <div className="menu-manager-desc">{it.description}</div>
-                    )}
-
                     <div className="menu-manager-item-price">
                       ₹ {Number.isFinite(priceNum) ? priceNum.toFixed(2) : '--'}
                     </div>
                   </div>
-
-                  <button onClick={() => removeItem(idx)} className="menu-manager-remove-btn">
-                    ×
-                  </button>
                 </div>
               );
             })}
@@ -258,20 +171,7 @@ export default function ShopMenuManager() {
 
           {error && <div className="menu-manager-error-msg">{error}</div>}
           {msg && <div className="menu-manager-success-msg">{msg}</div>}
-
-          <div className="menu-manager-actions">
-            <button onClick={() => navigate(-1)} className="menu-manager-cancel-btn">
-              Cancel
-            </button>
-            <button
-              onClick={save}
-              disabled={!canSave || saving}
-              className={`menu-manager-save-btn ${!canSave || saving ? 'disabled' : ''}`}
-            >
-              {saving ? 'Saving…' : 'Save Menu'}
-            </button>
-          </div>
-        </div>
+        </div> */}
       </div>
       <Footer />
     </>
