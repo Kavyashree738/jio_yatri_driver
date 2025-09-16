@@ -651,24 +651,6 @@ const ShopDetails = () => {
                   + Add / Edit Items
                 </button>
               )}
-
-              <div className="sd-contact-actions">
-                {showPhone ? (
-                  <a href={`tel:${shop.phone}`} className="sd-call-btn">
-                    <FaPhone /> {shop.phone}
-                  </a>
-                ) : (
-                  <button className="sd-call-btn" onClick={() => setShowPhone(true)}>
-                    <FaPhone /> Show Number
-                  </button>
-                )}
-                <button
-                  className="sd-whatsapp-btn"
-                  onClick={() => openWhatsApp(shop.phone, shop.shopName)}
-                >
-                  <FaWhatsapp /> WhatsApp
-                </button>
-              </div>
             </div>
           </div>
 
