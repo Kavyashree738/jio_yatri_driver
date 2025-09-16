@@ -73,6 +73,8 @@ router.put(
 // Delete shop
 router.delete('/:id', shopController.deleteShop);
 
+router.put('/:id/add-item', upload.any(), shopController.addItemToShop);
+
 router.get('/owner/:ownerId', shopController.getShopsByOwner);
 
 // MUST be defined near the top of routes/shops.js
