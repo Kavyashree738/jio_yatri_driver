@@ -1051,3 +1051,39 @@ exports.getShopReferralLeaderboard = async (req, res) => {
     return res.status(500).json({ success: false, error: 'Failed to fetch leaderboard' });
   }
 };
+// PUT /api/shops/:id/add-item
+exports.addItemToShop = async (req, res) => {
+  try {
+    const shopId = req.params.id;
+    const userId = req.body.userId;
+    const item = JSON.parse(req.body.item || '{}');
+
+    const shop = await Shop.findById(shopId);
+    if (!shop) return res.status(404).json({ success: false, error: 'Shop not found' });
+    if (String(shop.userId) !== String(userId)) {
+      return res.status(403).json({ success: false, error: 'Unauthorized' });
+    }
+
+    // Basic validation
+    if (!item.name || item.price == null) {
+      return res.status(400).json({ success: false, error: 'Name and price are required' });
+    }
+
+    shop.items.push(item);
+    await shop.save();
+
+    const baseUrl = process.env.API_BASE_URL || 'http://localhost:5000';
+    const data = {
+      ...shop.toObject(),
+      items: shop.items.map(it => ({
+        ...it,
+        imageUrl: it.image ? `${baseUrl}/api/shops/images/${it.image}` : null
+      }))
+    };
+
+    res.json({ success: true, data });
+  } catch (err) {
+    console.error('[addItemToShop] failed:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
