@@ -1072,7 +1072,7 @@ exports.addItemToShop = async (req, res) => {
     shop.items.push(item);
     await shop.save();
 
-    const baseUrl = process.env.API_BASE_URL || 'http://localhost:5000';
+    const baseUrl = 'https://jio-yatri-driver.onrender.com';
     const data = {
       ...shop.toObject(),
       items: shop.items.map(it => ({
