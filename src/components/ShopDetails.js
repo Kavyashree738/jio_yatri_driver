@@ -802,11 +802,7 @@ const ShopDetails = () => {
                             Prescription Required
                           </span>
                         )}
-                        {shop.category === "hotel" && item.spiceLevel && (
-                          <span className={`sd-product-tag spice-${item.spiceLevel}`}>
-                            <FaFire /> {item.spiceLevel.charAt(0).toUpperCase() + item.spiceLevel.slice(1)}
-                          </span>
-                        )}
+                       
                       </div>
                     </div>
                   </div>
