@@ -19,6 +19,14 @@ const FIELDS_BY_CATEGORY = {
   hotel: [
     { key: 'price', label: 'Price (₹)', type: 'number', required: true, min: 1 },
     { key: 'veg', label: 'Vegetarian', type: 'boolean', def: true },
+     {
+      key: 'category',
+      label: 'Menu Section',
+      type: 'select',
+      required: true,
+      options: ['main', 'breakfast', 'lunch', 'dinner', 'snacks', 'beverages'],
+      def: 'main'   // 👈 Default value
+    },
   ],
   bakery: [
     { key: 'price', label: 'Price (₹)', type: 'number', required: true, min: 1 },
