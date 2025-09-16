@@ -52,46 +52,39 @@ export default function ShopMenuManager() {
   }, [shopId]);
 
   // ✅ Save a single item immediately
-  const saveSingleItem = async (newItem) => {
-    if (!user || !shop) {
-      setError('You must be logged in.');
-      return;
-    }
+ const saveSingleItem = async (newItem) => {
+  if (!user || !shop) {
+    setError('You must be logged in.');
+    return;
+  }
 
-    try {
-      const payloadItems = [...items, {
+  try {
+    const fd = new FormData();
+    fd.append('userId', user.uid);
+    fd.append(
+      'item',
+      JSON.stringify({
         ...newItem,
         price: newItem.price != null ? Number(newItem.price) : null,
         quantity: newItem.quantity != null ? Number(newItem.quantity) : 0,
-      }];
+      })
+    );
+    fd.append('existingShopImages', JSON.stringify(shop.shopImages || []));
 
-      const fd = new FormData();
-      fd.append('userId', user.uid);
-      fd.append('items', JSON.stringify(payloadItems));
-      fd.append('existingShopImages', JSON.stringify(shop.shopImages || []));
+    const token = await user.getIdToken();
+    const res = await axios.put(`${apiBase}/api/shops/${shopId}/add-item`, fd, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
 
-      const token = await user.getIdToken();
-      const res = await axios.put(`${apiBase}/api/shops/${shopId}`, fd, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+    if (!res?.data?.success) throw new Error(res?.data?.error || 'Save failed');
 
-      if (!res?.data?.success) throw new Error(res?.data?.error || 'Save failed');
-
-      // update UI
-      const savedItems = (res.data.data.items || []).map((o) => ({
-        ...o,
-        price: o.price != null ? Number(o.price) : null,
-        quantity: o.quantity != null ? Number(o.quantity) : 0,
-        image: o.image || null,
-        imageUrl: o.imageUrl || (o.image ? baseImg(o.image) : null),
-      }));
-
-      setItems(savedItems);
-      setMsg('Item saved successfully');
-    } catch (e) {
-      setError(e?.response?.data?.error || e.message || 'Failed to save item');
-    }
-  };
+    setItems(res.data.data.items);
+    setMsg('Item saved successfully');
+    setError('');
+  } catch (e) {
+    setError(e?.response?.data?.error || e.message || 'Failed to save item');
+  }
+};
 
   if (authLoading) return <div className="menu-manager-loading">Loading auth…</div>;
   if (!user) return <div className="menu-manager-login-prompt">Please login</div>;
