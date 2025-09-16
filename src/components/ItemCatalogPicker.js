@@ -41,7 +41,7 @@ const FIELDS_BY_CATEGORY = {
   ],
   medical: [
     { key: 'price', label: 'Price (₹)', type: 'number', required: true, min: 0 },
-    { key: 'prescriptionRequired', label: 'Prescription Required', type: 'boolean', def: false },
+    //{ key: 'prescriptionRequired', label: 'Prescription Required', type: 'boolean', def: false },
   ],
 };
 
