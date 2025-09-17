@@ -76,7 +76,7 @@ const verifyOtp = async (req, res) => {
   try {
     const { phoneNumber, otp } = req.body;
 
-    const TEST_PHONE = "+911234567899";
+    const TEST_PHONE = "+911234567898";
     const TEST_OTP = "1234";
     
     if (!phoneNumber || !otp) {
@@ -200,6 +200,7 @@ const verifyOtp = async (req, res) => {
 
 
 module.exports = { sendOtp, verifyOtp };
+
 
 
 
