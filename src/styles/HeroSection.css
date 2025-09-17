@@ -3146,3 +3146,24 @@ progress::-webkit-progress-value {
   font-weight: 600;
 }
 
+.loading-role {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 120px; /* adjust height if needed */
+}
+
+.loading-circle {
+  width: 50px;
+  height: 50px;
+  border: 6px solid #e0e0e0;         /* light gray background ring */
+  border-top: 6px solid #007bff;     /* blue part that spins */
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
