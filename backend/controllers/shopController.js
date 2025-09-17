@@ -235,7 +235,7 @@ exports.registerShop = async (req, res) => {
     // Basic user flags
     await User.updateOne(
       { userId: shopData.userId },
-      { $set: { role: 'business', isRegistered: true, phone: shopData.phone } },
+      { $set: { role: 'business',  businessRegistered: true, phone: shopData.phone } },
       { upsert: true });
 
 
