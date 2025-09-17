@@ -49,6 +49,7 @@ const HeroSection = () => {
     const [registrationSubStep, setRegistrationSubStep] = useState(1);
     const [isValidPhone, setIsValidPhone] = useState(false);
     const [userRole, setUserRole] = useState(null); // 'driver' or 'business'
+    const [checkingRegistration, setCheckingRegistration] = useState(true);
     const [driverData, setDriverData] = useState({
         name: '',
         aadharFile: null,
@@ -163,9 +164,11 @@ const HeroSection = () => {
 
     useEffect(() => {
   const run = async () => {
+    setCheckingRegistration(true);
     if (softSignedOut || !auth.currentUser) {
       setIsRegistered(false);
       setRegistrationStep(0);
+      setCheckingRegistration(false);
       return;
     }
 
@@ -181,6 +184,7 @@ const HeroSection = () => {
         hasRoutedRef.current = true;
         navigate('/register', { replace: true });
       }
+       setCheckingRegistration(false);
       return;
     }
 
@@ -190,6 +194,7 @@ const HeroSection = () => {
         hasRoutedRef.current = true;
         navigate('/business-dashboard', { replace: true });
       }
+      setCheckingRegistration(false);
       return;
     }
 
@@ -205,11 +210,13 @@ const HeroSection = () => {
     // ✅ Driver: not registered → show driver wizard on Home
     if (role === 'driver') {
       setRegistrationStep(isRegistered ? 4 : 2);
+       setCheckingRegistration(false);
       return;
     }
 
     // ✅ Generic fallback
     setRegistrationStep(isRegistered ? 4 : 0);
+    setCheckingRegistration(false); 
   };
 
   const unsub = auth.onAuthStateChanged(run);
@@ -934,7 +941,11 @@ const HeroSection = () => {
                     variants={variants}
                     transition={{ duration: 0.8, delay: 0.3 }}
                 >
-                    {registrationStep === 0 ? (
+                    {checkingRegistration ? (
+    <div className="loading-role">
+        <div className="loading-circle"></div>
+    </div>
+) : registrationStep === 0 ? (
                         <RoleSelection />
                     ) : registrationStep === 1 ? (
                         <form className="registration-form hero-form" onSubmit={(e) => e.preventDefault()}>
