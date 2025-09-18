@@ -343,7 +343,12 @@ const driverSchema = new mongoose.Schema({
     driverToOwner: { type: Number, default: 0 },
     ownerToDriver: { type: Number, default: 0 },
     status: { type: String, enum: ['pending', 'settled'], default: 'pending' },
-    settledAt: { type: Date }
+    settledAt: { type: Date },
+
+    // 🔑 Razorpay details (optional, only filled when paid online)
+    razorpayOrderId: { type: String },
+    razorpayPaymentId: { type: String },
+    razorpaySignature: { type: String }
   }],
   currentDaySettlement: {
     cashCollected: { type: Number, default: 0 },
