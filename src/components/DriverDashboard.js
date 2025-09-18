@@ -44,6 +44,79 @@ const DriverDashboard = () => {
     const [marqueeText] = useState('Earn ₹10 Cashback');
     const [fatal, setFatal] = useState(null);
 
+    const loadRazorpay = () => {
+        return new Promise((resolve) => {
+            if (window.Razorpay) {
+                resolve(true);
+                return;
+            }
+            const script = document.createElement('script');
+            script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+            script.onload = () => resolve(true);
+            script.onerror = () => resolve(false);
+            document.body.appendChild(script);
+        });
+    };
+
+    const handleSettlementPayment = async (settlementId, amount) => {
+        try {
+            const token = await user.getIdToken();
+
+            // Step 1: Ask backend to create Razorpay order
+            const res = await axios.post(
+                `https://jio-yatri-driver.onrender.com/api/settlement/initiate-payment`,
+                { settlementId, amount },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+
+            const order = res.data.order;
+
+            // Step 2: Load Razorpay
+            const loaded = await loadRazorpay();
+            if (!loaded) throw new Error('Razorpay SDK failed to load');
+
+            const options = {
+                key: process.env.REACT_APP_RAZORPAY_KEY_ID,
+                amount: order.amount,
+                currency: order.currency,
+                name: "Owner Settlement",
+                description: `Settlement Payment`,
+                order_id: order.id,
+                handler: async function (response) {
+                    // ✅ Step 3: Verify payment with backend (ONLY ONCE)
+                    await axios.post(
+                        `https://jio-yatri-driver.onrender.com/api/settlement/verify-payment`,
+                        {
+                            razorpay_payment_id: response.razorpay_payment_id,
+                            razorpay_order_id: response.razorpay_order_id,
+                            razorpay_signature: response.razorpay_signature,
+                            settlementId,
+                            driverId: user.uid,
+                            amount // ✅ pass driverToOwner value
+                        },
+                        { headers: { Authorization: `Bearer ${token}` } }
+                    );
+
+                    setMessage({ text: 'Payment successful. Settlement cleared.', isError: false });
+                    fetchDriverInfo(); // refresh settlements
+                },
+                prefill: {
+                    name: driverInfo?.name,
+                    contact: driverInfo?.phone
+                },
+                theme: { color: "#3399cc" }
+            };
+
+            const rzp = new window.Razorpay(options);
+            rzp.open();
+        } catch (err) {
+            console.error(err);
+            setMessage({ text: err.message, isError: true });
+        }
+    };
+
+
+
     const fetchDriverInfo = useCallback(async () => {
         try {
             const token = await user.getIdToken();
@@ -404,46 +477,52 @@ const DriverDashboard = () => {
             </div>
         );
     };
-   // 🚨 Block dashboard if pending settlements exist
-if (settlement?.pending?.length > 0) {
-    return (
-        <>
-            <Header />
-            <div className="pending-overlay">
-                <div className="pending-modal">
-                    <h2 className="pending-title">Pending Settlements</h2>
-                    <p className="pending-message">
-                        You have pending settlements. Please clear them first.  
-                        Once the owner confirms your payment, your dashboard will unlock automatically.
-                    </p>
 
-                    <div className="pending-list">
-                        {settlement.pending.map(item => (
-                            <div key={item._id} className="pending-item">
-                                <span className="pending-date">{moment(item.date).format('MMM D')}:</span>
-                                {item.driverToOwner > 0 && (
-                                    <span className="pending-pay">
-                                        Pay Owner: ₹{(item.driverToOwner || 0).toFixed(2)}
-                                    </span>
-                                )}
-                                {item.ownerToDriver > 0 && (
-                                    <span className="pending-receive">
-                                        Receive: ₹{(item.ownerToDriver || 0).toFixed(2)}
-                                    </span>
-                                )}
-                            </div>
-                        ))}
+    // 🚨 Block dashboard if pending settlements exist
+    // 🚨 Block dashboard if pending settlements exist
+    if (settlement?.pending?.length > 0) {
+        return (
+            <>
+                <Header />
+                <div className="pending-overlay">
+                    <div className="pending-modal">
+                        <h2 className="pending-title">Pending Settlements</h2>
+                        <p className="pending-message">
+                            You have pending settlements. Please clear them first.
+                            Once the owner confirms your payment, your dashboard will unlock automatically.
+                        </p>
+
+                        <div className="pending-list">
+                            {settlement.pending.map(item => (
+                                <div key={item._id} className="pending-item">
+                                    <span className="pending-date">{moment(item.date).format('MMM D')}:</span>
+                                    {item.driverToOwner > 0 && (
+                                        <button
+                                            className="settle-btn"
+                                            onClick={() => handleSettlementPayment(item._id, item.driverToOwner)}
+                                        >
+                                            Pay Owner: ₹{(item.driverToOwner || 0).toFixed(2)}
+                                        </button>
+                                    )}
+
+                                    {item.ownerToDriver > 0 && (
+                                        <span className="pending-receive">
+                                            Receive: ₹{(item.ownerToDriver || 0).toFixed(2)}
+                                        </span>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+
+                        <button onClick={handleLogout} className="pending-btn">
+                            Logout
+                        </button>
                     </div>
-
-                    <button onClick={handleLogout} className="pending-btn">
-                        Logout
-                    </button>
                 </div>
-            </div>
-            <Footer />
-        </>
-    );
-}
+                <Footer />
+            </>
+        );
+    }
 
 
     if (fatal) {
@@ -661,18 +740,24 @@ if (settlement?.pending?.length > 0) {
                                 <span>Online Payments:</span>
                                 <span>₹{(settlement.today.onlineCollected || 0).toFixed(2)}</span>
                             </div>
-                            <div className="settlement-row highlight">
-                                <span>Owner Share (20%):</span>
-                                <span className="negative">
-                                    ₹{((settlement.today.cashCollected || 0) * 0.2).toFixed(2)}
-                                </span>
-                            </div>
-                            <div className="settlement-row highlight">
-                                <span>Your Share (80%):</span>
-                                <span className="positive">
-                                    ₹{((settlement.today.onlineCollected || 0) * 0.8).toFixed(2)}
-                                </span>
-                            </div>
+                            {(settlement.today.cashCollected || 0) > 0 && (
+                                <div className="settlement-row highlight">
+                                    <span>Owner Share (20%):</span>
+                                    <span className="negative">
+                                        ₹{((settlement.today.cashCollected || 0) * 0.2).toFixed(2)}
+                                    </span>
+                                </div>
+                            )}
+
+                            {(settlement.today.onlineCollected || 0) > 0 && (
+                                <div className="settlement-row highlight">
+                                    <span>Your Share (80%):</span>
+                                    <span className="positive">
+                                        ₹{((settlement.today.onlineCollected || 0) * 0.8).toFixed(2)}
+                                    </span>
+                                </div>
+                            )}
+
                         </>
                     )}
 
@@ -691,7 +776,7 @@ if (settlement?.pending?.length > 0) {
                                         // </button>
                                         <button
                                             className="settle-btn"
-                                            onClick={() => handleSettlePayment(item._id, item.driverToOwner, 'driverToOwner')}
+                                            onClick={() => handleSettlementPayment(item._id, item.driverToOwner)}
                                         >
                                             Pay Owner: ₹{(item.driverToOwner || 0).toFixed(2)}
                                         </button>
