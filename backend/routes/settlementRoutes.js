@@ -8,6 +8,8 @@ router.get('/driver/:userId', verifyFirebaseToken, settlementController.getDrive
 router.post('/complete/:userId', verifyFirebaseToken, settlementController.completeSettlement);
 router.post('/daily', settlementController.dailySettlement); // Should be protected in production
 router.get('/check-settlement/:userId', verifyFirebaseToken, settlementController.checkSettlement);
+router.post('/initiate-payment', verifyFirebaseToken,settlementController.initiateSettlementPayment);
+router.post('/verify-payment', verifyFirebaseToken,settlementController.verifySettlementPayment);
 
 
 module.exports = router;
