@@ -67,7 +67,7 @@ import ShopMenuManager from './components/ShopMenuManager';
 import KycPending from './components/KycPending';
 import RequireKycVerified from './components/RequireKycVerified';
 import OwnerDocumentViews from './components/OwnerDocumentViews';
-
+import OfflineHandler from './components/OfflineHandler';
 
 
 // Smart landing
@@ -103,6 +103,7 @@ const App = () => {
     // ✅ CartProvider should wrap the whole app
     <CartProvider>
       <AuthProvider>
+    <OfflineHandler>
         <OwnerFCMInit />
         <ScrollToTop />
         <Routes>
@@ -214,6 +215,7 @@ const App = () => {
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+            </OfflineHandler>
       </AuthProvider>
     </CartProvider>
   );
