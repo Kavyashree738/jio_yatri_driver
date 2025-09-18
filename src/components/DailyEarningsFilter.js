@@ -342,19 +342,45 @@ const DailyEarningsFilter = ({ paymentSettlements, registrationDate, onFilter })
             <div key={earning._id || index} className="earning-item">
               <div className="earning-date">{formatDate(earning.date)}</div>
               <div className="earning-details">
-                <div className="earning-row">
-                  <span>Cash Collected:</span>
-                  <span>₹{(earning.cashCollected || 0).toFixed(2)}</span>
-                </div>
-                <div className="earning-row">
-                  <span>Online Collected:</span>
-                  <span>₹{(earning.onlineCollected || 0).toFixed(2)}</span>
-                </div>
-                <div className="earning-row">
-                  <span>Status:</span>
-                  <span>{earning.status || 'unknown'}</span>
-                </div>
-              </div>
+  <div className="earning-row">
+    <span>Cash Collected:</span>
+    <span>₹{(earning.cashCollected || 0).toFixed(2)}</span>
+  </div>
+  <div className="earning-row">
+    <span>Online Collected:</span>
+    <span>₹{(earning.onlineCollected || 0).toFixed(2)}</span>
+  </div>
+
+  {/* 👇 NEW - Driver paid to Owner */}
+  {earning.driverToOwner > 0 && (
+    <div className="earning-row">
+      <span>Driver → Owner:</span>
+      <span className="negative">₹{earning.driverToOwner.toFixed(2)}</span>
+    </div>
+  )}
+
+  {/* 👇 NEW - Owner paid to Driver */}
+  {earning.ownerToDriver > 0 && (
+    <div className="earning-row">
+      <span>Owner → Driver:</span>
+      <span className="positive">₹{earning.ownerToDriver.toFixed(2)}</span>
+    </div>
+  )}
+
+  <div className="earning-row">
+    <span>Status:</span>
+    <span>{earning.status || 'unknown'}</span>
+  </div>
+
+  {/* 👇 Optional - SettledAt date */}
+  {earning.status === 'settled' && earning.settledAt && (
+    <div className="earning-row">
+      <span>Settled At:</span>
+      <span>{moment(earning.settledAt).format('MMM D, YYYY')}</span>
+    </div>
+  )}
+</div>
+
             </div>
           ))
         ) : (
