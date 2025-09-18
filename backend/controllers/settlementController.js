@@ -1,12 +1,123 @@
 const Driver = require('../models/Driver');
 const mongoose = require('mongoose');
 const moment = require('moment-timezone');
+const Razorpay = require('razorpay');
+const crypto = require('crypto');
+
+
+const rzp = new Razorpay({
+  key_id: process.env.RAZORPAY_KEY_ID,
+  key_secret: process.env.RAZORPAY_KEY_SECRET
+});
+
+exports.initiateSettlementPayment = async (req, res) => {
+  try {
+    const { settlementId, amount } = req.body;
+    if (!settlementId || !amount) {
+      return res.status(400).json({ error: 'Invalid settlement details' });
+    }
+
+    const order = await rzp.orders.create({
+      amount: amount * 100, // in paise
+      currency: 'INR',
+      receipt: `settlement_${settlementId}`
+    });
+
+    res.json({ success: true, order });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.verifySettlementPayment = async (req, res) => {
+  const { 
+    razorpay_payment_id, 
+    razorpay_order_id, 
+    razorpay_signature, 
+    settlementId, 
+    driverId, 
+    amount // ✅ must be sent from frontend
+  } = req.body;
+
+  try {
+    // Step 1: Verify Razorpay signature
+    const hmac = crypto.createHmac('sha256', process.env.RAZORPAY_KEY_SECRET);
+    hmac.update(razorpay_order_id + "|" + razorpay_payment_id);
+    const generatedSignature = hmac.digest('hex');
+
+    if (generatedSignature !== razorpay_signature) {
+      return res.status(400).json({ error: 'Invalid payment signature' });
+    }
+
+    // Step 2: Mark settlement as settled + store Razorpay details
+    const driver = await Driver.findOneAndUpdate(
+      { userId: driverId, 'paymentSettlements._id': settlementId },
+      {
+        $set: {
+          'paymentSettlements.$.status': 'settled',
+          'paymentSettlements.$.settledAt': new Date(),
+          'paymentSettlements.$.razorpayOrderId': razorpay_order_id,
+          'paymentSettlements.$.razorpayPaymentId': razorpay_payment_id,
+          'paymentSettlements.$.razorpaySignature': razorpay_signature
+        },
+        $push: {
+          collectedPayments: {
+            shipment: null, // because this is a settlement, not a delivery
+            amount: amount, // ✅ actual settlement amount from frontend
+            method: 'razorpay',
+            transactionId: razorpay_payment_id,
+            collectedAt: new Date()
+          }
+        }
+      },
+      { new: true }
+    );
+
+    if (!driver) {
+      return res.status(404).json({ error: 'Driver not found or settlement missing' });
+    }
+
+    // Step 3: Extract updated settlement
+    const updatedSettlement = driver.paymentSettlements.find(
+      s => s._id.toString() === settlementId
+    );
+
+    // ✅ Step 4: Adjust earnings based on settlement type
+    if (updatedSettlement) {
+      if (updatedSettlement.driverToOwner > 0) {
+        // Driver paid owner → reduce driver earnings
+        driver.earnings = (driver.earnings || 0) - updatedSettlement.driverToOwner;
+      }
+
+      if (updatedSettlement.ownerToDriver > 0) {
+        // Owner paid driver → increase driver earnings
+        driver.earnings = (driver.earnings || 0) + updatedSettlement.ownerToDriver;
+      }
+
+      await driver.save();
+    }
+
+    // Step 5: Respond with updated settlement
+    res.json({ 
+      success: true, 
+      settlement: updatedSettlement,
+      message: 'Settlement marked as settled successfully'
+    });
+
+  } catch (err) {
+    console.error(`[verifySettlementPayment] ERROR:`, err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+
+
 
 async function checkAndSettle(driverId, session = null) {
-//   console.log('\n' + '='.repeat(50));
-//   console.log(`[checkAndSettle] START - Processing driver: ${driverId}`);
-//   console.log(`[checkAndSettle] Session: ${session ? 'Active' : 'None'}`);
-//   console.log('='.repeat(50) + '\n');
+  // console.log('\n' + '='.repeat(50));
+  // console.log(`[checkAndSettle] START - Processing driver: ${driverId}`);
+  // console.log(`[checkAndSettle] Session: ${session ? 'Active' : 'None'}`);
+  // console.log('='.repeat(50) + '\n');
   
   const options = session ? { session } : {};
   
@@ -16,8 +127,8 @@ async function checkAndSettle(driverId, session = null) {
     const driver = await Driver.findOne({ userId: driverId }, null, options);
     
     if (!driver) {
-    //   console.error(`\n[${new Date().toISOString()}] [checkAndSettle] ERROR: Driver not found for ID: ${driverId}`);
-    //   console.log('='.repeat(50));
+      // console.error(`\n[${new Date().toISOString()}] [checkAndSettle] ERROR: Driver not found for ID: ${driverId}`);
+      // console.log('='.repeat(50));
       throw new Error('Driver not found');
     }
     
@@ -46,12 +157,12 @@ async function checkAndSettle(driverId, session = null) {
 
     // Safety check for abnormal dates
     if (lastSettled.isBefore('2020-01-01')) {
-    //   console.warn(`\n[${new Date().toISOString()}] [checkAndSettle] WARNING: Abnormal last settlement date detected:`);
-    //   console.log({
-    //     'Original Date': driver.lastSettlementDate,
-    //     'Reset To': now.clone().subtract(30, 'days').format('YYYY-MM-DD'),
-    //     'Reason': 'Date was before 2020-01-01'
-    //   });
+      // console.warn(`\n[${new Date().toISOString()}] [checkAndSettle] WARNING: Abnormal last settlement date detected:`);
+      // console.log({
+      //   'Original Date': driver.lastSettlementDate,
+      //   'Reset To': now.clone().subtract(30, 'days').format('YYYY-MM-DD'),
+      //   'Reason': 'Date was before 2020-01-01'
+      // });
       lastSettled = now.clone().subtract(30, 'days').startOf('day');
     }
 
@@ -74,33 +185,33 @@ async function checkAndSettle(driverId, session = null) {
     // 4. Process each day
     for (const day of daysToSettle) {
       const dayFormatted = day.format('YYYY-MM-DD');
-    //   console.log(`\n[${new Date().toISOString()}] [checkAndSettle] Processing day: ${dayFormatted}`);
+      // console.log(`\n[${new Date().toISOString()}] [checkAndSettle] Processing day: ${dayFormatted}`);
       
       const lastUpdated = moment(driver.currentDaySettlement.lastUpdated).tz('Asia/Kolkata');
       const hasTransactions = lastUpdated.isSame(day, 'day') && 
                             (driver.currentDaySettlement.cashCollected > 0 || 
                              driver.currentDaySettlement.onlineCollected > 0);
 
-    //   console.log(`[${new Date().toISOString()}] [checkAndSettle] Transaction check for ${dayFormatted}:`);
-    //   console.log({
-    //     'Last Updated': lastUpdated.format('YYYY-MM-DD HH:mm:ss'),
-    //     'Cash Collected': driver.currentDaySettlement.cashCollected,
-    //     'Online Collected': driver.currentDaySettlement.onlineCollected,
-    //     'Has Transactions': hasTransactions
-    //   });
+      // console.log(`[${new Date().toISOString()}] [checkAndSettle] Transaction check for ${dayFormatted}:`);
+      // console.log({
+      //   'Last Updated': lastUpdated.format('YYYY-MM-DD HH:mm:ss'),
+      //   'Cash Collected': driver.currentDaySettlement.cashCollected,
+      //   'Online Collected': driver.currentDaySettlement.onlineCollected,
+      //   'Has Transactions': hasTransactions
+      // });
 
       if (hasTransactions) {
         // console.log(`[${new Date().toISOString()}] [checkAndSettle] Found transactions for ${dayFormatted}, initiating settlement...`);
         await performDailySettlement(driver._id, day.toDate(), session);
       }
 
-    //   console.log(`[${new Date().toISOString()}] [checkAndSettle] Updating last settlement date to ${dayFormatted}`);
+      // console.log(`[${new Date().toISOString()}] [checkAndSettle] Updating last settlement date to ${dayFormatted}`);
       const updateResult = await Driver.findOneAndUpdate(
         { userId: driverId },
         { $set: { lastSettlementDate: day.toDate() } },
         { ...options }
       );
-    //   console.log(`[${new Date().toISOString()}] [checkAndSettle] Update result:`, updateResult ? 'Success' : 'Failed');
+      // console.log(`[${new Date().toISOString()}] [checkAndSettle] Update result:`, updateResult ? 'Success' : 'Failed');
     }
 
     // console.log('\n' + '='.repeat(50));
@@ -120,14 +231,14 @@ async function checkAndSettle(driverId, session = null) {
 }
 
 exports.recordPayment = async (req, res) => {
-//   console.log('\n' + '='.repeat(70));
-//   console.log(`[recordPayment] START - New payment recording initiated`);
-//   console.log(`[recordPayment] Timestamp: ${new Date().toISOString()}`);
-//   console.log('='.repeat(70) + '\n');
+  // console.log('\n' + '='.repeat(70));
+  // console.log(`[recordPayment] START - New payment recording initiated`);
+  // console.log(`[recordPayment] Timestamp: ${new Date().toISOString()}`);
+  // console.log('='.repeat(70) + '\n');
   
   const session = await mongoose.startSession();
   session.startTransaction();
-//   console.log(`[${new Date().toISOString()}] [recordPayment] MongoDB transaction started`);
+  // console.log(`[${new Date().toISOString()}] [recordPayment] MongoDB transaction started`);
 
   try {
     const { driverId, amount, method } = req.body;
@@ -141,7 +252,7 @@ exports.recordPayment = async (req, res) => {
 
     // Validate input
     if (!['cash', 'online'].includes(method)) {
-    //   console.error(`\n[${new Date().toISOString()}] [recordPayment] ERROR: Invalid payment method "${method}"`);
+      // console.error(`\n[${new Date().toISOString()}] [recordPayment] ERROR: Invalid payment method "${method}"`);
       await session.abortTransaction();
       return res.status(400).json({ error: 'Invalid payment method' });
     }
@@ -217,13 +328,12 @@ exports.recordPayment = async (req, res) => {
   }
 };
 
-
 async function performDailySettlement(driverId, settlementDate, session = null) {
-//   console.log('\n' + '='.repeat(60));
-//   console.log(`[performDailySettlement] START - Processing driver: ${driverId}`);
-//   console.log(`[performDailySettlement] Settlement date: ${settlementDate}`);
-//   console.log(`[performDailySettlement] Session: ${session ? 'Active' : 'None'}`);
-//   console.log('='.repeat(60) + '\n');
+  // console.log('\n' + '='.repeat(60));
+  // console.log(`[performDailySettlement] START - Processing driver: ${driverId}`);
+  // console.log(`[performDailySettlement] Settlement date: ${settlementDate}`);
+  // console.log(`[performDailySettlement] Session: ${session ? 'Active' : 'None'}`);
+  // console.log('='.repeat(60) + '\n');
   
   const options = session ? { session } : {};
   
@@ -300,9 +410,9 @@ async function performDailySettlement(driverId, settlementDate, session = null) 
 }
 
 exports.checkSettlement = async (req, res) => {
-//   console.log('\n' + '='.repeat(50));
-//   console.log(`[checkSettlement] START - Request for userId: ${req.params.userId}`);
-//   console.log('='.repeat(50) + '\n');
+  // console.log('\n' + '='.repeat(50));
+  // console.log(`[checkSettlement] START - Request for userId: ${req.params.userId}`);
+  // console.log('='.repeat(50) + '\n');
   
   try {
     // console.log(`[${new Date().toISOString()}] [checkSettlement] Initiating settlement check`);
@@ -337,9 +447,9 @@ exports.checkSettlement = async (req, res) => {
 };
 
 exports.dailySettlement = async (req, res) => {
-//   console.log('\n' + '='.repeat(70));
-//   console.log(`[dailySettlement] START - Manual settlement process initiated`);
-//   console.log('='.repeat(70) + '\n');
+  // console.log('\n' + '='.repeat(70));
+  // console.log(`[dailySettlement] START - Manual settlement process initiated`);
+  // console.log('='.repeat(70) + '\n');
   
   try {
     const today = moment().tz('Asia/Kolkata').startOf('day').toDate();
@@ -350,13 +460,13 @@ exports.dailySettlement = async (req, res) => {
     // console.log(`[${new Date().toISOString()}] [dailySettlement] Found ${drivers.length} drivers to process`);
 
     for (const driver of drivers) {
-    //   console.log(`\n[${new Date().toISOString()}] [dailySettlement] Processing driver:`);
-    //   console.log({
-    //     driverId: driver._id,
-    //     name: driver.name,
-    //     userId: driver.userId,
-    //     lastSettlementDate: driver.lastSettlementDate
-    //   });
+      // console.log(`\n[${new Date().toISOString()}] [dailySettlement] Processing driver:`);
+      // console.log({
+      //   driverId: driver._id,
+      //   name: driver.name,
+      //   userId: driver.userId,
+      //   lastSettlementDate: driver.lastSettlementDate
+      // });
       await checkAndSettle(driver.userId); 
     }
 
@@ -387,9 +497,9 @@ exports.dailySettlement = async (req, res) => {
 };
 
 exports.getDriverSettlement = async (req, res) => {
-//   console.log('\n' + '='.repeat(60));
-//   console.log(`[getDriverSettlement] START - Request for userId: ${req.params.userId}`);
-//   console.log('='.repeat(60) + '\n');
+  // console.log('\n' + '='.repeat(60));
+  // console.log(`[getDriverSettlement] START - Request for userId: ${req.params.userId}`);
+  // console.log('='.repeat(60) + '\n');
   
   try {
     // console.log(`[${new Date().toISOString()}] [getDriverSettlement] Querying driver document`);
@@ -397,8 +507,8 @@ exports.getDriverSettlement = async (req, res) => {
       .select('paymentSettlements currentDaySettlement lastSettlementDate');
     
     if (!driver) {
-    //   console.error(`\n[${new Date().toISOString()}] [getDriverSettlement] ERROR: Driver not found`);
-    //   console.log('='.repeat(60));
+      // console.error(`\n[${new Date().toISOString()}] [getDriverSettlement] ERROR: Driver not found`);
+      // console.log('='.repeat(60));
       return res.status(404).json({ 
         error: 'Driver not found',
         userId: req.params.userId
@@ -454,10 +564,10 @@ exports.getDriverSettlement = async (req, res) => {
   }
 };
 exports.completeSettlement = async (req, res) => {
-//   console.log('\n' + '='.repeat(70));
-//   console.log(`[completeSettlement] START - Request for userId: ${req.params.userId}`);
-//   console.log(`[completeSettlement] Settlement ID: ${req.body.settlementId}`);
-//   console.log('='.repeat(70) + '\n');
+  // console.log('\n' + '='.repeat(70));
+  // console.log(`[completeSettlement] START - Request for userId: ${req.params.userId}`);
+  // console.log(`[completeSettlement] Settlement ID: ${req.body.settlementId}`);
+  // console.log('='.repeat(70) + '\n');
   
   try {
     const { settlementId } = req.body;
