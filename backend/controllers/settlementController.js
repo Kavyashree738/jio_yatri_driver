@@ -60,15 +60,6 @@ exports.verifySettlementPayment = async (req, res) => {
           'paymentSettlements.$.razorpayPaymentId': razorpay_payment_id,
           'paymentSettlements.$.razorpaySignature': razorpay_signature
         },
-        $push: {
-          collectedPayments: {
-            shipment: null, // because this is a settlement, not a delivery
-            amount: amount, // ✅ actual settlement amount from frontend
-            method: 'razorpay',
-            transactionId: razorpay_payment_id,
-            collectedAt: new Date()
-          }
-        }
       },
       { new: true }
     );
