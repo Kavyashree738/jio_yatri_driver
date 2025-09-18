@@ -1606,7 +1606,7 @@
 }
 
 .settlement-card h3:before {
-  content: "💸";
+  content: "₹";
   margin-right: 10px;
   font-size: 1.2em;
 }
