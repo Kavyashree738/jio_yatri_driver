@@ -1250,7 +1250,7 @@ exports.getReferralCode = async (req, res, next) => {
       // console.log(`[Referral] Existing referral code found: ${driver.referralCode}`);
     }
 
-    const shareLink = `https://play.google.com/store/apps/details?id=com.matspl.jioyatripartner?driver_ref=${driver.referralCode}`;
+    const shareLink = `https://play.google.com/store/apps/details?id=com.matspl.jioyatripartner&driver_ref=${driver.referralCode}`;
     // console.log(`[Referral] Generated share link: ${shareLink}`);
 
     // Send response
