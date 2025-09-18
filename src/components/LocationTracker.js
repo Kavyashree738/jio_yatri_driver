@@ -394,7 +394,6 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
         travelMode: window.google.maps.TravelMode.DRIVING,
       },
       (result, status) => {
-        console.log('[ROUTE] status', status, result);
         if (status === 'OK') {
           directionsRendererRef.current.setDirections(result);
           setRouteError(null);
