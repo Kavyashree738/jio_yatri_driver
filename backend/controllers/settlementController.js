@@ -13,18 +13,22 @@ const rzp = new Razorpay({
 exports.initiateSettlementPayment = async (req, res) => {
   try {
     const { settlementId, amount } = req.body;
-    if (!settlementId || !amount) {
+    if (!settlementId || typeof amount !== 'number') {
       return res.status(400).json({ error: 'Invalid settlement details' });
     }
 
+    // Round to 2 decimals, then convert to paise
+    const finalAmount = Math.round((amount + Number.EPSILON) * 100);
+
     const order = await rzp.orders.create({
-      amount: amount * 100, // in paise
+      amount: finalAmount, // ✅ integer paise
       currency: 'INR',
       receipt: `settlement_${settlementId}`
     });
 
     res.json({ success: true, order });
   } catch (err) {
+    console.error('[initiateSettlementPayment] Error:', err.message);
     res.status(500).json({ error: err.message });
   }
 };
