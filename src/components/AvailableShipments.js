@@ -63,15 +63,19 @@ if (activeShipment?._id) {
   console.log("✅ Parsed shipmentData:", shipmentData);
   console.log("📦 Shipment status:", shipmentData?.status);
 
-  if (shipmentData && ['cancelled', 'delivered'].includes(shipmentData.status)) {
-    console.log("🚨 Clearing shipment, status:", shipmentData.status);
-    setActiveShipment(null);
-    localStorage.removeItem("lastShipment");
-  } else if (shipmentData) {
-    console.log("✅ Keeping active shipment:", shipmentData._id);
-    setActiveShipment(shipmentData);
-    localStorage.setItem("lastShipment", JSON.stringify(shipmentData));
-  }
+if (shipmentData && ['cancelled', 'delivered'].includes(shipmentData.status)) {
+  console.log("🚨 Clearing shipment, status:", shipmentData.status);
+  setActiveShipment(null);
+  localStorage.removeItem("lastShipment");
+  return; // ⛔ IMPORTANT: stop here so cancelled shipment is not set again
+}
+
+if (shipmentData) {
+  console.log("✅ Keeping active shipment:", shipmentData._id);
+  setActiveShipment(shipmentData);
+  localStorage.setItem("lastShipment", JSON.stringify(shipmentData));
+}
+
 }
     // 3. Fetch available shipments if driver is active
     if (newStatus === 'active') {
@@ -275,6 +279,7 @@ const handleStatusUpdate = useCallback((newStatus) => {
 }
 
 export default AvailableShipments;
+
 
 
 
