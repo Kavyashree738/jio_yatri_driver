@@ -48,29 +48,31 @@ function AvailableShipments() {
     const newStatus = statusResponse.data.data.status;
     setDriverStatus(newStatus);
 
-    // 2. 🔥 Check if activeShipment still valid
-    if (activeShipment?._id) {
-      const res = await axios.get(
-        `https://jio-yatri-driver.onrender.com/api/shipments/${activeShipment._id}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+// 2. 🔥 Check if activeShipment still valid
+if (activeShipment?._id) {
+  const res = await axios.get(
+    `https://jio-yatri-driver.onrender.com/api/shipments/${activeShipment._id}`,
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
 
-      // If cancelled/delivered -> remove from dashboard
-// unwrap shipment correctly (backend may wrap it in data or shipment)
-const shipmentData = res.data.shipment || res.data.data || res.data;
+  console.log("🔍 Full shipment response:", res.data);
 
-if (shipmentData && ['cancelled', 'delivered'].includes(shipmentData.status)) {
-  console.log("Clearing shipment, status:", shipmentData.status);
-  setActiveShipment(null);
-  localStorage.removeItem("lastShipment");  // 🔥 clear storage
-} else if (shipmentData) {
-  setActiveShipment(shipmentData);
-  localStorage.setItem("lastShipment", JSON.stringify(shipmentData));
+  // unwrap shipment correctly (backend may wrap it in data or shipment)
+  const shipmentData = res.data.shipment || res.data.data || res.data;
+
+  console.log("✅ Parsed shipmentData:", shipmentData);
+  console.log("📦 Shipment status:", shipmentData?.status);
+
+  if (shipmentData && ['cancelled', 'delivered'].includes(shipmentData.status)) {
+    console.log("🚨 Clearing shipment, status:", shipmentData.status);
+    setActiveShipment(null);
+    localStorage.removeItem("lastShipment");
+  } else if (shipmentData) {
+    console.log("✅ Keeping active shipment:", shipmentData._id);
+    setActiveShipment(shipmentData);
+    localStorage.setItem("lastShipment", JSON.stringify(shipmentData));
+  }
 }
-
-
-    }
-
     // 3. Fetch available shipments if driver is active
     if (newStatus === 'active') {
       await fetchAvailableShipments(token);
@@ -273,6 +275,7 @@ const handleStatusUpdate = useCallback((newStatus) => {
 }
 
 export default AvailableShipments;
+
 
 
 
