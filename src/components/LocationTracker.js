@@ -443,45 +443,37 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
   }, [location, loadingMap, updateMap]);
 
   /* ------------------------ Send driver location (API) ------------------------ */
-  const debouncedSendLocation = useCallback(
-    debounce(async (coords) => {
-      if (!coords || !user) return;
-      try {
-        const token = await user.getIdToken();
+ useEffect(() => {
+  if (!user || !activeShipment?._id) return;
 
-        // console.log('[API] PUT /driver/location', coords);
-        await axios.put(
-          `${API_BASE_URL}/api/driver/location`,
-          { coordinates: coords, isLocationActive: true },
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+  const interval = setInterval(async () => {
+    if (!location) return; // location = [lng, lat]
 
-        if (activeShipment?._id) {
-          // console.log('[API] PUT /shipments/:id/driver-location', activeShipment._id, coords);
-          await axios.put(
-            `${API_BASE_URL}/api/shipments/${activeShipment._id}/driver-location`,
-            { coordinates: coords },
-            {
-              headers: {
-                Authorization: `Bearer ${token}`,
-                'Content-Type': 'application/json',
-              },
-            }
-          );
-        }
-      } catch (err) {
-        // console.error('[API] location update failed', err);
-        // toast.error('Failed to update your location');
-      }
-    }, 5000),
-    [user, activeShipment]
-  );
+    try {
+      const token = await user.getIdToken();
 
-  useEffect(() => {
-    if (location && user) {
-      debouncedSendLocation(location);
+      // Update driver profile
+      await axios.put(
+        `${API_BASE_URL}/api/driver/location`,
+        { coordinates: location, isLocationActive: true },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      // Update active shipment
+      await axios.put(
+        `${API_BASE_URL}/api/shipments/${activeShipment._id}/driver-location`,
+        { coordinates: location },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      console.log("✅ Driver location updated:", location);
+    } catch (err) {
+      console.error("❌ Failed to update driver location:", err);
     }
-  }, [location, user, debouncedSendLocation]);
+  }, 5000); // send every 5 seconds no matter what
+
+  return () => clearInterval(interval);
+}, [user, activeShipment, location]);
 
   /* ------------------------------ UI Handlers ------------------------------ */
   const handleRecenter = () => {
