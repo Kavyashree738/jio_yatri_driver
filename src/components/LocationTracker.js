@@ -303,116 +303,70 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
   const [distanceToReceiver, setDistanceToReceiver] = useState('');
   const [routeError, setRouteError] = useState(null);
 
-  const updateMap = useCallback(() => {
-    if (!mapRef.current || !activeShipment || !window.google) return;
+const updateMap = useCallback(() => {
+  if (!mapRef.current || !activeShipment || !window.google) return;
 
-    const driverLatLng = normalizeToLatLng(location);
-    // console.log('[DRIVER] normalized', driverLatLng);
+  const driverLatLng = normalizeToLatLng(location);
 
-    if (!isValidLatLng(driverLatLng)) {
-      // console.warn('[WARN] Invalid driver point, skipping marker/route.');
-      return;
-    }
-    if (!isValidLatLng(senderLatLng) || !isValidLatLng(receiverLatLng)) {
-      setRouteError('Missing/invalid sender or receiver coordinates');
-      // console.warn('[WARN] Bad sender/receiver', { senderLatLng, receiverLatLng });
-      return;
-    }
+  if (!isValidLatLng(driverLatLng)) return;
+  if (!isValidLatLng(senderLatLng) || !isValidLatLng(receiverLatLng)) return;
 
-    // DRIVER marker
-    if (!markerRef.current) {
-      markerRef.current = new window.google.maps.Marker({
-        position: driverLatLng,
-        map: mapRef.current,
-        icon: {
-          path: window.google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
-          scale: 6,
-          rotation: Number.isFinite(heading) ? heading : 0,
-          fillColor: '#EA4335',
-          fillOpacity: 1,
-          strokeWeight: 2,
-          strokeColor: '#FFFFFF',
-        },
-        title: 'Your Location',
-      });
-      // console.log('[MARKER] created: driver');
-    } else {
-      markerRef.current.setPosition(driverLatLng);
-      // console.log('[MARKER] updated: driver');
-    }
-
-    // SENDER marker
-    if (!senderMarkerRef.current) {
-      senderMarkerRef.current = new window.google.maps.Marker({
-        position: senderLatLng,
-        map: mapRef.current,
-        icon: {
-          url: 'https://maps.google.com/mapfiles/ms/icons/green-dot.png',
-          labelOrigin: new window.google.maps.Point(10, 11),
-        },
-        label: { text: 'S', color: '#ffffff', fontWeight: '700' },
-        title: 'Sender',
-      });
-      // console.log('[MARKER] created: sender');
-    } else {
-      senderMarkerRef.current.setPosition(senderLatLng);
-      // console.log('[MARKER] updated: sender');
-    }
-
-    // RECEIVER marker
-    if (!receiverMarkerRef.current) {
-      receiverMarkerRef.current = new window.google.maps.Marker({
-        position: receiverLatLng,
-        map: mapRef.current,
-        icon: {
-          url: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png',
-          labelOrigin: new window.google.maps.Point(10, 11),
-        },
-        label: { text: 'R', color: '#ffffff', fontWeight: '700' },
-        title: 'Receiver',
-      });
-      // console.log('[MARKER] created: receiver');
-    } else {
-      receiverMarkerRef.current.setPosition(receiverLatLng);
-      // console.log('[MARKER] updated: receiver');
-    }
-
-    // Fit bounds
-    const bounds = new window.google.maps.LatLngBounds();
-    bounds.extend(driverLatLng);
-    bounds.extend(senderLatLng);
-    bounds.extend(receiverLatLng);
-    mapRef.current.fitBounds(bounds);
-    // console.log('[MAP] fitBounds done');
-
-    // Route
-    // console.log('[ROUTE] origin', driverLatLng, 'via', senderLatLng, 'to', receiverLatLng);
-    directionsServiceRef.current.route(
-      {
-        origin: driverLatLng,
-        destination: receiverLatLng,
-        waypoints: [{ location: senderLatLng, stopover: true }],
-        travelMode: window.google.maps.TravelMode.DRIVING,
+  // DRIVER marker update
+  if (!markerRef.current) {
+    markerRef.current = new window.google.maps.Marker({
+      position: driverLatLng,
+      map: mapRef.current,
+      icon: {
+        path: window.google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+        scale: 6,
+        rotation: Number.isFinite(heading) ? heading : 0,
+        fillColor: '#EA4335',
+        fillOpacity: 1,
+        strokeWeight: 2,
+        strokeColor: '#FFFFFF',
       },
-      (result, status) => {
-        if (status === 'OK') {
-          directionsRendererRef.current.setDirections(result);
-          setRouteError(null);
-          const legs = result?.routes?.[0]?.legs || [];
-          if (legs.length >= 1) {
-            setDistanceToSender(legs[0]?.distance?.text || '');
-            setEtaToSender(legs[0]?.duration?.text || '');
-          }
-          if (legs.length >= 2) {
-            setDistanceToReceiver(legs[1]?.distance?.text || '');
-            setEtaToReceiver(legs[1]?.duration?.text || '');
-          }
-        } else {
-          setRouteError(`Route error: ${status}`);
-        }
+      title: 'Your Location',
+    });
+  } else {
+    markerRef.current.setPosition(driverLatLng);
+  }
+
+  // Sender + Receiver markers (only create once)
+  if (!senderMarkerRef.current) {
+    senderMarkerRef.current = new window.google.maps.Marker({
+      position: senderLatLng,
+      map: mapRef.current,
+      icon: { url: 'https://maps.google.com/mapfiles/ms/icons/green-dot.png' },
+      label: { text: 'S', color: '#ffffff', fontWeight: '700' },
+      title: 'Sender',
+    });
+  }
+  if (!receiverMarkerRef.current) {
+    receiverMarkerRef.current = new window.google.maps.Marker({
+      position: receiverLatLng,
+      map: mapRef.current,
+      icon: { url: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png' },
+      label: { text: 'R', color: '#ffffff', fontWeight: '700' },
+      title: 'Receiver',
+    });
+  }
+
+  // Route update
+  directionsServiceRef.current.route(
+    {
+      origin: driverLatLng,
+      destination: receiverLatLng,
+      waypoints: [{ location: senderLatLng, stopover: true }],
+      travelMode: window.google.maps.TravelMode.DRIVING,
+    },
+    (result, status) => {
+      if (status === 'OK') {
+        directionsRendererRef.current.setDirections(result);
       }
-    );
-  }, [location, heading, activeShipment, senderLatLng, receiverLatLng]);
+    }
+  );
+}, [location, heading, activeShipment, senderLatLng, receiverLatLng]);
+
 
   /* --------------------------- Load Maps JS once --------------------------- */
   useEffect(() => {
