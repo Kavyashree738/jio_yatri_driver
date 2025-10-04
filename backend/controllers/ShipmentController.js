@@ -590,8 +590,18 @@ exports.cancelShipment = async (req, res) => {
 
     // Emit real-time update if using Socket.io
     if (req.io) {
-      req.io.to(`shipment_${shipment._id}`).emit('shipment_updated', shipment);
-    }
+  // Notify all shipment listeners
+  req.io.to(`shipment_${shipment._id}`).emit('shipment_cancelled', shipment);
+
+  // Also tell driver dashboard to clear active shipment
+  if (shipment.assignedDriver?.userId) {
+    req.io.to(`driver_${shipment.assignedDriver.userId}`).emit('active_shipment_cleared', {
+      driverId: shipment.assignedDriver.userId,
+      shipmentId: shipment._id
+    });
+  }
+}
+
 
     res.status(200).json({
       success: true,
@@ -758,5 +768,6 @@ exports.getShopShipments = async (req, res) => {
     res.status(500).json({ message: 'Failed to fetch shop shipments' });
   }
 };
+
 
 
