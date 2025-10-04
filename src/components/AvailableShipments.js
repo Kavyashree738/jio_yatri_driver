@@ -56,15 +56,18 @@ function AvailableShipments() {
       );
 
       // If cancelled/delivered -> remove from dashboard
-     const shipmentData = res.data.shipment || res.data;
+// unwrap shipment correctly (backend may wrap it in data or shipment)
+const shipmentData = res.data.shipment || res.data.data || res.data;
 
-if (['cancelled', 'delivered'].includes(shipmentData.status)) {
+if (shipmentData && ['cancelled', 'delivered'].includes(shipmentData.status)) {
+  console.log("Clearing shipment, status:", shipmentData.status);
   setActiveShipment(null);
-  localStorage.removeItem('lastShipment');
-} else {
+  localStorage.removeItem("lastShipment");  // 🔥 clear storage
+} else if (shipmentData) {
   setActiveShipment(shipmentData);
-  localStorage.setItem('lastShipment', JSON.stringify(shipmentData));
+  localStorage.setItem("lastShipment", JSON.stringify(shipmentData));
 }
+
 
     }
 
@@ -270,6 +273,7 @@ const handleStatusUpdate = useCallback((newStatus) => {
 }
 
 export default AvailableShipments;
+
 
 
 
