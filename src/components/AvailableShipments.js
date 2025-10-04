@@ -148,12 +148,21 @@ function AvailableShipments() {
     }
   };
 
-  const handleStatusUpdate = useCallback((newStatus) => {
-    setActiveShipment(prev => prev ? { ...prev, status: newStatus } : null);
+const handleStatusUpdate = useCallback((newStatus) => {
+  setActiveShipment(prev => {
+    if (!prev) return null;
+
     if (['cancelled', 'delivered'].includes(newStatus)) {
-      fetchData();
+      return null;  // ❌ remove from dashboard
     }
-  }, []);
+    return { ...prev, status: newStatus };
+  });
+
+  if (['cancelled', 'delivered'].includes(newStatus)) {
+    fetchData(); // refresh shipments list
+  }
+}, []);
+
 
   return (
     <div className="available-shipments">
@@ -238,3 +247,4 @@ function AvailableShipments() {
 }
 
 export default AvailableShipments;
+
