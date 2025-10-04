@@ -504,9 +504,7 @@ const updateMap = useCallback(() => {
         </button>
       </div>
 
-      <button onClick={handleViewFullMap} className="fullscreen-button" aria-label="View full screen map">
-        <span className="button-icon">🗺️</span> View Full Map
-      </button>
+
 
       <EtaDisplay
         etaToSender={etaToSender}
