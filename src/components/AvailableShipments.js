@@ -56,12 +56,16 @@ function AvailableShipments() {
       );
 
       // If cancelled/delivered -> remove from dashboard
-      if (['cancelled', 'delivered'].includes(res.data.status)) {
-        setActiveShipment(null);
-        localStorage.removeItem('lastShipment');
-      } else {
-        setActiveShipment(res.data); // keep status updated
-      }
+     const shipmentData = res.data.shipment || res.data;
+
+if (['cancelled', 'delivered'].includes(shipmentData.status)) {
+  setActiveShipment(null);
+  localStorage.removeItem('lastShipment');
+} else {
+  setActiveShipment(shipmentData);
+  localStorage.setItem('lastShipment', JSON.stringify(shipmentData));
+}
+
     }
 
     // 3. Fetch available shipments if driver is active
@@ -266,5 +270,6 @@ const handleStatusUpdate = useCallback((newStatus) => {
 }
 
 export default AvailableShipments;
+
 
 
