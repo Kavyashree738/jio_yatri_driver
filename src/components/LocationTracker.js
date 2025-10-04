@@ -182,12 +182,13 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
   }, [shipment]);
 
   useEffect(() => {
-    if (!shipment && localShipment && ['cancelled', 'delivered'].includes(localShipment.status)) {
-      localStorage.removeItem('lastShipment');
-      setLocalShipment(null);
-      if (onStatusUpdate) onStatusUpdate(localShipment.status);
-    }
-  }, [shipment, localShipment, onStatusUpdate]);
+  if (shipment && ['cancelled', 'delivered'].includes(shipment.status)) {
+    localStorage.removeItem('lastShipment');
+    setLocalShipment(null);
+    if (onStatusUpdate) onStatusUpdate(shipment.status);
+  }
+}, [shipment, onStatusUpdate]);
+
 
   /* ------------------------------ Driver point ------------------------------ */
   const location = useMemo(() => {
