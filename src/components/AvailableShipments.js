@@ -29,35 +29,54 @@ function AvailableShipments() {
   }, []);
 
   const fetchData = async () => {
-    try {
-      const auth = getAuth();
-      const user = auth.currentUser;
+  try {
+    const auth = getAuth();
+    const user = auth.currentUser;
 
-      if (!user) {
-        setLoading(false);
-        return;
-      }
-
-      const token = await user.getIdToken();
-
-      const statusResponse = await axios.get(`https://jio-yatri-driver.onrender.com/api/driver/status`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      const newStatus = statusResponse.data.data.status;
-      setDriverStatus(newStatus);
-
-      if (newStatus === 'active') {
-        await fetchAvailableShipments(token);
-      } else {
-        setShipments([]);
-      }
-    } catch (error) {
-      console.error('Error fetching data:', error);
-    } finally {
+    if (!user) {
       setLoading(false);
+      return;
     }
-  };
+
+    const token = await user.getIdToken();
+
+    // 1. Get driver status
+    const statusResponse = await axios.get(`https://jio-yatri-driver.onrender.com/api/driver/status`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    const newStatus = statusResponse.data.data.status;
+    setDriverStatus(newStatus);
+
+    // 2. 🔥 Check if activeShipment still valid
+    if (activeShipment?._id) {
+      const res = await axios.get(
+        `https://jio-yatri-driver.onrender.com/api/shipments/${activeShipment._id}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      // If cancelled/delivered -> remove from dashboard
+      if (['cancelled', 'delivered'].includes(res.data.status)) {
+        setActiveShipment(null);
+        localStorage.removeItem('lastShipment');
+      } else {
+        setActiveShipment(res.data); // keep status updated
+      }
+    }
+
+    // 3. Fetch available shipments if driver is active
+    if (newStatus === 'active') {
+      await fetchAvailableShipments(token);
+    } else {
+      setShipments([]);
+    }
+  } catch (error) {
+    console.error('Error fetching data:', error);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   const fetchAvailableShipments = async (token) => {
     try {
@@ -247,4 +266,5 @@ const handleStatusUpdate = useCallback((newStatus) => {
 }
 
 export default AvailableShipments;
+
 
