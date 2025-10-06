@@ -12,6 +12,7 @@ import { signOut } from 'firebase/auth';
 import { auth } from '../firebase';
 import axios from 'axios';
 import moment from 'moment';
+import ImageCropper from './ImageCropper';
 import useDriverHeartbeat from '../hooks/useDriverHeartbeat';
 import 'moment/locale/en-in'; // Import the locale you need
 import DailyEarningsFilter from './DailyEarningsFilter';
@@ -43,6 +44,9 @@ const DriverDashboard = () => {
     const [marqueeActive, setMarqueeActive] = useState(false);
     const [marqueeText] = useState('Earn ₹10 Cashback');
     const [fatal, setFatal] = useState(null);
+
+    const [cropMode, setCropMode] = useState(false);
+    const [selectedImage, setSelectedImage] = useState(null);
 
     const loadRazorpay = () => {
         return new Promise((resolve) => {
@@ -310,61 +314,57 @@ const DriverDashboard = () => {
         }
     };
 
-    const handleImageUpload = async (e) => {
-        // console.log('File selected'); // Debug log
-        const file = e.target.files[0];
-        if (!file) {
-            console.log('No file selected');
-            return;
-        }
-        e.target.value = ''; // Reset input
+     const handleImageUpload = (e) => {
+  const file = e.target.files[0];
+  if (!file) {
+    console.log('No file selected');
+    return;
+  }
 
-        // console.log('File type:', file.type, 'Size:', file.size); // Debug log
+  if (!file.type.match('image.*')) {
+    setError('Please select an image file');
+    return;
+  }
 
-        if (!file.type.match('image.*')) {
-            console.log('Invalid file type');
-            setError('Please select an image file');
-            return;
-        }
+  if (file.size > 5 * 1024 * 1024) {
+    setError('Image size should be less than 5MB');
+    return;
+  }
 
-        if (file.size > 5 * 1024 * 1024) {
-            console.log('File too large');
-            setError('Image size should be < 5MB');
-            return;
-        }
+  const previewUrl = URL.createObjectURL(file);
+  setSelectedImage(previewUrl);
+  setCropMode(true); // ✅ Opens cropper popup
+};
 
-        setIsUploading(true);
-        setError(null);
+const handleCropComplete = async (croppedImageUrl) => {
+  setCropMode(false);
+  setProfileImage(croppedImageUrl);
 
-        try {
-            console.log('Starting upload'); // Debug log
-            const previewUrl = URL.createObjectURL(file);
-            setProfileImage(previewUrl);
+  const blob = await fetch(croppedImageUrl).then((r) => r.blob());
+  const formData = new FormData();
+  formData.append('file', blob, 'profile.jpg');
 
-            const formData = new FormData();
-            formData.append('file', file);
+  const token = await user.getIdToken(true);
 
-            const token = await user.getIdToken(true);
-            const response = await fetch('https://jio-yatri-driver.onrender.com/api/upload/profile-image', {
-                method: 'POST',
-                headers: { Authorization: `Bearer ${token}` },
-                body: formData
-            });
+  try {
+    const response = await fetch('https://jio-yatri-driver.onrender.com/api/upload/profile-image', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData,
+    });
 
-            console.log('Upload response:', response); // Debug log
+    if (!response.ok) {
+      throw new Error('Upload failed');
+    }
 
-            if (!response.ok) {
-                throw new Error('Upload failed');
-            }
-
-            await fetchDriverInfo();
-        } catch (err) {
-            console.error('Upload error:', err); // Debug log
-            setError(err.message);
-        } finally {
-            setIsUploading(false);
-        }
-    };
+    await fetchDriverInfo();
+  } catch (err) {
+    console.error('Upload error:', err);
+    setError(err.message);
+  } finally {
+    setIsUploading(false);
+  }
+};
     const handleLogout = async () => {
         try {
             await signOut(auth);
@@ -822,6 +822,13 @@ const DriverDashboard = () => {
             </div>
             
             <AvailableShipments />
+            {cropMode && (
+  <ImageCropper
+    image={selectedImage}
+    onCropComplete={handleCropComplete}
+    onCancel={() => setCropMode(false)}
+  />
+)}
             <Footer />
         </>
     );
