@@ -584,7 +584,7 @@ useEffect(() => {
           onClick={() => {
             handleCancelShipment();
             setShowCancelPopup(false);
-            window.location.reload();
+          
           }}
           className="yes-button"
         >
@@ -612,7 +612,7 @@ useEffect(() => {
           onClick={() => {
             handleDeliverShipment();
             setShowDeliverPopup(false);
-            window.location.reload();
+          
           }}
           className="yes-button"
         >
