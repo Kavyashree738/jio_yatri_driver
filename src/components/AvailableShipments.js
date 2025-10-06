@@ -14,6 +14,13 @@ function AvailableShipments() {
   const [isMobile, setIsMobile] = useState(false);
   const notifiedShipmentIdsRef = useRef(new Set());
 
+   useEffect(() => {
+    const savedShipment = localStorage.getItem("lastShipment");
+    if (savedShipment) {
+      setActiveShipment(JSON.parse(savedShipment));
+    }
+  }, []);
+
   useEffect(() => {
     const checkIfMobile = () => {
       const userAgent = navigator.userAgent || navigator.vendor || window.opera;
@@ -288,6 +295,7 @@ const handleStatusUpdate = useCallback((newStatus) => {
 }
 
 export default AvailableShipments;
+
 
 
 
