@@ -2235,11 +2235,14 @@
   z-index: 2000;
   backdrop-filter: blur(6px);
   animation: fadeIn 0.3s ease-in-out;
+  padding: 20px; /* ensure cropper doesn’t touch screen edges */
 }
 
 .cropper {
-  width: 320px;
-  height: 320px;
+  width: 90vw; /* responsive width */
+  max-width: 340px;
+  height: 90vw; /* maintain square aspect ratio */
+  max-height: 340px;
   background: #1f1f1f;
   border-radius: 12px;
   overflow: hidden;
@@ -2256,15 +2259,20 @@
 .controls {
   margin-top: 24px;
   display: flex;
+  flex-wrap: wrap; /* wrap buttons on small screens */
   gap: 14px;
   align-items: center;
   justify-content: center;
   color: #eaeaea;
   font-family: 'Inter', sans-serif;
+  width: 100%;
+  text-align: center;
 }
 
 .controls button {
-  padding: 10px 18px;
+  flex: 1 1 auto;
+  min-width: 110px;
+  padding: 10px 16px;
   background: linear-gradient(135deg, #3399cc, #0077b6);
   color: white;
   border: none;
@@ -2290,7 +2298,45 @@
   background: #555;
 }
 
-/* Optional animation for entrance */
+/* ✅ RESPONSIVE MEDIA QUERIES */
+@media (max-width: 768px) {
+  .cropper {
+    width: 80vw;
+    height: 80vw;
+    max-width: 300px;
+    max-height: 300px;
+  }
+
+  .controls {
+    margin-top: 18px;
+    gap: 10px;
+  }
+
+  .controls button {
+    font-size: 14px;
+    padding: 8px 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .cropper {
+    width: 90vw;
+    height: 90vw;
+    max-width: 280px;
+    max-height: 280px;
+  }
+
+  .controls {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .controls button {
+    width: 100%;
+  }
+}
+
+/* Optional fade animation */
 @keyframes fadeIn {
   from { opacity: 0; transform: scale(0.95); }
   to { opacity: 1; transform: scale(1); }
