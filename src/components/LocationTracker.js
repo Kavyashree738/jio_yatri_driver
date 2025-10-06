@@ -419,6 +419,22 @@ const updateMap = useCallback(() => {
     }
   }, [location, loadingMap, updateMap]);
 
+  // ✅ Fix scroll after exiting fullscreen mode
+useEffect(() => {
+  const handleFullscreenChange = () => {
+    if (!document.fullscreenElement && mapContainerRef.current) {
+      // User exited fullscreen → scroll map back into view smoothly
+      mapContainerRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  };
+
+  document.addEventListener('fullscreenchange', handleFullscreenChange);
+
+  return () => {
+    document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  };
+}, []);
+
   /* ------------------------ Send driver location (API) ------------------------ */
  useEffect(() => {
   if (!user || !activeShipment?._id) return;
