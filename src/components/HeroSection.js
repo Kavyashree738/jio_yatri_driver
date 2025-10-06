@@ -1303,33 +1303,49 @@ const HeroSection = () => {
                             <h3 className="otp-title">Enter Verification Code</h3>
                             <p className="otp-subtitle">Sent to {phoneNumber}</p>
 
-                            <div className="otp-container">
-                                {[...Array(4)].map((_, index) => (
-                                    <input
-                                        key={index}
-                                        type="text"
-                                        maxLength="1"
-                                        value={otp[index] || ''}
-                                        onChange={(e) => {
-                                            const newOtp = otp.split('');
-                                            newOtp[index] = e.target.value.replace(/\D/g, '');
-                                            setOtp(newOtp.join('').slice(0, 4));
+                           <form autoComplete="one-time-code"> {/* Helps iOS autofill */}
+  <div className="otp-container">
+    {[...Array(4)].map((_, index) => (
+      <input
+        key={index}
+        type="text"
+        maxLength="1"
+        value={otp[index] || ''}
+        onChange={(e) => {
+          const value = e.target.value.replace(/\D/g, '');
+          let newOtp = otp.split('');
 
-                                            if (e.target.value && index < 3) {
-                                                document.getElementById(`otp-input-${index + 1}`).focus();
-                                            }
-                                        }}
-                                        onKeyDown={(e) => {
-                                            if (e.key === 'Backspace' && !otp[index] && index > 0) {
-                                                document.getElementById(`otp-input-${index - 1}`).focus();
-                                            }
-                                        }}
-                                        className={`otp-input ${otp[index] ? 'filled' : ''}`}
-                                        id={`otp-input-${index}`}
-                                        inputMode="numeric"
-                                    />
-                                ))}
-                            </div>
+          // ✅ If user pastes entire OTP (e.g. “1234”), auto-fill all boxes
+          if (value.length > 1) {
+            const digits = value.slice(0, 4).split('');
+            setOtp(digits.join(''));
+            return;
+          }
+
+          newOtp[index] = value;
+          setOtp(newOtp.join('').slice(0, 4));
+
+          // Move focus to next input automatically
+          if (value && index < 3) {
+            document.getElementById(`otp-input-${index + 1}`).focus();
+          }
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Backspace' && !otp[index] && index > 0) {
+            document.getElementById(`otp-input-${index - 1}`).focus();
+          }
+        }}
+        className={`otp-input ${otp[index] ? 'filled' : ''}`}
+        id={`otp-input-${index}`}
+        inputMode="numeric"
+        pattern="\d*"
+        name={index === 0 ? 'otp' : undefined}           // ✅ add only on first box
+        autoComplete={index === 0 ? 'one-time-code' : undefined} // ✅ add only on first box
+      />
+    ))}
+  </div>
+</form>
+
 
                             {message.isError && (
                                 <div className="otp-error">
