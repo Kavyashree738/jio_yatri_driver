@@ -243,11 +243,19 @@ exports.getOrderStatus = async (req, res) => {
 exports.getMatchingShipments = async (req, res) => {
   try {
     const driver = await Driver.findOne({ userId: req.user.uid })
-      .select('vehicleType lastKnownLocation')
+       .select('vehicleType lastKnownLocation activeShipment')
       .lean();
 
     if (!driver) {
       return res.status(404).json({ success: false, error: 'Driver not found' });
+    }
+
+        if (driver.activeShipment) {
+      return res.status(200).json({
+        success: true,
+        shipments: [],
+        message: 'You already have an active shipment. Complete or deliver it before viewing new ones.'
+      });
     }
 
     const point = driver.lastKnownLocation;
@@ -768,6 +776,7 @@ exports.getShopShipments = async (req, res) => {
     res.status(500).json({ message: 'Failed to fetch shop shipments' });
   }
 };
+
 
 
 
