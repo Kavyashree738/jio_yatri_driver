@@ -157,6 +157,8 @@ const ShipmentDetailsCard = ({ shipment }) => {
 /* ---------------------------- Main Component ---------------------------- */
 const LocationTracker = ({ shipment, onStatusUpdate }) => {
   const { user } = useAuth();
+ const [showCancelPopup, setShowCancelPopup] = useState(false);
+const [showDeliverPopup, setShowDeliverPopup] = useState(false);
   const navigate = useNavigate();
 
   const { position: geoPosition } = useGeolocation({
@@ -535,27 +537,84 @@ const updateMap = useCallback(() => {
       />
       {routeError && <p className="error-message">{routeError}</p>}
 
-      <div className="shipment-actions">
-        <button
-          onClick={() => {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-            handleCancelShipment();
-          }}
-          className="cancel-buttons"
-        >
-          Cancel Shipment
-        </button>
+<div className="shipment-actions">
+  <button
+    onClick={() => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      setShowCancelPopup(true);
+    }}
+    className="cancel-buttons"
+  >
+    Cancel Shipment
+  </button>
 
+  <button
+    onClick={() => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      setShowDeliverPopup(true);
+    }}
+    className="deliver-button"
+  >
+    Mark as Delivered
+  </button>
+</div>
+
+      {/* Cancel Shipment Popup */}
+{showCancelPopup && (
+  <div className="popup-overlay">
+    <div className="popup-box">
+      <h3>Cancel Shipment</h3>
+      <p>Are you sure you want to cancel this shipment?</p>
+      <div className="popup-buttons">
         <button
           onClick={() => {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-            handleDeliverShipment();
+            handleCancelShipment();
+            setShowCancelPopup(false);
+            window.location.reload();
           }}
-          className="deliver-button"
+          className="yes-button"
         >
-          Mark as Delivered
+          Yes, Cancel
+        </button>
+        <button
+          onClick={() => setShowCancelPopup(false)}
+          className="no-button"
+        >
+          No
         </button>
       </div>
+    </div>
+  </div>
+)}
+
+{/* Mark as Delivered Popup */}
+{showDeliverPopup && (
+  <div className="popup-overlay">
+    <div className="popup-box">
+      <h3>Mark as Delivered</h3>
+      <p>Have you reached the delivery location and handed over the package?</p>
+      <div className="popup-buttons">
+        <button
+          onClick={() => {
+            handleDeliverShipment();
+            setShowDeliverPopup(false);
+            window.location.reload();
+          }}
+          className="yes-button"
+        >
+          Yes, Mark as Delivered
+        </button>
+        <button
+          onClick={() => setShowDeliverPopup(false)}
+          className="no-button"
+        >
+          No
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
     </div>
   );
 };
