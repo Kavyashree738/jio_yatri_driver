@@ -362,10 +362,49 @@ const updateMap = useCallback(() => {
     (result, status) => {
       if (status === 'OK') {
         directionsRendererRef.current.setDirections(result);
+
+        // 🟢 Add this block to calculate ETA and Distance
+        const service = new window.google.maps.DistanceMatrixService();
+
+        // Calculate distance & ETA to Sender
+        service.getDistanceMatrix(
+          {
+            origins: [driverLatLng],
+            destinations: [senderLatLng],
+            travelMode: window.google.maps.TravelMode.DRIVING,
+          },
+          (response, status) => {
+            if (status === 'OK') {
+              const element = response.rows[0].elements[0];
+              setDistanceToSender(element.distance.text);
+              setEtaToSender(element.duration.text);
+            }
+          }
+        );
+
+        // Calculate distance & ETA to Receiver
+        service.getDistanceMatrix(
+          {
+            origins: [driverLatLng],
+            destinations: [receiverLatLng],
+            travelMode: window.google.maps.TravelMode.DRIVING,
+          },
+          (response, status) => {
+            if (status === 'OK') {
+              const element = response.rows[0].elements[0];
+              setDistanceToReceiver(element.distance.text);
+              setEtaToReceiver(element.duration.text);
+            }
+          }
+        );
+        // 🟢 END ETA BLOCK
+      } else {
+        setRouteError('Failed to fetch route');
       }
     }
   );
 }, [location, heading, activeShipment, senderLatLng, receiverLatLng]);
+
 
 
   /* --------------------------- Load Maps JS once --------------------------- */
