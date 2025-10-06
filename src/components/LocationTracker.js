@@ -475,7 +475,6 @@ const updateMap = useCallback(() => {
       if (onStatusUpdate) onStatusUpdate('cancelled');
       mapRef.current = null;
       toast.success('Shipment cancelled successfully');
-      setTimeout(() => window.location.reload(), 2000);
     } catch (error) {
       // console.error('[API] cancel failed', error);
       toast.error(error.response?.data?.message || 'Error cancelling shipment');
@@ -496,7 +495,6 @@ const updateMap = useCallback(() => {
       if (onStatusUpdate) onStatusUpdate('delivered');
       mapRef.current = null;
       toast.success('Shipment delivered successfully!');
-      setTimeout(() => window.location.reload(), 2000);
     } catch (error) {
       // console.error('[API] deliver failed', error);
       toast.error(error.response?.data?.message || 'Error delivering shipment');
