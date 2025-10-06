@@ -820,7 +820,7 @@ const DriverDashboard = () => {
                     </button> */}
                 </div>
             </div>
-            <LocationTracker />
+            
             <AvailableShipments />
             <Footer />
         </>
