@@ -48,6 +48,10 @@ const DriverDashboard = () => {
     const [cropMode, setCropMode] = useState(false);
     const [selectedImage, setSelectedImage] = useState(null);
 
+    const [showPreview, setShowPreview] = useState(false);
+    const pressTimer = useRef(null);
+
+
     const loadRazorpay = () => {
         return new Promise((resolve) => {
             if (window.Razorpay) {
@@ -119,6 +123,22 @@ const DriverDashboard = () => {
         }
     };
 
+
+
+    // 🔹 Detect long-press start (500 ms)
+    const handleLongPressStart = () => {
+        pressTimer.current = setTimeout(() => setShowPreview(true), 500);
+    };
+
+    // 🔹 Cancel if released early
+    const handleLongPressEnd = () => {
+        clearTimeout(pressTimer.current);
+    };
+
+    // 🔹 Close preview
+    const handleClosePreview = () => {
+        setShowPreview(false);
+    };
 
 
     const fetchDriverInfo = useCallback(async () => {
@@ -314,57 +334,57 @@ const DriverDashboard = () => {
         }
     };
 
-     const handleImageUpload = (e) => {
-  const file = e.target.files[0];
-  if (!file) {
-    console.log('No file selected');
-    return;
-  }
+    const handleImageUpload = (e) => {
+        const file = e.target.files[0];
+        if (!file) {
+            console.log('No file selected');
+            return;
+        }
 
-  if (!file.type.match('image.*')) {
-    setError('Please select an image file');
-    return;
-  }
+        if (!file.type.match('image.*')) {
+            setError('Please select an image file');
+            return;
+        }
 
-  if (file.size > 5 * 1024 * 1024) {
-    setError('Image size should be less than 5MB');
-    return;
-  }
+        if (file.size > 5 * 1024 * 1024) {
+            setError('Image size should be less than 5MB');
+            return;
+        }
 
-  const previewUrl = URL.createObjectURL(file);
-  setSelectedImage(previewUrl);
-  setCropMode(true); // ✅ Opens cropper popup
-};
+        const previewUrl = URL.createObjectURL(file);
+        setSelectedImage(previewUrl);
+        setCropMode(true); // ✅ Opens cropper popup
+    };
 
-const handleCropComplete = async (croppedImageUrl) => {
-  setCropMode(false);
-  setProfileImage(croppedImageUrl);
+    const handleCropComplete = async (croppedImageUrl) => {
+        setCropMode(false);
+        setProfileImage(croppedImageUrl);
 
-  const blob = await fetch(croppedImageUrl).then((r) => r.blob());
-  const formData = new FormData();
-  formData.append('file', blob, 'profile.jpg');
+        const blob = await fetch(croppedImageUrl).then((r) => r.blob());
+        const formData = new FormData();
+        formData.append('file', blob, 'profile.jpg');
 
-  const token = await user.getIdToken(true);
+        const token = await user.getIdToken(true);
 
-  try {
-    const response = await fetch('https://jio-yatri-driver.onrender.com/api/upload/profile-image', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
-      body: formData,
-    });
+        try {
+            const response = await fetch('https://jio-yatri-driver.onrender.com/api/upload/profile-image', {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${token}` },
+                body: formData,
+            });
 
-    if (!response.ok) {
-      throw new Error('Upload failed');
-    }
+            if (!response.ok) {
+                throw new Error('Upload failed');
+            }
 
-    await fetchDriverInfo();
-  } catch (err) {
-    console.error('Upload error:', err);
-    setError(err.message);
-  } finally {
-    setIsUploading(false);
-  }
-};
+            await fetchDriverInfo();
+        } catch (err) {
+            console.error('Upload error:', err);
+            setError(err.message);
+        } finally {
+            setIsUploading(false);
+        }
+    };
     const handleLogout = async () => {
         try {
             await signOut(auth);
@@ -663,8 +683,13 @@ const handleCropComplete = async (croppedImageUrl) => {
                                         src={profileImage}
                                         className="dd-profile-image"
                                         alt="Profile"
-                                        onClick={() => fileInputRef.current.click()} // Make avatar clickable
-                                        style={{ cursor: 'pointer' }} // Shows pointer on hover
+                                        onClick={() => fileInputRef.current.click()}
+                                        onMouseDown={handleLongPressStart}
+                                        onMouseUp={handleLongPressEnd}
+                                        onMouseLeave={handleLongPressEnd}
+                                        onTouchStart={handleLongPressStart}
+                                        onTouchEnd={handleLongPressEnd}
+                                        style={{ cursor: 'pointer' }}
                                     />
                                 ) : (
                                     <FaUser
@@ -820,15 +845,28 @@ const handleCropComplete = async (croppedImageUrl) => {
                     </button> */}
                 </div>
             </div>
-            
+
             <AvailableShipments />
             {cropMode && (
-  <ImageCropper
-    image={selectedImage}
-    onCropComplete={handleCropComplete}
-    onCancel={() => setCropMode(false)}
-  />
-)}
+                <ImageCropper
+                    image={selectedImage}
+                    onCropComplete={handleCropComplete}
+                    onCancel={() => setCropMode(false)}
+                />
+            )}
+
+            {showPreview && (
+                <div className="profile-preview-overlay" onClick={handleClosePreview}>
+                    <div className="profile-preview-circle">
+                        <img
+                            src={profileImage}
+                            alt="Profile Preview"
+                            className="profile-preview-img"
+                        />
+                    </div>
+                </div>
+            )}
+
             <Footer />
         </>
     );
