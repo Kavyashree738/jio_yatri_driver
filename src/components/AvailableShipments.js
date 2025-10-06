@@ -196,89 +196,99 @@ const handleStatusUpdate = useCallback((newStatus) => {
 }, []);
 
 
-  return (
-    <div className="available-shipments">
-      <ToastContainer 
-        position={isMobile ? "top-center" : "top-right"}
-        autoClose={5000} 
-        theme="colored" 
-        pauseOnFocusLoss={false} 
-      />
+ return (
+  <div className="available-shipments">
+    <ToastContainer 
+      position={isMobile ? "top-center" : "top-right"}
+      autoClose={5000} 
+      theme="colored" 
+      pauseOnFocusLoss={false} 
+    />
 
-      <h2>Available Shipments</h2>
+    {/* ✅ Hide heading when driver has an active shipment */}
+    {!activeShipment && <h2>Available Shipments</h2>}
 
-      {loading ? (
-        <div className="loading-message">Loading data...</div>
-      ) : activeShipment ? (
-        <div className="active-shipment-container">
-          <LocationTracker
-            key={activeShipment._id}
-            shipment={activeShipment}
-            onStatusUpdate={handleStatusUpdate}
-            isMobile={isMobile}
-          />
-        </div>
-      ) : driverStatus !== 'active' ? (
-        <div className="inactive-message">
-          You must be active to view available shipments.
-        </div>
-      ) : shipments.length === 0 ? (
+    {loading ? (
+      <div className="loading-message">Loading data...</div>
+    ) : activeShipment ? (
+      // ✅ Show only the active shipment tracker
+      <div className="active-shipment-container">
+        <LocationTracker
+          key={activeShipment._id}
+          shipment={activeShipment}
+          onStatusUpdate={handleStatusUpdate}
+          isMobile={isMobile}
+        />
+      </div>
+    ) : driverStatus !== 'active' ? (
+      <div className="inactive-message">
+        You must be active to view available shipments.
+      </div>
+    ) : shipments.length === 0 ? (
+      // ✅ Hide this "No matching..." message if driver has an active shipment
+      !activeShipment && (
         <div className="no-shipments">
           No matching shipments available at this time.
         </div>
-      ) : (
-        <ul className={`shipment-list ${isMobile ? 'mobile-view' : ''}`}>
-          {shipments.map(shipment => (
-            <li key={shipment._id} className="shipment-card">
-              <div className="shipment-details">
-                <p><strong>Tracking No:</strong> {shipment.trackingNumber}</p>
-                <p><strong>From:</strong> {shipment.sender.address.addressLine1}</p>
-                <p><strong>To:</strong> {shipment.receiver.address.addressLine1}</p>
-                <p><strong>Vehicle Type:</strong> {shipment.vehicleType}</p>
-                <p><strong>Distance:</strong> {shipment.distance.toFixed(2)} km</p>
-                <p><strong>Cost:</strong> ₹{shipment.cost.toFixed(2)}</p>
-                {shipment?.parcel?.description && (
-                  <p><strong>Description:</strong> {shipment.parcel.description}</p>
-                )}
+      )
+    ) : (
+      // ✅ Show shipments only if available
+      <ul className={`shipment-list ${isMobile ? 'mobile-view' : ''}`}>
+        {shipments.map(shipment => (
+          <li key={shipment._id} className="shipment-card">
+            <div className="shipment-details">
+              <p><strong>Tracking No:</strong> {shipment.trackingNumber}</p>
+              <p><strong>From:</strong> {shipment.sender.address.addressLine1}</p>
+              <p><strong>To:</strong> {shipment.receiver.address.addressLine1}</p>
+              <p><strong>Vehicle Type:</strong> {shipment.vehicleType}</p>
+              <p><strong>Distance:</strong> {shipment.distance.toFixed(2)} km</p>
+              <p><strong>Cost:</strong> ₹{shipment.cost.toFixed(2)}</p>
 
-                {shipment?.parcel?.images?.length > 0 && (
-                  <div className="parcel-images">
-                    <strong>Images:</strong>
-                    <div className="image-gallery">
-                      {shipment.parcel.images.map((id) => {
-                        const imgUrl = `https://jio-yatri-driver.onrender.com/api/shipment-images/image/${id}`;
-                        return (
-                          <img
-                            key={id}
-                            src={imgUrl}
-                            alt="Parcel"
-                            style={{
-                              width: "100px",
-                              height: "100px",
-                              objectFit: "cover",
-                              margin: "5px",
-                            }}
-                          />
-                        );
-                      })}
-                    </div>
+              {shipment?.parcel?.description && (
+                <p><strong>Description:</strong> {shipment.parcel.description}</p>
+              )}
+
+              {shipment?.parcel?.images?.length > 0 && (
+                <div className="parcel-images">
+                  <strong>Images:</strong>
+                  <div className="image-gallery">
+                    {shipment.parcel.images.map((id) => {
+                      const imgUrl = `https://jio-yatri-driver.onrender.com/api/shipment-images/image/${id}`;
+                      return (
+                        <img
+                          key={id}
+                          src={imgUrl}
+                          alt="Parcel"
+                          style={{
+                            width: "100px",
+                            height: "100px",
+                            objectFit: "cover",
+                            margin: "5px",
+                          }}
+                        />
+                      );
+                    })}
                   </div>
-                )}
+                </div>
+              )}
+            </div>
 
-                
-              </div>
-              <button onClick={() => handleAccept(shipment._id)} className="accept-button">
-                Accept Order
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  );
+            <button
+              onClick={() => handleAccept(shipment._id)}
+              className="accept-button"
+            >
+              Accept Order
+            </button>
+          </li>
+        ))}
+      </ul>
+    )}
+  </div>
+);
 }
 
 export default AvailableShipments;
+
 
 
 
