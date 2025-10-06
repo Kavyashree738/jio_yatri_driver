@@ -307,7 +307,6 @@ const updateMap = useCallback(() => {
   if (!mapRef.current || !activeShipment || !window.google) return;
 
   const driverLatLng = normalizeToLatLng(location);
-
   if (!isValidLatLng(driverLatLng)) return;
   if (!isValidLatLng(senderLatLng) || !isValidLatLng(receiverLatLng)) return;
 
@@ -341,6 +340,7 @@ const updateMap = useCallback(() => {
       title: 'Sender',
     });
   }
+
   if (!receiverMarkerRef.current) {
     receiverMarkerRef.current = new window.google.maps.Marker({
       position: receiverLatLng,
@@ -351,7 +351,7 @@ const updateMap = useCallback(() => {
     });
   }
 
-  // Route update
+  // ✅ Route update and ETA calculation (same as user website)
   directionsServiceRef.current.route(
     {
       origin: driverLatLng,
@@ -362,49 +362,31 @@ const updateMap = useCallback(() => {
     (result, status) => {
       if (status === 'OK') {
         directionsRendererRef.current.setDirections(result);
+        setRouteError(null);
 
-        // 🟢 Add this block to calculate ETA and Distance
-        const service = new window.google.maps.DistanceMatrixService();
-
-        // Calculate distance & ETA to Sender
-        service.getDistanceMatrix(
-          {
-            origins: [driverLatLng],
-            destinations: [senderLatLng],
-            travelMode: window.google.maps.TravelMode.DRIVING,
-          },
-          (response, status) => {
-            if (status === 'OK') {
-              const element = response.rows[0].elements[0];
-              setDistanceToSender(element.distance.text);
-              setEtaToSender(element.duration.text);
-            }
+        // 🟢 Extract ETA & Distance directly from route legs
+        const route = result.routes[0];
+        if (route && route.legs && route.legs.length > 0) {
+          if (route.legs.length === 2) {
+            // Two segments: driver → sender, sender → receiver
+            setDistanceToSender(route.legs[0].distance.text);
+            setEtaToSender(route.legs[0].duration.text);
+            setDistanceToReceiver(route.legs[1].distance.text);
+            setEtaToReceiver(route.legs[1].duration.text);
+          } else if (route.legs.length === 1) {
+            // Only one segment (e.g. direct driver → receiver)
+            setDistanceToReceiver(route.legs[0].distance.text);
+            setEtaToReceiver(route.legs[0].duration.text);
+            setDistanceToSender('');
+            setEtaToSender('');
           }
-        );
-
-        // Calculate distance & ETA to Receiver
-        service.getDistanceMatrix(
-          {
-            origins: [driverLatLng],
-            destinations: [receiverLatLng],
-            travelMode: window.google.maps.TravelMode.DRIVING,
-          },
-          (response, status) => {
-            if (status === 'OK') {
-              const element = response.rows[0].elements[0];
-              setDistanceToReceiver(element.distance.text);
-              setEtaToReceiver(element.duration.text);
-            }
-          }
-        );
-        // 🟢 END ETA BLOCK
+        }
       } else {
-        setRouteError('Failed to fetch route');
+        setRouteError(`Failed to fetch route: ${status}`);
       }
     }
   );
 }, [location, heading, activeShipment, senderLatLng, receiverLatLng]);
-
 
 
   /* --------------------------- Load Maps JS once --------------------------- */
