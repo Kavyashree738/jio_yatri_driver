@@ -138,6 +138,9 @@ baseShopSchema.pre('save', async function () {
     this.referralCode = await this.constructor.generateReferralCode('MG'); // SB = Shop/Business
   }
 });
+
+db.shops.createIndex({ "address.coordinates": "2dsphere" })
+
 // Create base Shop model
 const Shop = mongoose.model('Shop', baseShopSchema);
 
