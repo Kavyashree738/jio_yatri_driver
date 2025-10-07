@@ -303,37 +303,34 @@ exports.registerShop = async (req, res) => {
 exports.getShopsByCategory = async (req, res) => {
   try {
     const { category } = req.params;
-    console.log(`[ShopController] Fetching shops for category: ${category}`);
 
+    // Find shops without populating (since GridFS files can't be properly populated)
     const shops = await Shop.find({ category }).sort({ createdAt: -1 }).lean();
 
-    // Generate image URLs
-    const baseUrl = 'https://jio-yatri-driver.onrender.com';
+    // Process shops to add image URLs
     const shopsWithUrls = shops.map(shop => ({
       ...shop,
       shopImageUrls: shop.shopImages?.map(imgId =>
-        `${baseUrl}/api/shops/images/${imgId}`
+        `https://jio-yatri-driver.onrender.com/api/shops/images/${imgId}`
       ) || [],
       items: shop.items?.map(item => ({
         ...item,
         imageUrl: item.image ?
-          `${baseUrl}/api/shops/images/${item.image}` :
+          `https://jio-yatri-driver.onrender.com/api/shops/images/${item.image}` :
           null
+      })) || [],
+      rooms: shop.rooms?.map(room => ({
+        ...room,
+        imageUrls: room.images?.map(imgId =>
+          `https://jio-yatri-driver.onrender.com/api/shops/images/${imgId}`
+        ) || []
       })) || []
     }));
 
-    console.log(`[ShopController] Found ${shopsWithUrls.length} shops`);
     res.status(200).json({ success: true, data: shopsWithUrls });
   } catch (err) {
-    console.error('[ShopController] Error in getShopsByCategory:', {
-      message: err.message,
-      params: req.params
-    });
-    res.status(500).json({
-      success: false,
-      error: 'Failed to fetch shops',
-      ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
-    });
+    console.error('Error in getShopsByCategory:', err);
+    res.status(500).json({ success: false, error: 'Failed to fetch shops' });
   }
 };
 
