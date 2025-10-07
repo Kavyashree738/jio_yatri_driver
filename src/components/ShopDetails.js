@@ -832,7 +832,7 @@ const [deleting, setDeleting] = useState(false);
             setDeleting(true);
             try {
               await axios.delete(
-                `${process.env.REACT_APP_API_BASE_URL || "http://localhost:5000"}/api/shops/${shop._id}`,
+                `https://jio-yatri-driver.onrender.com/api/shops/${shop._id}`,
                 { data: { userId: user?.uid } }
               );
               toast.success("Shop deleted successfully.");
