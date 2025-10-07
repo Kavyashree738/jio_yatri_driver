@@ -410,6 +410,10 @@ import Footer from "../components/Footer";
 import "../styles/ShopDetails.css";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
+import { FaTrashAlt } from "react-icons/fa";
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+
 
 const categoryIcons = {
   hotel: <FaUtensils />,
@@ -432,6 +436,10 @@ const ShopDetails = () => {
   const [error, setError] = useState(null);
   const [filter, setFilter] = useState("all");
   const [vegFilter, setVegFilter] = useState("all");
+
+  const [showDeletePopup, setShowDeletePopup] = useState(false);
+const [deleting, setDeleting] = useState(false);
+
 
   // auth (to show owner actions)
   const { user } = useAuth();
@@ -643,14 +651,25 @@ const ShopDetails = () => {
             <div className="sd-action-container">
               {/* Owner-only Add/Edit button */}
               {isOwner && (
-                <button
-                  className="sd-manage-menu-btn"
-                  onClick={() => navigate(`/shop/${shop._id}/menu`)}
-                  title="Add or edit items"
-                >
-                  + Add / Edit Items
-                </button>
-              )}
+  <div className="sd-owner-actions">
+    <button
+      className="sd-manage-menu-btn"
+      onClick={() => navigate(`/shop/${shop._id}/menu`)}
+      title="Add or edit items"
+    >
+      + Add / Edit Items
+    </button>
+
+    <button
+      className="sd-delete-btn"
+      title="Delete shop"
+      onClick={() => setShowDeletePopup(true)}
+    >
+      <FaTrashAlt />
+    </button>
+  </div>
+)}
+
             </div>
           </div>
 
@@ -800,6 +819,47 @@ const ShopDetails = () => {
           </div>
         </div>
       </div>
+            {showDeletePopup && (
+  <div className="sd-popup-overlay">
+    <div className="sd-popup">
+      <h3>Delete Shop</h3>
+      <p>Are you sure you want to delete your shop? This action cannot be undone.</p>
+
+      <div className="sd-popup-actions">
+        <button
+          className="sd-confirm-delete"
+          onClick={async () => {
+            setDeleting(true);
+            try {
+              await axios.delete(
+                `${process.env.REACT_APP_API_BASE_URL || "http://localhost:5000"}/api/shops/${shop._id}`,
+                { data: { userId: user?.uid } }
+              );
+              toast.success("Shop deleted successfully.");
+              navigate("/business-dashboard");
+            } catch (err) {
+              toast.error(err.response?.data?.error || "Failed to delete shop.");
+            } finally {
+              setDeleting(false);
+              setShowDeletePopup(false);
+            }
+          }}
+          disabled={deleting}
+        >
+          {deleting ? "Deleting..." : "Yes, Delete"}
+        </button>
+
+        <button
+          className="sd-cancel-delete"
+          onClick={() => setShowDeletePopup(false)}
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
       <Footer />
     </>
   );
