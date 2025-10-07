@@ -924,12 +924,6 @@ const CategoryRegistration = () => {
                                             <span className="hr-count-bubble">{shopImages.length}</span>
                                             <span>Shop Images</span>
                                         </div>
-                                        <div className="hr-images-count">
-                                            <span className="hr-count-bubble">
-                                                {formData.items.filter((i) => i.image).length}
-                                            </span>
-                                            <span>Item Images</span>
-                                        </div>
                                     </div>
                                 </div>
                             </div>
