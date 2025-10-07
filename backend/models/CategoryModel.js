@@ -139,7 +139,8 @@ baseShopSchema.pre('save', async function () {
   }
 });
 
-db.shops.createIndex({ "address.coordinates": "2dsphere" })
+baseShopSchema.index({ "address.coordinates": "2dsphere" });
+
 
 // Create base Shop model
 const Shop = mongoose.model('Shop', baseShopSchema);
