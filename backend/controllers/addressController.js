@@ -3,7 +3,51 @@ const client = new Client({});
 const GOOGLE_API_KEY=process.env.GOOGLE_MAPS_API_KEY;
 
 // Enhanced with better error handling and response formatting
+// exports.autocomplete = async (req, res) => {
+//   const { input, country = 'in' } = req.query;
+
+//   if (!input || input.length < 3) {
+//     return res.status(400).json({ 
+//       error: 'Input parameter is required and must be at least 3 characters' 
+//     });
+//   }
+
+//   try {
+//     const response = await client.placeAutocomplete({
+//       params: {
+//         input,
+//         key: GOOGLE_API_KEY,
+//         components: [`country:${country}`],
+//         sessiontoken: req.query.session_token,
+//       },
+//       timeout: 3000
+//     });
+// console.log('Google Predictions:', response.data.predictions);
+//     res.json({
+//       predictions: response.data.predictions.map(prediction => ({
+//         description: prediction.description,
+//         place_id: prediction.place_id,
+//         structured_formatting: prediction.structured_formatting
+//       }))
+//     });
+
+//   } catch (error) {
+//     console.error('Autocomplete error:', {
+//       status: error.response?.status,
+//       data: error.response?.data,
+//       message: error.message
+//     });
+
+//     res.status(500).json({ 
+//       error: 'Autocomplete failed',
+//       details: error.response?.data?.error_message || error.message
+//     });
+//   }
+// };
+
 exports.autocomplete = async (req, res) => {
+  //  console.log('ENDPOINT HIT - Request received'); // Add this first
+  // console.log('Query params:', req.query); // Log all incoming parameters
   const { input, country = 'in' } = req.query;
 
   if (!input || input.length < 3) {
@@ -18,11 +62,16 @@ exports.autocomplete = async (req, res) => {
         input,
         key: GOOGLE_API_KEY,
         components: [`country:${country}`],
-        types: 'address'
+        // Add these parameters:
+        language: 'en',
+        // Make session token optional:
+        sessiontoken: req.query.session_token || undefined
       },
-      timeout: 1000
+      timeout: 3000
     });
 
+    // console.log('Full API Response:', JSON.stringify(response.data, null, 2));
+    
     res.json({
       predictions: response.data.predictions.map(prediction => ({
         description: prediction.description,
@@ -30,14 +79,12 @@ exports.autocomplete = async (req, res) => {
         structured_formatting: prediction.structured_formatting
       }))
     });
-
   } catch (error) {
-    console.error('Autocomplete error:', {
-      status: error.response?.status,
-      data: error.response?.data,
-      message: error.message
+    console.error('Full error details:', {
+      error: error.toString(),
+      response: error.response?.data,
+      stack: error.stack
     });
-
     res.status(500).json({ 
       error: 'Autocomplete failed',
       details: error.response?.data?.error_message || error.message
