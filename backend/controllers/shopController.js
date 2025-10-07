@@ -1051,7 +1051,6 @@ exports.getShopReferralLeaderboard = async (req, res) => {
     return res.status(500).json({ success: false, error: 'Failed to fetch leaderboard' });
   }
 };
-// PUT /api/shops/:id/add-item
 exports.addItemToShop = async (req, res) => {
   try {
     const shopId = req.params.id;
@@ -1059,16 +1058,52 @@ exports.addItemToShop = async (req, res) => {
     const item = JSON.parse(req.body.item || '{}');
 
     const shop = await Shop.findById(shopId);
-    if (!shop) return res.status(404).json({ success: false, error: 'Shop not found' });
+    if (!shop) {
+      return res.status(404).json({ success: false, error: 'Shop not found' });
+    }
+
+    // Verify owner
     if (String(shop.userId) !== String(userId)) {
       return res.status(403).json({ success: false, error: 'Unauthorized' });
     }
 
-    // Basic validation
     if (!item.name || item.price == null) {
       return res.status(400).json({ success: false, error: 'Name and price are required' });
     }
 
+    // 🔍 Check if item already exists by name (case-insensitive)
+    const existingIndex = shop.items.findIndex(
+      (i) => i.name.trim().toLowerCase() === item.name.trim().toLowerCase()
+    );
+
+    if (existingIndex !== -1) {
+      // ✅ Update existing item details instead of adding duplicate
+      const existingItem = shop.items[existingIndex];
+
+      shop.items[existingIndex] = {
+        ...existingItem,
+        ...item, // overwrite changed fields (price, quantity, desc, etc.)
+      };
+
+      await shop.save();
+
+      const baseUrl = 'https://jio-yatri-driver.onrender.com';
+      const data = {
+        ...shop.toObject(),
+        items: shop.items.map(it => ({
+          ...it,
+          imageUrl: it.image ? `${baseUrl}/api/shops/images/${it.image}` : null
+        }))
+      };
+
+      return res.json({
+        success: true,
+        data,
+        message: `Item "${item.name}" updated successfully ✅`
+      });
+    }
+
+    // ✅ Otherwise add new item
     shop.items.push(item);
     await shop.save();
 
@@ -1081,7 +1116,12 @@ exports.addItemToShop = async (req, res) => {
       }))
     };
 
-    res.json({ success: true, data });
+    res.json({
+      success: true,
+      data,
+      message: 'Item added successfully ✅'
+    });
+
   } catch (err) {
     console.error('[addItemToShop] failed:', err);
     res.status(500).json({ success: false, error: err.message });
