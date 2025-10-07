@@ -491,6 +491,19 @@ const HeroSection = () => {
 
     // after verifyOtp()
 
+    // ✅ Auto-verify when OTP is fully entered or auto-filled
+useEffect(() => {
+  // Ensure OTP modal is visible, 4 digits entered, and no current verification running
+  if (showOtpComponent && otp.length === 4 && !isLoading) {
+    const timer = setTimeout(() => {
+      verifyOtp(); // trigger verification automatically
+    }, 200); // small delay to ensure autofill completes
+
+    return () => clearTimeout(timer); // cleanup if OTP changes fast
+  }
+}, [otp, showOtpComponent]);
+
+
 
 
     const resendOtp = async () => {
