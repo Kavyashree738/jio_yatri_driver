@@ -45,6 +45,9 @@ router.put(
   shipmentController.updateDriverLocation
 );
 
+
+router.post('/:id/verify-pickup', verifyFirebaseToken,shipmentController.verifyPickupOtp);
+
 router.get('/driver/:userId', async (req, res) => {
   try {
     const { userId } = req.params;

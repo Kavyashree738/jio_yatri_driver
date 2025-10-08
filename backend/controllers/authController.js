@@ -2,7 +2,7 @@ const admin = require('firebase-admin');
 const crypto = require('crypto');
 const sendSms = require('../services/otpService');
 const axios = require('axios');
-
+const Shipment = require('../models/Shipment');
 
 const sendOtp = async (req, res) => {
   try {
@@ -198,8 +198,74 @@ const verifyOtp = async (req, res) => {
   }
 };
 
+const sendReceiverOtp = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const shipment = await Shipment.findById(id);
 
-module.exports = { sendOtp, verifyOtp };
+    if (!shipment) {
+      return res.status(404).json({ success: false, message: 'Shipment not found' });
+    }
+
+    const receiverPhone = shipment.receiver?.phone;
+    if (!receiverPhone) {
+      return res.status(400).json({ success: false, message: 'Receiver phone number not found' });
+    }
+
+    // Generate 4-digit OTP
+    const otp = Math.floor(1000 + Math.random() * 9000).toString();
+
+    // Save OTP in shipment
+    shipment.deliveryOtp = otp;
+    shipment.deliveryOtpVerified = false;
+    await shipment.save();
+
+    // Send SMS to receiver
+    const smsMessage = `Hello ${receiverPhone}, Please find your OTP ${otp} for jioyatri. Thanks, AmbaniYatri`;
+    await sendSms(receiverPhone, smsMessage);
+
+    console.log(`📦 Delivery OTP ${otp} sent to receiver ${receiverPhone}`);
+
+    res.json({ success: true, message: 'OTP sent to receiver successfully!' });
+  } catch (error) {
+    console.error('Error sending receiver OTP:', error);
+    res.status(500).json({ success: false, message: 'Failed to send OTP' });
+  }
+};
+
+
+const verifyReceiverOtp = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { otp } = req.body;
+
+    const shipment = await Shipment.findById(id);
+    if (!shipment) {
+      return res.status(404).json({ success: false, message: 'Shipment not found' });
+    }
+
+    // Compare OTP
+    if (shipment.deliveryOtp !== otp) {
+      return res.status(400).json({ success: false, message: 'Invalid OTP' });
+    }
+
+    // Mark verified
+    shipment.deliveryOtpVerified = true;
+    shipment.deliveryOtp = null;
+    await shipment.save();
+
+    res.json({ success: true, message: 'Receiver OTP verified successfully' });
+  } catch (error) {
+    console.error('Error verifying receiver OTP:', error);
+    res.status(500).json({ success: false, message: 'OTP verification failed' });
+  }
+};
+
+
+
+module.exports = { sendOtp, verifyOtp,sendReceiverOtp,verifyReceiverOtp };
+
+
 
 
 

@@ -462,6 +462,15 @@ exports.acceptShipment = async (req, res) => {
         driverLocation: shipment.driverLocation
       });
 
+       if (!shipment.isShopOrder) {
+        const otp = Math.floor(1000 + Math.random() * 9000).toString();
+        shipment.pickupOtp = otp;
+        await shipment.save({ session });
+        // console.log(`Generated Pickup OTP for normal shipment ${shipment._id}: ${otp}`);
+      } else {
+        // console.log(`🛍️ Shop order detected (${shipment._id}) — skipping OTP generation`);
+      }
+
       await session.commitTransaction();
       console.log('Transaction committed successfully');
 
@@ -777,6 +786,37 @@ exports.getShopShipments = async (req, res) => {
   }
 };
 
+exports.verifyPickupOtp = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { otp } = req.body;
+
+    const shipment = await Shipment.findById(id);
+
+    if (!shipment) {
+      return res.status(404).json({ success: false, message: 'Shipment not found' });
+    }
+
+    if (shipment.pickupOtp !== otp) {
+      return res.status(400).json({ success: false, message: 'Invalid OTP' });
+    }
+
+    shipment.status = 'picked_up';
+    shipment.pickupVerifiedAt = new Date();
+    shipment.pickupOtp = null; // clear OTP after use
+
+    await shipment.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Pickup verified successfully',
+      shipment
+    });
+  } catch (error) {
+    console.error('Error verifying pickup OTP:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
 
 
 

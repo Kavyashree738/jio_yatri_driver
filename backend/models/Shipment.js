@@ -117,7 +117,7 @@ const shipmentSchema = new mongoose.Schema({
       coordinates: { type: Object }
     }
   },
-    parcel: {
+  parcel: {
     description: {
       type: String,
       required: true,
@@ -143,7 +143,7 @@ const shipmentSchema = new mongoose.Schema({
   trackingNumber: { type: String, required: true, unique: true },
   status: {
     type: String,
-    enum: ['pending', 'assigned', 'picked_up','delivered', 'cancelled'],
+    enum: ['pending', 'assigned', 'picked_up', 'delivered', 'cancelled'],
     default: 'pending'
   },
   rating: {
@@ -155,7 +155,7 @@ const shipmentSchema = new mongoose.Schema({
     feedback: String,
     submittedAt: Date
   },
-   assignedDriver: {
+  assignedDriver: {
     _id: { type: mongoose.Schema.Types.ObjectId, ref: 'Driver' },
     userId: { type: String },
     name: String,
@@ -165,6 +165,22 @@ const shipmentSchema = new mongoose.Schema({
   driverLocation: {
     type: { type: String, default: 'Point' },
     coordinates: { type: [Number], default: [0, 0] }
+  },
+  pickupOtp: {
+    type: String,
+    default: null
+  },
+  pickupVerifiedAt: {
+    type: Date,
+    default: null
+  },
+  deliveryOtp: {
+    type: String,
+    default: null
+  },
+  deliveryOtpVerified: {
+    type: Boolean,
+    default: false
   },
   // Corrected payment field in shipmentSchema
   payment: {
@@ -183,7 +199,7 @@ const shipmentSchema = new mongoose.Schema({
     date: { type: Date, default: Date.now },
     recordedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
   }],
-    shopId: {
+  shopId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Shop'
   },
