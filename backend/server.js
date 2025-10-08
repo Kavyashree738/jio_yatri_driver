@@ -24,7 +24,7 @@ const adminRoutes = require('./routes/admin');
 const catalogRoutes = require('./routes/catalogroutes');
 // app.use(cors());
 const corsOptions = {
-  origin: ['https://driver.jioyatri.com','https://jioyatri-admin.netlify.app','https://jioyatri-driver.netlify.app'], // ✅ Allow your frontend origin
+  origin: ['https://driver.jioyatri.com','https://jioyatri-admin.netlify.app','https://jioyatri-driver.netlify.app','http://localhost:3000'], // ✅ Allow your frontend origin
   methods: ['GET', 'POST', 'PUT', 'DELETE','PATCH'],
   credentials: true // Optional, only if you use cookies or tokens
 };
