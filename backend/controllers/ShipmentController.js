@@ -462,14 +462,7 @@ exports.acceptShipment = async (req, res) => {
         driverLocation: shipment.driverLocation
       });
 
-       if (!shipment.isShopOrder) {
-        const otp = Math.floor(1000 + Math.random() * 9000).toString();
-        shipment.pickupOtp = otp;
-        await shipment.save({ session });
-        // console.log(`Generated Pickup OTP for normal shipment ${shipment._id}: ${otp}`);
-      } else {
-        // console.log(`🛍️ Shop order detected (${shipment._id}) — skipping OTP generation`);
-      }
+      
 
       await session.commitTransaction();
       console.log('Transaction committed successfully');
@@ -817,6 +810,7 @@ exports.verifyPickupOtp = async (req, res) => {
     res.status(500).json({ success: false, message: 'Server error' });
   }
 };
+
 
 
 
