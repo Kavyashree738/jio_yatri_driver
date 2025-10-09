@@ -19,6 +19,8 @@ router.put('/:id/accept', verifyFirebaseToken, shipmentController.acceptShipment
 
 router.get('/:orderId/status', verifyFirebaseToken, shipmentController.getOrderStatus);
 
+router.get('/:id/status-only', verifyFirebaseToken, shipmentController.getShipmentStatusOnly);
+
 router.get('/matching',verifyFirebaseToken , shipmentController.getMatchingShipments);
 
 router.put('/:id/cancel', verifyFirebaseToken, shipmentController.cancelShipment);
@@ -65,3 +67,4 @@ router.get('/driver/:userId', async (req, res) => {
 
 
 module.exports = router;
+
