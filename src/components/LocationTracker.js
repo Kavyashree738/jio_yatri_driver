@@ -289,7 +289,7 @@ const [showPaymentPendingPopup, setShowPaymentPendingPopup] = useState(false);
         // ✅ Run this only ONCE when status first becomes cancelled/delivered
         if (
           !statusHandledRef.current &&
-          ['cancelled', 'delivered'].includes(latestStatus)
+          ['cancelled'].includes(latestStatus)
         ) {
           statusHandledRef.current = true; // mark handled once
 
