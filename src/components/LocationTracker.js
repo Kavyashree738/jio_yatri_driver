@@ -310,6 +310,47 @@ const [showPaymentPendingPopup, setShowPaymentPendingPopup] = useState(false);
   }, [activeShipment?._id, user]);
 
 
+  // 🔁 Poll payment status every 5 seconds
+useEffect(() => {
+  if (!activeShipment?._id) return;
+
+  const interval = setInterval(async () => {
+    try {
+      const token = await user.getIdToken();
+      const res = await axios.get(
+        `${API_BASE_URL}/api/shipments/${activeShipment._id}/payment-status`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      const latestPaymentStatus = res.data.payment?.status;
+
+      if (!latestPaymentStatus) return;
+
+      // 💾 Update payment status locally + persist to localStorage
+      setLocalShipment((prev) => {
+        if (!prev) return prev;
+        const updated = {
+          ...prev,
+          payment: {
+            ...prev.payment,
+            status: latestPaymentStatus,
+          },
+        };
+        localStorage.setItem('lastShipment', JSON.stringify(updated));
+        return updated;
+      });
+
+      console.log(`💰 Payment status updated → ${latestPaymentStatus}`);
+    } catch (err) {
+      console.error("⚠️ Error fetching payment status:", err.message);
+    }
+  }, 5000); // every 5 seconds
+
+  return () => clearInterval(interval);
+}, [activeShipment?._id, user]);
+
+
+
 
 
   /* ------------------------------ Driver point ------------------------------ */
@@ -811,16 +852,26 @@ const [showPaymentPendingPopup, setShowPaymentPendingPopup] = useState(false);
         ) && (
            <button
   onClick={() => {
-    if (activeShipment?.payment?.status === 'pending') {
+    const paymentStatus = activeShipment?.payment?.status;
+
+    if (!paymentStatus) {
+      
+      return;
+    }
+
+    if (paymentStatus === "pending") {
       setShowPaymentPendingPopup(true);
-    } else {
+    } else if (paymentStatus === "paid") {
       setShowDeliverPopup(true);
+    } else {
+      toast.info(`Payment status: ${paymentStatus}`);
     }
   }}
   className="deliver-button"
 >
   Mark as Delivered
 </button>
+
 
           )}
 
