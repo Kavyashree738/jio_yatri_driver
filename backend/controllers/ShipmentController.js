@@ -463,14 +463,16 @@ exports.acceptShipment = async (req, res) => {
       });
 
 
-       if (!shipment.isShopOrder) {
-        const otp = Math.floor(1000 + Math.random() * 9000).toString();
-        shipment.pickupOtp = otp;
-        await shipment.save({ session });
-        // console.log(`Generated Pickup OTP for normal shipment ${shipment._id}: ${otp}`);
+      const otp = Math.floor(1000 + Math.random() * 9000).toString();
+      shipment.pickupOtp = otp;
+      shipment.pickupVerifiedAt = null;
+
+      if (shipment.isShopOrder) {
+        // console.log(`🛍️ Shop order: Pickup OTP ${otp} generated for receiver in app`);
       } else {
-        // console.log(`🛍️ Shop order detected (${shipment._id}) — skipping OTP generation`);
+        // console.log(`🚚 Normal shipment: Pickup OTP ${otp} generated for sender`);
       }
+      await shipment.save({ session });
 
       
 
@@ -820,6 +822,7 @@ exports.verifyPickupOtp = async (req, res) => {
     res.status(500).json({ success: false, message: 'Server error' });
   }
 };
+
 
 
 
