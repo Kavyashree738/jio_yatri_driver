@@ -47,7 +47,8 @@ router.put(
   shipmentController.updateDriverLocation
 );
 
-
+router.get('/:id/payment-status', verifyFirebaseToken, shipmentController.getShipmentPaymentStatus );
+    
 router.post('/:id/verify-pickup', verifyFirebaseToken,shipmentController.verifyPickupOtp);
 
 router.get('/driver/:userId', async (req, res) => {
@@ -67,4 +68,5 @@ router.get('/driver/:userId', async (req, res) => {
 
 
 module.exports = router;
+
 
