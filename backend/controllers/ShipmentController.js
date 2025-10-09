@@ -793,35 +793,52 @@ exports.getShopShipments = async (req, res) => {
 
 exports.verifyPickupOtp = async (req, res) => {
   try {
+    console.log("📩 [verifyPickupOtp] API called");
     const { id } = req.params;
     const { otp } = req.body;
 
+    console.log("➡️ Shipment ID:", id);
+    console.log("➡️ OTP received from frontend:", otp);
+
     const shipment = await Shipment.findById(id);
+    console.log("🔍 Shipment fetched from DB:", shipment ? "✅ Found" : "❌ Not found");
 
     if (!shipment) {
+      console.log("❌ Shipment not found for ID:", id);
       return res.status(404).json({ success: false, message: 'Shipment not found' });
     }
 
+    console.log("📦 Current shipment OTP in DB:", shipment.pickupOtp);
+    console.log("🆚 Comparing OTPs → DB:", shipment.pickupOtp, "| Frontend:", otp);
+
     if (shipment.pickupOtp !== otp) {
+      console.log("⚠️ Invalid OTP entered!");
       return res.status(400).json({ success: false, message: 'Invalid OTP' });
     }
 
+    console.log("✅ OTP matched successfully!");
     shipment.status = 'picked_up';
     shipment.pickupVerifiedAt = new Date();
-    shipment.pickupOtp = null; // clear OTP after use
+    shipment.pickupOtp = null;
 
+    console.log("📝 Updating shipment status to 'picked_up'...");
     await shipment.save();
+    console.log("💾 Shipment saved successfully:", shipment._id);
 
     res.status(200).json({
       success: true,
       message: 'Pickup verified successfully',
       shipment
     });
+
+    console.log("✅ Response sent successfully to frontend");
+
   } catch (error) {
-    console.error('Error verifying pickup OTP:', error);
+    console.error("🔥 Error verifying pickup OTP:", error);
     res.status(500).json({ success: false, message: 'Server error' });
   }
 };
+
 
 
 
