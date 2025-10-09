@@ -82,6 +82,24 @@ export default function BusinessOrders({ shopId }) {
         }
     }, [resolvedShopId, user?.uid]);
 
+    // 🕒 Polling useEffect: refresh orders every 10 seconds
+useEffect(() => {
+  if (resolvedShopId || user?.uid) {
+
+    const interval = setInterval(() => {
+      
+      load();
+    }, 10000); // every 10 seconds
+
+    // cleanup interval when component unmounts
+    return () => {
+      
+      clearInterval(interval);
+    };
+  }
+}, [resolvedShopId, user?.uid]);
+
+
     // FCM useEffect - Fixed version
     useEffect(() => {
         // console.log('[BusinessOrders] FCM useEffect triggered', { resolvedShopId });
