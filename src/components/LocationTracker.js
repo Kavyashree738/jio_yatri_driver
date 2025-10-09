@@ -209,6 +209,7 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
   // console.log('👤 Auth user:', user);
   const [showCancelPopup, setShowCancelPopup] = useState(false);
   const statusHandledRef = useRef(false);
+const [showPaymentPendingPopup, setShowPaymentPendingPopup] = useState(false);
 
   const [showDeliverPopup, setShowDeliverPopup] = useState(false);
   const [showOtpPopup, setShowOtpPopup] = useState(false);
