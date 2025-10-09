@@ -257,7 +257,7 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
 
   useEffect(() => {
     // console.log('🔄 Shipment status effect - shipment:', shipment);
-    if (shipment && ['cancelled', 'delivered'].includes(shipment.status)) {
+    if (shipment && ['cancelled'].includes(shipment.status)) {
       // console.log('🗑️ Removing shipment from localStorage - status:', shipment.status);
       localStorage.removeItem('lastShipment');
       setLocalShipment(null);
