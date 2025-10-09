@@ -839,6 +839,28 @@ exports.verifyPickupOtp = async (req, res) => {
   }
 };
 
+exports.getShipmentStatusOnly = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Validate ID
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ success: false, message: 'Invalid shipment ID format' });
+    }
+
+    // Fetch only the "status" field
+    const shipment = await Shipment.findById(id).select('status').lean();
+
+    if (!shipment) {
+      return res.status(404).json({ success: false, message: 'Shipment not found' });
+    }
+
+    return res.status(200).json({ success: true, status: shipment.status });
+  } catch (error) {
+    console.error('Error fetching shipment status:', error);
+    return res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+};
 
 
 
