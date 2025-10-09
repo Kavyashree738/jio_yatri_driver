@@ -384,4 +384,15 @@
   border: 1px solid #ddd;
 
 }
+.prepaid-label {
+  color: #007bff;
+  font-weight: 600;
+}
+
+.cod-label {
+  color: #28a745;
+  font-weight: 600;
+}
+
+
 
