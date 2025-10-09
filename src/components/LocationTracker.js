@@ -808,12 +808,19 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
           (activeShipment?.isShopOrder && pickupVerified) ||   // only after OTP verified for shop orders
           (activeShipment?.status === 'picked_up' && receiverOtpVerified)  // normal shipments
         ) && (
-            <button onClick={() => {
-              // console.log('✅ Deliver shipment button clicked');
-              setShowDeliverPopup(true);
-            }} className="deliver-button">
-              Mark as Delivered
-            </button>
+           <button
+  onClick={() => {
+    if (activeShipment?.payment?.status === 'pending') {
+      setShowPaymentPendingPopup(true);
+    } else {
+      setShowDeliverPopup(true);
+    }
+  }}
+  className="deliver-button"
+>
+  Mark as Delivered
+</button>
+
           )}
 
         {activeShipment?.status === 'assigned' && !pickupVerified && (
@@ -999,6 +1006,25 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
           </div>
         </div>
       )}
+{showPaymentPendingPopup && (
+  <div className="popup-overlay">
+    <div className="popup-box">
+      <h3>Payment Pending</h3>
+      <p>
+        The customer has not completed the payment yet.
+        You can mark this shipment as delivered only after the payment is successful.
+      </p>
+      <div className="popup-buttons">
+        <button
+          onClick={() => setShowPaymentPendingPopup(false)}
+          className="no-button"
+        >
+          Okay
+        </button>
+      </div>
+    </div>
+  </div>
+)}
 
       {/* Mark as Delivered Popup */}
       {showDeliverPopup && (
