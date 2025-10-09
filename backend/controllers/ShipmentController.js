@@ -864,6 +864,44 @@ exports.getShipmentStatusOnly = async (req, res) => {
 
 
 
+exports.getShipmentPaymentStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Validate shipment ID
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ success: false, message: 'Invalid shipment ID format' });
+    }
+
+    // Fetch only payment info
+    const shipment = await Shipment.findById(id)
+      .select('payment.method payment.status cost trackingNumber')
+      .lean();
+
+    if (!shipment) {
+      return res.status(404).json({ success: false, message: 'Shipment not found' });
+    }
+
+    return res.status(200).json({
+      success: true,
+      payment: shipment.payment || { status: 'unknown' },
+      cost: shipment.cost,
+      trackingNumber: shipment.trackingNumber,
+    });
+  } catch (error) {
+    console.error('Error fetching payment status:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error while fetching payment status',
+      error: error.message,
+    });
+  }
+};
+
+
+
+
+
 
 
 
