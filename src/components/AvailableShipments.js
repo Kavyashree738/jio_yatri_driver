@@ -251,6 +251,15 @@ const handleStatusUpdate = useCallback((newStatus) => {
               <p><strong>Distance:</strong> {shipment.distance.toFixed(2)} km</p>
               <p><strong>Cost:</strong> ₹{shipment.cost.toFixed(2)}</p>
 
+                          <p>
+                  <strong>Payment Type:</strong>{" "}
+                  {shipment.payment?.method === "razorpay" ? (
+                    <span className="prepaid-label">Prepaid</span>
+                  ) : (
+                    <span className="cod-label">Cash on Delivery</span>
+                  )}
+                </p>
+
               {shipment?.parcel?.description && (
                 <p><strong>Description:</strong> {shipment.parcel.description}</p>
               )}
@@ -295,6 +304,7 @@ const handleStatusUpdate = useCallback((newStatus) => {
 }
 
 export default AvailableShipments;
+
 
 
 
