@@ -166,10 +166,15 @@ const ShipmentDetailsCard = ({ shipment }) => {
         <h3>Shipment #{shipment.trackingNumber}</h3>
         <div className="badge-row">
           <span className={`status-badge ${shipment.status}`}>{shipment.status}</span>
+
           {shipment.payment?.method === "razorpay" ? (
-            <span className="payment-badge prepaid">Prepaid</span>
+            <span className="payment-badge prepaid">
+              Prepaid ₹{shipment.cost?.toFixed(2)}
+            </span>
           ) : (
-            <span className="payment-badge cod">Cash on Delivery</span>
+            <span className="payment-badge cod">
+              Cash ₹{shipment.cost?.toFixed(2)}
+            </span>
           )}
         </div>
         {/* <span className={`status-badge ${shipment.status}`}>{shipment.status}</span> */}
