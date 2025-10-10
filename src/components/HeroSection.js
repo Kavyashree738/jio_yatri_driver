@@ -685,58 +685,52 @@ useEffect(() => {
     //         return false;
     //     }
     // };
-    const checkRegistrationStatus = async () => {
-        try {
-            const u = auth.currentUser;
-            if (!u) return { isRegistered: false, role: null };
+   const checkRegistrationStatus = async () => {
+  try {
+    const u = auth.currentUser;
+    if (!u) return { isRegistered: false, role: null };
 
-            const token = await u.getIdToken();
-            const res = await fetch(
-                `https://jio-yatri-driver.onrender.com/api/user/check-registration/${u.uid}`,
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
+    // ✅ Try reading from localStorage first
+    const cached = localStorage.getItem(`registration_${u.uid}`);
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      console.log('⚡ Loaded registration from localStorage');
+      setIsRegistered(parsed.isRegistered);
+      setUserRole(parsed.role);
+      return parsed; // instantly return cached data
+    }
 
-            if (!res.ok) return { isRegistered: false, role: null };
-            const json = await res.json();
-            if (!json.success) return { isRegistered: false, role: null };
+    // 🧠 If not in cache → fetch fresh from backend
+    const token = await u.getIdToken();
+    const res = await fetch(
+      `https://jio-yatri-driver.onrender.com/api/user/check-registration/${u.uid}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
 
-            const { role, driverRegistered, businessRegistered } = json.data;
+    if (!res.ok) return { isRegistered: false, role: null };
+    const json = await res.json();
+    if (!json.success) return { isRegistered: false, role: null };
 
-            let isRegistered = false;
-            if (role === 'driver') {
-                isRegistered = !!driverRegistered;
-            } else if (role === 'business') {
-                isRegistered = !!businessRegistered;
-            }
+    const { role, driverRegistered, businessRegistered } = json.data;
+    const isRegistered =
+      role === 'driver' ? !!driverRegistered : !!businessRegistered;
 
-            setIsRegistered(isRegistered);
-            localStorage.setItem('isRegistered', isRegistered ? '1' : '0');
-            localStorage.setItem('userRole', role || '');
+    setIsRegistered(isRegistered);
+    setUserRole(role || '');
 
-            // OPTIONAL: if you want to prefill driver fields after a positive check:
-            if (isRegistered && role === 'driver') {
-                const res2 = await fetch(
-                    `https://jio-yatri-driver.onrender.com/api/driver/profile/${u.uid}`, // or your existing driver GET endpoint
-                    { headers: { Authorization: `Bearer ${token}` } }
-                );
-                if (res2.ok) {
-                    const d = await res2.json();
-                    setDriverData(prev => ({
-                        ...prev,
-                        name: d.driver?.name || u.displayName || '',
-                        phone: d.driver?.phone || u.phoneNumber || '',
-                        vehicleType: d.driver?.vehicleType || '',
-                        vehicleNumber: d.driver?.vehicleNumber || ''
-                    }));
-                }
-            }
+    // ✅ Save for next time (instant load)
+    localStorage.setItem(
+      `registration_${u.uid}`,
+      JSON.stringify({ isRegistered, role })
+    );
 
-            return { isRegistered, role };
-        } catch (error) {
-            console.error('Error checking registration:', error);
-            return { isRegistered: false, role: null };
-        }
-    };
+    return { isRegistered, role };
+  } catch (error) {
+    console.error('Error checking registration:', error);
+    return { isRegistered: false, role: null };
+  }
+};
+
 
 
 
@@ -841,6 +835,7 @@ useEffect(() => {
             localStorage.removeItem('token');
             localStorage.removeItem(`driverRegistered_${auth.currentUser?.uid}`);
             localStorage.removeItem('userRole');
+             localStorage.removeItem(`driverRegistered_${uid}`);
             localStorage.removeItem('isRegistered');
             setRegistrationStep(0); // Reset to role selection
             setRegistrationSubStep(1);
