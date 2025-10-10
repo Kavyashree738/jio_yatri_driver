@@ -831,6 +831,7 @@ useEffect(() => {
 
     const handleLogout = async () => {
         try {
+            const uid = auth.currentUser?.uid;
             await signOut(auth);
             localStorage.removeItem('token');
             localStorage.removeItem(`driverRegistered_${auth.currentUser?.uid}`);
