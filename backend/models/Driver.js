@@ -248,6 +248,11 @@ const driverSchema = new mongoose.Schema({
   verifiedBy: {
     type: String // Admin user ID who verified
   },
+   passbook: {
+  type: mongoose.Schema.Types.ObjectId,
+  ref: 'fs.files',
+  default: null
+},
   status: { type: String, enum: ['active', 'inactive'], default: 'active' },
   ratings: {
     average: {

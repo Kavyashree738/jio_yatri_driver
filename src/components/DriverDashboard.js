@@ -16,6 +16,7 @@ import ImageCropper from './ImageCropper';
 import useDriverHeartbeat from '../hooks/useDriverHeartbeat';
 import 'moment/locale/en-in'; // Import the locale you need
 import DailyEarningsFilter from './DailyEarningsFilter';
+import { FaUpload } from 'react-icons/fa'
 // import useDriverHeartbeat from '../hooks/useDriverHeartbeat';
 // Initialize moment with the desired locale
 moment.locale('en-in');
@@ -50,6 +51,9 @@ const DriverDashboard = () => {
 
     const [showPreview, setShowPreview] = useState(false);
     const pressTimer = useRef(null);
+
+     const [passbookUploaded, setPassbookUploaded] = useState(false);
+    const passbookInputRef = useRef(null);
 
 
     const loadRazorpay = () => {
@@ -183,6 +187,7 @@ const DriverDashboard = () => {
             const settlementData = await settlementRes.json();
 
             setDriverInfo(driverData.data);
+            setPassbookUploaded(!!driverData.data?.passbook);
             setStatus(driverData.data?.status || 'inactive');
             setSettlement({
                 today: settlementData.currentDaySettlement || {
@@ -331,6 +336,32 @@ const DriverDashboard = () => {
         } catch (error) {
             console.error('Error getting token:', error);
             navigate('/refferal');
+        }
+    };
+
+    const handlePassbookUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        try {
+            const token = await user.getIdToken();
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const res = await fetch('https://jio-yatri-driver.onrender.com/api/passbook/upload-passbook', {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${token}` },
+                body: formData
+            });
+
+            if (!res.ok) throw new Error('Passbook upload failed');
+            const data = await res.json();
+
+            setPassbookUploaded(true);
+            setMessage({ text: 'Passbook uploaded successfully', isError: false });
+        } catch (err) {
+            console.error('Error uploading passbook:', err);
+            setMessage({ text: err.message, isError: true });
         }
     };
 
@@ -671,6 +702,36 @@ const DriverDashboard = () => {
                         </button>
                     </div>
                 </div>
+
+                {!passbookUploaded && (
+                        <div className={`dd-passbook-alert ${passbookUploaded ? 'dd-passbook-hide' : ''}`}>
+                            <div className="dd-passbook-marquee-container">
+                                <div className="dd-passbook-marquee-content">
+                                    <span className="dd-passbook-marquee-text">
+                                        Please upload your passbook for payment settlements. We keep your information safe and secure.
+                                    </span>
+                                    <span className="dd-passbook-marquee-text dd-passbook-marquee-duplicate">
+                                        Please upload your passbook for payment settlements. We keep your information safe and secure.
+                                    </span>
+                                </div>
+                            </div>
+
+                            <button
+                                className="dd-passbook-upload-btn"
+                                onClick={() => passbookInputRef.current.click()}
+                            >
+                                <FaUpload style={{ marginRight: '6px' }} />
+                            </button>
+
+                            <input
+                                type="file"
+                                accept="image/*,application/pdf"
+                                ref={passbookInputRef}
+                                style={{ display: 'none' }}
+                                onChange={handlePassbookUpload}
+                            />
+                        </div>
+                    )}
 
                 <div className="dd-profile">
                     <div className="dd-profile-card">

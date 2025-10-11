@@ -256,9 +256,7 @@ const DocumentViewer = () => {
                 </div>
 
                 {/* Status Badge */}
-                <div className="document-status">
-                  {getStatusBadge(statusMap[doc.docType])}
-                </div>
+                  {doc.docType !== 'passbook' && ( <div className="document-status"> {getStatusBadge(statusMap[doc.docType])} </div> )}
 
                 <div className="document-actions">
                   <button
