@@ -223,6 +223,9 @@ export function AuthProvider({ children }) {
   // 🔹 Logout clears everything
   const logout = async () => {
     try {
+      const uid = auth.currentUser?.uid;
+if (uid) localStorage.removeItem(`registration_${uid}`);
+
       await signOut(auth);
     } catch (err) {
       console.error("Error signing out:", err);
@@ -297,6 +300,16 @@ export function AuthProvider({ children }) {
         role === 'driver' ? driverRegistered : businessRegistered
       );
 
+      // ✅ Store registration data in localStorage for faster reloads
+localStorage.setItem(
+  `registration_${firebaseUser.uid}`,
+  JSON.stringify({
+    role,
+    isRegistered: role === 'driver' ? driverRegistered : businessRegistered,
+  })
+);
+
+
       localStorage.setItem('userRole', role || '');
 
       return { role, driverRegistered, businessRegistered };
@@ -334,8 +347,17 @@ export function AuthProvider({ children }) {
           setToken(idToken);
           localStorage.setItem('authToken', idToken);
 
+          const cached = localStorage.getItem(`registration_${currentUser.uid}`);
+  if (cached) {
+    const parsed = JSON.parse(cached);
+    console.log('⚡ Loaded registration info from cache');
+    setUserRole(parsed.role);
+    setIsRegistered(parsed.isRegistered);
+  }
+
+
           // Always fetch fresh meta from backend
-          await refreshUserMeta(currentUser);
+        refreshUserMeta(currentUser);
         } else {
           logout();
         }
