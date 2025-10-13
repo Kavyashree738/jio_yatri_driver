@@ -91,19 +91,33 @@ exports.getPassbook = async (req, res) => {
 
     const driver = await Driver.findOne({ userId });
     if (!driver?.passbook) {
+      // console.log('No passbook found for driver:', userId);
       return res.status(404).json({ error: 'No passbook uploaded' });
     }
 
-    const file = await gfs.find({ _id: driver.passbook }).toArray();
+    let fileId;
+    try {
+      fileId = typeof driver.passbook === 'string'
+        ? new mongoose.Types.ObjectId(driver.passbook)
+        : driver.passbook;
+    } catch (err) {
+      // console.error('Invalid passbook ObjectId:', driver.passbook);
+      return res.status(400).json({ error: 'Invalid passbook ID' });
+    }
+
+    const file = await gfs.find({ _id: fileId }).toArray();
     if (!file.length) {
+      // console.log('File not found in GridFS:', fileId);
       return res.status(404).json({ error: 'File not found in GridFS' });
     }
 
     res.set('Content-Type', file[0].metadata?.mimetype || 'application/pdf');
-    const readStream = gfs.openDownloadStream(driver.passbook);
+
+    const readStream = gfs.openDownloadStream(fileId);
     readStream.pipe(res);
   } catch (err) {
-    console.error('Error fetching passbook:', err);
+    // console.error('Error fetching passbook:', err);
     res.status(500).json({ error: err.message });
   }
 };
+
