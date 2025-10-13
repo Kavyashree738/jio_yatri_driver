@@ -60,6 +60,17 @@ const baseShopSchema = new mongoose.Schema({
       lng: { type: Number, required: true }
     }
   },
+  geoLocation: {
+    type: {
+      type: String,
+      enum: ['Point'],
+      default: 'Point'
+    },
+    coordinates: {
+      type: [Number], // [lng, lat] format for MongoDB
+      index: '2dsphere'
+    }
+  },
   openingTime: { type: String, required: true },
   closingTime: { type: String, required: true },
   shopImages: [{ type: mongoose.Schema.Types.ObjectId }], // Removed ref as we handle manually
@@ -139,7 +150,7 @@ baseShopSchema.pre('save', async function () {
   }
 });
 
-baseShopSchema.index({ "address.coordinates": "2dsphere" });
+baseShopSchema.index({ geoLocation: "2dsphere" });
 
 
 // Create base Shop model
