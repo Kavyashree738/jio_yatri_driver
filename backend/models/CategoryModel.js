@@ -306,7 +306,7 @@ const hotelSchema = new mongoose.Schema({
     category: {
       type: String,
       enum: ['main', 'breakfast', 'lunch', 'dinner', 'snacks', 'beverages'],
-      required: true
+      required: false
     },
     image: {
       type: mongoose.Schema.Types.ObjectId,
