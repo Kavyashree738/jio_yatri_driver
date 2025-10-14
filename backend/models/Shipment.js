@@ -182,6 +182,16 @@ const shipmentSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  recreatedFrom: {
+  type: mongoose.Schema.Types.ObjectId,
+  ref: 'Shipment',
+  default: null
+},
+recreatedTo: {
+  type: mongoose.Schema.Types.ObjectId,
+  ref: 'Shipment',
+  default: null
+},
   // Corrected payment field in shipmentSchema
   payment: {
     type: paymentSchema,
@@ -217,4 +227,5 @@ shipmentSchema.index({ isShopOrder: 1 });
 shipmentSchema.index({ "sender.address.coordinates": "2dsphere" });
 
 module.exports = mongoose.model('Shipment', shipmentSchema);
+
 
