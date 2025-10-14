@@ -386,6 +386,46 @@ useEffect(() => {
     }
     return null;
   }, [geoPosition]);
+/* ----------------------- Send location to backend ----------------------- */
+useEffect(() => {
+  if (!user) return;
+
+  // 🔁 Send driver's current location every 5 seconds
+  const interval = setInterval(async () => {
+    try {
+      const stored = localStorage.getItem('lastKnownLocation');
+      if (!stored) return;
+
+      const [lng, lat] = JSON.parse(stored);
+      if (typeof lng !== 'number' || typeof lat !== 'number') return;
+
+      const token = await user.getIdToken();
+
+      await axios.put(
+        'https://jio-yatri-driver.onrender.com/api/driver/location',
+        {
+          coordinates: [lng, lat],
+          isLocationActive: true
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+
+      console.log('📡 Driver location updated →', [lng, lat]);
+    } catch (err) {
+      console.error('⚠️ Failed to update driver location:', err.message);
+    }
+  }, 5000);
+
+  return () => clearInterval(interval);
+}, [user]);
+
+
+  
+
+
+  
 
   const verifyPickupOtp = async () => {
     // console.log('🔐 verifyPickupOtp called with OTP:', enteredOtp);
