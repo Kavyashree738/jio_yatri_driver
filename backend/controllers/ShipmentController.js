@@ -1,9 +1,12 @@
 const axios = require('axios');
 const Shipment = require('../models/Shipment');
 const Driver = require('../models/Driver')
+const Order = require('../models/Order');
+const Shop = require('../models/CategoryModel');
+
 const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY;
 const { notifyNewShipment } = require('../services/notificationService');
-
+const { fanOutShipmentToNearbyDrivers } = require('../controllers/orderController');
 const mongoose = require('mongoose');  // Add this line at the top
 
 function toGeoPoint(input) {
@@ -572,103 +575,156 @@ exports.updateDriverLocation = async (req, res) => {
 
 
 
+async function distanceKm(origin, destination) {
+  try {
+    const r = await axios.get('https://maps.googleapis.com/maps/api/directions/json', {
+      params: {
+        origin: `${origin.lat},${origin.lng}`,
+        destination: `${destination.lat},${destination.lng}`,
+        key: GOOGLE_MAPS_API_KEY,
+        units: 'metric'
+      }
+    });
+    if (r.data?.status === 'OK') {
+      const meters = r.data.routes[0].legs[0].distance.value || 0;
+      return +(meters / 1000).toFixed(2);
+    }
+    return 0;
+  } catch (err) {
+    console.warn('[distanceKm] Fallback distance calc failed:', err.message);
+    return 0;
+  }
+}
+
+// ✅ Main cancelShipment controller
 exports.cancelShipment = async (req, res) => {
   const session = await mongoose.startSession();
   session.startTransaction();
 
   try {
-    const { id } = req.params;
-    const { reason } = req.body;
-
-    // 1️⃣ Find the shipment
-    const shipment = await Shipment.findById(id).session(session);
+    const shipment = await Shipment.findById(req.params.id).session(session);
     if (!shipment) {
       await session.abortTransaction();
-      return res.status(404).json({ success: false, error: 'Shipment not found' });
+      return res.status(404).json({ success: false, message: 'Shipment not found' });
     }
 
-    // 2️⃣ Only allow cancel before pickup/delivery
-    if (['picked_up', 'delivered'].includes(shipment.status)) {
-      await session.abortTransaction();
-      return res.status(400).json({
-        success: false,
-        error: 'Cannot cancel after parcel pickup or delivery'
-      });
-    }
-
-    // 3️⃣ Mark cancelled
+    // 🔹 Mark shipment as cancelled
     shipment.status = 'cancelled';
     await shipment.save({ session });
 
-    // 4️⃣ Clear driver’s active shipment
-    if (shipment.assignedDriver?.userId) {
-      await Driver.findOneAndUpdate(
-        { userId: shipment.assignedDriver.userId },
-        {
-          $set: { isLocationActive: false },
-          $unset: { activeShipment: 1 }
+    console.log(`[CancelShipment] 🚫 Shipment ${shipment._id} cancelled by driver`);
+
+    // 🔹 If this shipment belongs to a shop order, re-create and re-notify
+    if (shipment.isShopOrder) {
+      const order = await Order.findOne({ shipmentId: shipment._id }).lean();
+      if (!order) {
+        console.warn(`[CancelShipment] ⚠️ No order found for shop shipment ${shipment._id}`);
+        await session.commitTransaction();
+        return res.json({ success: true, message: 'Cancelled successfully (no order linked)' });
+      }
+
+      const shop = await Shop.findById(order.shop._id).lean();
+      if (!shop) {
+        console.warn(`[CancelShipment] ⚠️ Shop not found for order ${order._id}`);
+        await session.commitTransaction();
+        return res.json({ success: true, message: 'Cancelled successfully (no shop found)' });
+      }
+
+      // ✅ Safely extract shop & customer coordinates
+      const pickupCoords = shop?.address?.coordinates || {};
+      const dropCoords = order?.customer?.address || {};
+
+      const pickupPoint = {
+        type: 'Point',
+        coordinates: [
+          Number(pickupCoords.lng) || 0,
+          Number(pickupCoords.lat) || 0
+        ]
+      };
+
+      const dropPoint = {
+        type: 'Point',
+        coordinates: [
+          Number(dropCoords.lng) || 0,
+          Number(dropCoords.lat) || 0
+        ]
+      };
+
+      // ✅ Calculate distance accurately
+      const km = await distanceKm(
+        { lat: pickupCoords.lat, lng: pickupCoords.lng },
+        { lat: dropCoords.lat, lng: dropCoords.lng }
+      );
+
+      // ✅ Create new shipment (same details)
+      const newShipment = await Shipment.create([{
+        userId: order.customer.userId,
+        sender: {
+          name: shop.shopName,
+          phone: shop.phone,
+          address: {
+            addressLine1: shop.address.address || '',
+            coordinates: pickupPoint
+          }
         },
-        { session }
+        receiver: {
+          name: order.customer.name,
+          phone: order.customer.phone,
+          address: {
+            addressLine1: order.customer.address.line || '',
+            coordinates: dropPoint
+          }
+        },
+        parcel: {
+          description: (order.items || [])
+            .map(i => `${i.quantity}x ${i.name}`)
+            .join(', ')
+            .slice(0, 180),
+          images: []
+        },
+        vehicleType: order.vehicleType,
+        distance: km,
+        cost: order.pricing?.deliveryFee || 0,
+        trackingNumber: uuidv4().split('-')[0].toUpperCase(),
+        status: 'pending',
+        shopId: shop._id,
+        isShopOrder: true,
+        payment: { status: 'pending', method: null }
+      }], { session });
+
+      // ✅ Re-send notifications to nearby drivers (within 10 km)
+      await fanOutShipmentToNearbyDrivers({
+        shipment: newShipment[0],
+        vehicleType: newShipment[0].vehicleType,
+        pickupPoint,
+        radiusMeters: 10_000
+      });
+
+      // ✅ Update order to point to the new shipment
+      await Order.findByIdAndUpdate(order._id, {
+        $set: { shipmentId: newShipment[0]._id }
+      });
+
+      console.log(
+        `[CancelShipment] ✅ New shipment ${newShipment[0]._id} created and drivers re-notified`
       );
     }
 
-    // ✅ 5️⃣ If this is a shop order AND shipment was previously assigned,
-    // then reset to "pending" and re-notify all nearby drivers
-    if (shipment.isShopOrder && shipment.status === 'cancelled') {
-      console.log(`[ShopOrderCancel] Shop order cancelled by driver. Re-notifying nearby drivers...`);
-
-      // reset to pending (so next driver can take it)
-      shipment.status = 'pending';
-      shipment.assignedDriver = null;
-      await shipment.save({ session });
-
-      // re-send to nearby drivers (same as when shop owner accepts)
-      await fanOutShipmentToNearbyDrivers({
-        shipment,
-        vehicleType: shipment.vehicleType,
-        pickupPoint: shipment.sender.address.coordinates,
-        radiusMeters: 10000
-      });
-
-      console.log(`[Reassign] Shipment ${shipment._id} re-notified to nearby drivers`);
-    }
-
     await session.commitTransaction();
-
-    // 6️⃣ Socket notifications
-    if (req.io) {
-      req.io.to(`shipment_${shipment._id}`).emit('shipment_cancelled', shipment);
-      if (shipment.assignedDriver?.userId) {
-        req.io.to(`driver_${shipment.assignedDriver.userId}`).emit('active_shipment_cleared', {
-          driverId: shipment.assignedDriver.userId,
-          shipmentId: shipment._id
-        });
-      }
-      if (shipment.shopId) {
-        req.io.to(`shop_${shipment.shopId}`).emit('order_status_updated', {
-          shipmentId: shipment._id,
-          status: shipment.status
-        });
-      }
-    }
-
-    res.status(200).json({
-      success: true,
-      message: 'Shipment cancelled successfully',
-      data: shipment
-    });
-
+    return res.json({ success: true, message: 'Shipment cancelled and re-created if needed' });
   } catch (error) {
+    console.error('[CancelShipment] ❌ Error:', error);
     await session.abortTransaction();
-    console.error('Error cancelling shipment:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
-      error: 'Failed to cancel shipment'
+      message: 'Failed to cancel shipment',
+      error: error.message
     });
   } finally {
     session.endSession();
   }
 };
+
 
 
 exports.deliverShipment = async (req, res) => {
@@ -926,6 +982,7 @@ exports.getShipmentPaymentStatus = async (req, res) => {
     });
   }
 };
+
 
 
 
