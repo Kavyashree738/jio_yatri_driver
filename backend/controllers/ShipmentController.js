@@ -580,23 +580,27 @@ exports.cancelShipment = async (req, res) => {
     const { id } = req.params;
     const { reason } = req.body;
 
-    // 1. Update the shipment status
-    const shipment = await Shipment.findByIdAndUpdate(
-      id,
-      {
-        status: 'cancelled',
-        cancellationReason: reason,
-        $unset: { driverLocation: 1 } // Remove driver location
-      },
-      { new: true, session }
-    );
-
+    // 1️⃣ Find the shipment
+    const shipment = await Shipment.findById(id).session(session);
     if (!shipment) {
       await session.abortTransaction();
       return res.status(404).json({ success: false, error: 'Shipment not found' });
     }
 
-    // 2. Update the driver's active shipment
+    // 2️⃣ Only allow cancel before pickup/delivery
+    if (['picked_up', 'delivered'].includes(shipment.status)) {
+      await session.abortTransaction();
+      return res.status(400).json({
+        success: false,
+        error: 'Cannot cancel after parcel pickup or delivery'
+      });
+    }
+
+    // 3️⃣ Mark cancelled
+    shipment.status = 'cancelled';
+    await shipment.save({ session });
+
+    // 4️⃣ Clear driver’s active shipment
     if (shipment.assignedDriver?.userId) {
       await Driver.findOneAndUpdate(
         { userId: shipment.assignedDriver.userId },
@@ -608,39 +612,64 @@ exports.cancelShipment = async (req, res) => {
       );
     }
 
+    // ✅ 5️⃣ If this is a shop order AND shipment was previously assigned,
+    // then reset to "pending" and re-notify all nearby drivers
+    if (shipment.isShopOrder && shipment.status === 'cancelled') {
+      console.log(`[ShopOrderCancel] Shop order cancelled by driver. Re-notifying nearby drivers...`);
+
+      // reset to pending (so next driver can take it)
+      shipment.status = 'pending';
+      shipment.assignedDriver = null;
+      await shipment.save({ session });
+
+      // re-send to nearby drivers (same as when shop owner accepts)
+      await fanOutShipmentToNearbyDrivers({
+        shipment,
+        vehicleType: shipment.vehicleType,
+        pickupPoint: shipment.sender.address.coordinates,
+        radiusMeters: 10000
+      });
+
+      console.log(`[Reassign] Shipment ${shipment._id} re-notified to nearby drivers`);
+    }
+
     await session.commitTransaction();
 
-    // Emit real-time update if using Socket.io
+    // 6️⃣ Socket notifications
     if (req.io) {
-  // Notify all shipment listeners
-  req.io.to(`shipment_${shipment._id}`).emit('shipment_cancelled', shipment);
-
-  // Also tell driver dashboard to clear active shipment
-  if (shipment.assignedDriver?.userId) {
-    req.io.to(`driver_${shipment.assignedDriver.userId}`).emit('active_shipment_cleared', {
-      driverId: shipment.assignedDriver.userId,
-      shipmentId: shipment._id
-    });
-  }
-}
-
+      req.io.to(`shipment_${shipment._id}`).emit('shipment_cancelled', shipment);
+      if (shipment.assignedDriver?.userId) {
+        req.io.to(`driver_${shipment.assignedDriver.userId}`).emit('active_shipment_cleared', {
+          driverId: shipment.assignedDriver.userId,
+          shipmentId: shipment._id
+        });
+      }
+      if (shipment.shopId) {
+        req.io.to(`shop_${shipment.shopId}`).emit('order_status_updated', {
+          shipmentId: shipment._id,
+          status: shipment.status
+        });
+      }
+    }
 
     res.status(200).json({
       success: true,
+      message: 'Shipment cancelled successfully',
       data: shipment
     });
+
   } catch (error) {
     await session.abortTransaction();
     console.error('Error cancelling shipment:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to cancel shipment',
-      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      error: 'Failed to cancel shipment'
     });
   } finally {
     session.endSession();
   }
 };
+
 
 exports.deliverShipment = async (req, res) => {
   const session = await mongoose.startSession();
@@ -897,6 +926,7 @@ exports.getShipmentPaymentStatus = async (req, res) => {
     });
   }
 };
+
 
 
 
