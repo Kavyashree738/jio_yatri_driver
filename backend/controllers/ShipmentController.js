@@ -602,35 +602,60 @@ exports.cancelShipment = async (req, res) => {
   session.startTransaction();
 
   try {
-    const shipment = await Shipment.findById(req.params.id).session(session);
+    console.log('🚀 [CancelShipment] ====== START CANCEL FLOW ======');
+
+    const shipmentId = req.params.id;
+    console.log(`📦 [CancelShipment] Shipment ID: ${shipmentId}`);
+
+    const shipment = await Shipment.findById(shipmentId).session(session);
     if (!shipment) {
+      console.warn(`⚠️ [CancelShipment] Shipment not found: ${shipmentId}`);
       await session.abortTransaction();
       return res.status(404).json({ success: false, message: 'Shipment not found' });
     }
 
-    // 🔹 Mark shipment as cancelled
+    // 🔹 Step 1: Mark shipment as cancelled
     shipment.status = 'cancelled';
     await shipment.save({ session });
+    console.log(`❌ [CancelShipment] Shipment ${shipment._id} marked as CANCELLED`);
 
-    console.log(`[CancelShipment] 🚫 Shipment ${shipment._id} cancelled by driver`);
+    // 🔹 Step 2: Clear driver state if assigned
+    if (shipment.assignedDriver?.userId) {
+      await Driver.findOneAndUpdate(
+        { userId: shipment.assignedDriver.userId },
+        {
+          $unset: { activeShipment: 1 },
+          $set: { isAvailable: true, isLocationActive: false }
+        },
+        { session }
+      );
+      console.log(`🧹 [CancelShipment] Cleared activeShipment for driver ${shipment.assignedDriver.userId}`);
+    } else {
+      console.log('🧍 [CancelShipment] No assigned driver found — skipping driver cleanup');
+    }
 
-    // 🔹 If this shipment belongs to a shop order, re-create and re-notify
+    // 🔹 Step 3: Recreate shipment if this is a shop order
     if (shipment.isShopOrder) {
+      console.log('🏪 [CancelShipment] Detected SHOP ORDER — preparing new shipment...');
+
       const order = await Order.findOne({ shipmentId: shipment._id }).lean();
       if (!order) {
-        console.warn(`[CancelShipment] ⚠️ No order found for shop shipment ${shipment._id}`);
+        console.warn(`⚠️ [CancelShipment] No order found for shop shipment ${shipment._id}`);
         await session.commitTransaction();
         return res.json({ success: true, message: 'Cancelled successfully (no order linked)' });
       }
 
       const shop = await Shop.findById(order.shop._id).lean();
       if (!shop) {
-        console.warn(`[CancelShipment] ⚠️ Shop not found for order ${order._id}`);
+        console.warn(`⚠️ [CancelShipment] Shop not found for order ${order._id}`);
         await session.commitTransaction();
         return res.json({ success: true, message: 'Cancelled successfully (no shop found)' });
       }
 
-      // ✅ Safely extract shop & customer coordinates
+      console.log(`🏬 [CancelShipment] Shop: ${shop.shopName} (${shop._id})`);
+      console.log(`👤 [CancelShipment] Customer: ${order.customer.name} (${order.customer.phone})`);
+
+      // ✅ Step 4: Extract coordinates safely
       const pickupCoords = shop?.address?.coordinates || {};
       const dropCoords = order?.customer?.address || {};
 
@@ -641,7 +666,6 @@ exports.cancelShipment = async (req, res) => {
           Number(pickupCoords.lat) || 0
         ]
       };
-
       const dropPoint = {
         type: 'Point',
         coordinates: [
@@ -650,13 +674,21 @@ exports.cancelShipment = async (req, res) => {
         ]
       };
 
-      // ✅ Calculate distance accurately
+      console.log(`📍 [CancelShipment] PickupPoint: ${pickupPoint.coordinates}`);
+      console.log(`📍 [CancelShipment] DropPoint: ${dropPoint.coordinates}`);
+
+      // ✅ Step 5: Calculate distance
       const km = await distanceKm(
         { lat: pickupCoords.lat, lng: pickupCoords.lng },
         { lat: dropCoords.lat, lng: dropCoords.lng }
       );
+      console.log(`📏 [CancelShipment] Distance calculated: ${km} km`);
 
-      // ✅ Create new shipment (same details)
+      // ✅ Step 6: Determine correct delivery cost
+      const deliveryCost = order.pricing?.deliveryFee ?? 0;
+      console.log(`💰 [CancelShipment] Delivery cost set to ₹${deliveryCost}`);
+
+      // ✅ Step 7: Create replacement shipment
       const newShipment = await Shipment.create([{
         userId: order.customer.userId,
         sender: {
@@ -684,7 +716,7 @@ exports.cancelShipment = async (req, res) => {
         },
         vehicleType: order.vehicleType,
         distance: km,
-        cost: order.pricing?.deliveryFee || 0,
+        cost: deliveryCost,
         trackingNumber: uuidv4().split('-')[0].toUpperCase(),
         status: 'pending',
         shopId: shop._id,
@@ -692,28 +724,38 @@ exports.cancelShipment = async (req, res) => {
         payment: { status: 'pending', method: null }
       }], { session });
 
-      // ✅ Re-send notifications to nearby drivers (within 10 km)
+      console.log(`✅ [CancelShipment] New shipment created: ${newShipment[0]._id}`);
+
+      // ✅ Step 8: Re-notify nearby drivers (within 10km)
+      console.log('📢 [CancelShipment] Notifying nearby drivers...');
       await fanOutShipmentToNearbyDrivers({
         shipment: newShipment[0],
         vehicleType: newShipment[0].vehicleType,
         pickupPoint,
         radiusMeters: 10_000
       });
+      console.log('📬 [CancelShipment] Notification fan-out complete.');
 
-      // ✅ Update order to point to the new shipment
+      // ✅ Step 9: Link new shipment to order
       await Order.findByIdAndUpdate(order._id, {
         $set: { shipmentId: newShipment[0]._id }
       });
-
-      console.log(
-        `[CancelShipment] ✅ New shipment ${newShipment[0]._id} created and drivers re-notified`
-      );
+      console.log(`🔗 [CancelShipment] Linked order ${order._id} → new shipment ${newShipment[0]._id}`);
+    } else {
+      console.log('🚚 [CancelShipment] Not a shop order — skipping recreation.');
     }
 
+    // 🔹 Step 10: Commit transaction
     await session.commitTransaction();
-    return res.json({ success: true, message: 'Shipment cancelled and re-created if needed' });
+    console.log('💾 [CancelShipment] Transaction committed ✅');
+    console.log('🎉 [CancelShipment] ====== CANCEL FLOW COMPLETE ======');
+
+    return res.json({
+      success: true,
+      message: 'Shipment cancelled and re-created if needed'
+    });
   } catch (error) {
-    console.error('[CancelShipment] ❌ Error:', error);
+    console.error('🔥 [CancelShipment] ERROR OCCURRED:', error);
     await session.abortTransaction();
     return res.status(500).json({
       success: false,
@@ -722,6 +764,7 @@ exports.cancelShipment = async (req, res) => {
     });
   } finally {
     session.endSession();
+    console.log('🧩 [CancelShipment] Mongo session closed.');
   }
 };
 
@@ -982,6 +1025,7 @@ exports.getShipmentPaymentStatus = async (req, res) => {
     });
   }
 };
+
 
 
 
