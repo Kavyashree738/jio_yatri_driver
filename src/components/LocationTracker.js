@@ -838,18 +838,17 @@ useEffect(() => {
 
       <div className="shipment-actions">
         {(
-  activeShipment?.status !== 'picked_up' &&
-  !(activeShipment?.isShopOrder && activeShipment?.status === 'assigned')
+  !activeShipment?.isShopOrder &&  // 🚫 hide completely for shop orders
+  activeShipment?.status !== 'picked_up' // ✅ show only for normal shipments before pickup
 ) && (
   <button
-    onClick={() => {
-      setShowCancelPopup(true);
-    }}
+    onClick={() => setShowCancelPopup(true)}
     className="cancel-buttons"
   >
     Cancel Shipment
   </button>
 )}
+
 
 
         {(
