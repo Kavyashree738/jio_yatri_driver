@@ -227,7 +227,14 @@ exports.registerShop = async (req, res) => {
       address: parsedAddress,
       category,
       shopImages: shopImageIds,
-      items // Include items for ALL categories
+      items,
+       geoLocation: {
+    type: "Point",
+    coordinates: [
+      parsedAddress?.coordinates?.lng,
+      parsedAddress?.coordinates?.lat
+    ]
+  }
     });
 
     await newShop.save();
