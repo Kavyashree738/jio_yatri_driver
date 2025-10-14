@@ -575,196 +575,73 @@ exports.updateDriverLocation = async (req, res) => {
 
 
 
-async function distanceKm(origin, destination) {
-  try {
-    const r = await axios.get('https://maps.googleapis.com/maps/api/directions/json', {
-      params: {
-        origin: `${origin.lat},${origin.lng}`,
-        destination: `${destination.lat},${destination.lng}`,
-        key: GOOGLE_MAPS_API_KEY,
-        units: 'metric'
-      }
-    });
-    if (r.data?.status === 'OK') {
-      const meters = r.data.routes[0].legs[0].distance.value || 0;
-      return +(meters / 1000).toFixed(2);
-    }
-    return 0;
-  } catch (err) {
-    console.warn('[distanceKm] Fallback distance calc failed:', err.message);
-    return 0;
-  }
-}
-
-// ✅ Main cancelShipment controller
 exports.cancelShipment = async (req, res) => {
   const session = await mongoose.startSession();
   session.startTransaction();
 
   try {
-    console.log('🚀 [CancelShipment] ====== START CANCEL FLOW ======');
+    const { id } = req.params;
+    const { reason } = req.body;
 
-    const shipmentId = req.params.id;
-    console.log(`📦 [CancelShipment] Shipment ID: ${shipmentId}`);
+    // 1. Update the shipment status
+    const shipment = await Shipment.findByIdAndUpdate(
+      id,
+      {
+        status: 'cancelled',
+        cancellationReason: reason,
+        $unset: { driverLocation: 1 } // Remove driver location
+      },
+      { new: true, session }
+    );
 
-    const shipment = await Shipment.findById(shipmentId).session(session);
     if (!shipment) {
-      console.warn(`⚠️ [CancelShipment] Shipment not found: ${shipmentId}`);
       await session.abortTransaction();
-      return res.status(404).json({ success: false, message: 'Shipment not found' });
+      return res.status(404).json({ success: false, error: 'Shipment not found' });
     }
 
-    // 🔹 Step 1: Mark shipment as cancelled
-    shipment.status = 'cancelled';
-    await shipment.save({ session });
-    console.log(`❌ [CancelShipment] Shipment ${shipment._id} marked as CANCELLED`);
-
-    // 🔹 Step 2: Clear driver state if assigned
+    // 2. Update the driver's active shipment
     if (shipment.assignedDriver?.userId) {
       await Driver.findOneAndUpdate(
         { userId: shipment.assignedDriver.userId },
         {
-          $unset: { activeShipment: 1 },
-          $set: { isAvailable: true, isLocationActive: false }
+          $set: { isLocationActive: false },
+          $unset: { activeShipment: 1 }
         },
         { session }
       );
-      console.log(`🧹 [CancelShipment] Cleared activeShipment for driver ${shipment.assignedDriver.userId}`);
-    } else {
-      console.log('🧍 [CancelShipment] No assigned driver found — skipping driver cleanup');
     }
 
-    // 🔹 Step 3: Recreate shipment if this is a shop order
-    if (shipment.isShopOrder) {
-      console.log('🏪 [CancelShipment] Detected SHOP ORDER — preparing new shipment...');
-
-      const order = await Order.findOne({ shipmentId: shipment._id }).lean();
-      if (!order) {
-        console.warn(`⚠️ [CancelShipment] No order found for shop shipment ${shipment._id}`);
-        await session.commitTransaction();
-        return res.json({ success: true, message: 'Cancelled successfully (no order linked)' });
-      }
-
-      const shop = await Shop.findById(order.shop._id).lean();
-      if (!shop) {
-        console.warn(`⚠️ [CancelShipment] Shop not found for order ${order._id}`);
-        await session.commitTransaction();
-        return res.json({ success: true, message: 'Cancelled successfully (no shop found)' });
-      }
-
-      console.log(`🏬 [CancelShipment] Shop: ${shop.shopName} (${shop._id})`);
-      console.log(`👤 [CancelShipment] Customer: ${order.customer.name} (${order.customer.phone})`);
-
-      // ✅ Step 4: Extract coordinates safely
-      const pickupCoords = shop?.address?.coordinates || {};
-      const dropCoords = order?.customer?.address || {};
-
-      const pickupPoint = {
-        type: 'Point',
-        coordinates: [
-          Number(pickupCoords.lng) || 0,
-          Number(pickupCoords.lat) || 0
-        ]
-      };
-      const dropPoint = {
-        type: 'Point',
-        coordinates: [
-          Number(dropCoords.lng) || 0,
-          Number(dropCoords.lat) || 0
-        ]
-      };
-
-      console.log(`📍 [CancelShipment] PickupPoint: ${pickupPoint.coordinates}`);
-      console.log(`📍 [CancelShipment] DropPoint: ${dropPoint.coordinates}`);
-
-      // ✅ Step 5: Calculate distance
-      const km = await distanceKm(
-        { lat: pickupCoords.lat, lng: pickupCoords.lng },
-        { lat: dropCoords.lat, lng: dropCoords.lng }
-      );
-      console.log(`📏 [CancelShipment] Distance calculated: ${km} km`);
-
-      // ✅ Step 6: Determine correct delivery cost
-      const deliveryCost = order.pricing?.deliveryFee ?? 0;
-      console.log(`💰 [CancelShipment] Delivery cost set to ₹${deliveryCost}`);
-
-      // ✅ Step 7: Create replacement shipment
-      const newShipment = await Shipment.create([{
-        userId: order.customer.userId,
-        sender: {
-          name: shop.shopName,
-          phone: shop.phone,
-          address: {
-            addressLine1: shop.address.address || '',
-            coordinates: pickupPoint
-          }
-        },
-        receiver: {
-          name: order.customer.name,
-          phone: order.customer.phone,
-          address: {
-            addressLine1: order.customer.address.line || '',
-            coordinates: dropPoint
-          }
-        },
-        parcel: {
-          description: (order.items || [])
-            .map(i => `${i.quantity}x ${i.name}`)
-            .join(', ')
-            .slice(0, 180),
-          images: []
-        },
-        vehicleType: order.vehicleType,
-        distance: km,
-        cost: deliveryCost,
-        trackingNumber: uuidv4().split('-')[0].toUpperCase(),
-        status: 'pending',
-        shopId: shop._id,
-        isShopOrder: true,
-        payment: { status: 'pending', method: null }
-      }], { session });
-
-      console.log(`✅ [CancelShipment] New shipment created: ${newShipment[0]._id}`);
-
-      // ✅ Step 8: Re-notify nearby drivers (within 10km)
-      console.log('📢 [CancelShipment] Notifying nearby drivers...');
-      await fanOutShipmentToNearbyDrivers({
-        shipment: newShipment[0],
-        vehicleType: newShipment[0].vehicleType,
-        pickupPoint,
-        radiusMeters: 10_000
-      });
-      console.log('📬 [CancelShipment] Notification fan-out complete.');
-
-      // ✅ Step 9: Link new shipment to order
-      await Order.findByIdAndUpdate(order._id, {
-        $set: { shipmentId: newShipment[0]._id }
-      });
-      console.log(`🔗 [CancelShipment] Linked order ${order._id} → new shipment ${newShipment[0]._id}`);
-    } else {
-      console.log('🚚 [CancelShipment] Not a shop order — skipping recreation.');
-    }
-
-    // 🔹 Step 10: Commit transaction
     await session.commitTransaction();
-    console.log('💾 [CancelShipment] Transaction committed ✅');
-    console.log('🎉 [CancelShipment] ====== CANCEL FLOW COMPLETE ======');
 
-    return res.json({
+    // Emit real-time update if using Socket.io
+    if (req.io) {
+  // Notify all shipment listeners
+  req.io.to(`shipment_${shipment._id}`).emit('shipment_cancelled', shipment);
+
+  // Also tell driver dashboard to clear active shipment
+  if (shipment.assignedDriver?.userId) {
+    req.io.to(`driver_${shipment.assignedDriver.userId}`).emit('active_shipment_cleared', {
+      driverId: shipment.assignedDriver.userId,
+      shipmentId: shipment._id
+    });
+  }
+}
+
+
+    res.status(200).json({
       success: true,
-      message: 'Shipment cancelled and re-created if needed'
+      data: shipment
     });
   } catch (error) {
-    console.error('🔥 [CancelShipment] ERROR OCCURRED:', error);
     await session.abortTransaction();
-    return res.status(500).json({
+    console.error('Error cancelling shipment:', error);
+    res.status(500).json({
       success: false,
-      message: 'Failed to cancel shipment',
-      error: error.message
+      error: 'Failed to cancel shipment',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   } finally {
     session.endSession();
-    console.log('🧩 [CancelShipment] Mongo session closed.');
   }
 };
 
@@ -1025,6 +902,7 @@ exports.getShipmentPaymentStatus = async (req, res) => {
     });
   }
 };
+
 
 
 
