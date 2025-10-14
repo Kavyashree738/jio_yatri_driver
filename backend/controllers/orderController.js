@@ -99,7 +99,7 @@ async function findNearbyDrivers({ vehicleType, centerPoint, radiusMeters = 10_0
  * Notify nearby drivers about a shipment.
  * Uses your notifyNewShipment(userId, shipment) service.
  */
-async function fanOutShipmentToNearbyDrivers({ shipment, vehicleType, pickupPoint, radiusMeters = 10_000 }) {
+exports.fanOutShipmentToNearbyDrivers = async function ({ shipment, vehicleType, pickupPoint, radiusMeters = 10_000 }) {
   try {
     const drivers = await findNearbyDrivers({ vehicleType, centerPoint: pickupPoint, radiusMeters });
     console.log(`[fanOut] Found ${drivers.length} drivers within ${radiusMeters}m for ${vehicleType}`);
@@ -107,7 +107,8 @@ async function fanOutShipmentToNearbyDrivers({ shipment, vehicleType, pickupPoin
   } catch (e) {
     console.warn('[fanOut] notify failed:', e.message);
   }
-}
+};
+
 
 // --------------------------- create order ---------------------------
 exports.createOrder = async (req, res) => {
