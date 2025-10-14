@@ -837,19 +837,19 @@ useEffect(() => {
       {routeError && <p className="error-message">{routeError}</p>}
 
       <div className="shipment-actions">
-        {(
-  !activeShipment?.isShopOrder &&  // 🚫 hide completely for shop orders
-  activeShipment?.status !== 'picked_up' // ✅ show only for normal shipments before pickup
-) && (
-  <button
-    onClick={() => setShowCancelPopup(true)}
-    className="cancel-buttons"
-  >
-    Cancel Shipment
-  </button>
-)}
-
-
+         {(
+          activeShipment?.status !== 'picked_up' // hide when picked_up
+        ) && (
+            <button
+              onClick={() => {
+                // console.log('❌ Cancel shipment button clicked');
+                setShowCancelPopup(true);
+              }}
+              className="cancel-buttons"
+            >
+              Cancel Shipment
+            </button>
+          )}
 
         {(
           (activeShipment?.isShopOrder && pickupVerified) ||   // only after OTP verified for shop orders
