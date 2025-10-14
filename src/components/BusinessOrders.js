@@ -12,7 +12,9 @@ export default function BusinessOrders({ shopId }) {
     const { user } = useAuth();
     const [orders, setOrders] = useState([]);
     const [err, setErr] = useState(null);
-    const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
+const [firstLoadDone, setFirstLoadDone] = useState(false);
+
     const [busy, setBusy] = useState(null);
     const [hidePaid, setHidePaid] = useState(true);
 
@@ -26,78 +28,46 @@ export default function BusinessOrders({ shopId }) {
     //     userId: user?.uid
     // });
 
-    const load = async () => {
-        try {
-            // console.log('[BusinessOrders] Loading orders...');
-            setLoading(true);
-            setErr(null);
+const load = async (showLoader = false) => {
+  try {
+    if (showLoader) setLoading(true);
+    setErr(null);
 
-            let url;
-            if (resolvedShopId) {
-                url = `${apiBase}/api/orders/shop/${resolvedShopId}`;
-                // console.log('[BusinessOrders] Loading orders for shop:', resolvedShopId);
-            } else {
-                if (!user?.uid) {
-                    // console.error('[BusinessOrders] Missing owner id for aggregate orders');
-                    throw new Error('Missing owner id');
-                }
-                url = `${apiBase}/api/orders/owner/${user.uid}`;
-                // console.log('[BusinessOrders] Loading orders for owner:', user.uid);
-            }
+    let url;
+    if (resolvedShopId) {
+      url = `${apiBase}/api/orders/shop/${resolvedShopId}`;
+    } else {
+      if (!user?.uid) throw new Error('Missing owner id');
+      url = `${apiBase}/api/orders/owner/${user.uid}`;
+    }
 
-            // console.log('[BusinessOrders] Making GET request to:', url);
-            const res = await axios.get(url);
-            // console.log('[BusinessOrders] Response received:', {
-            //     status: res.status,
-            //     dataCount: res.data?.data?.length || 0
-            // });
+    const res = await axios.get(url);
+    setOrders(res.data.data || []);
+  } catch (e) {
+    setErr(e.response?.data?.error || e.message);
+  } finally {
+    if (showLoader) setLoading(false);
+    setFirstLoadDone(true);
+  }
+};
 
-            setOrders(res.data.data || []);
-            // console.log('[BusinessOrders] Orders state updated with', res.data.data?.length || 0, 'orders');
-        } catch (e) {
-            console.error('[BusinessOrders] Error loading orders:', {
-                status: e?.response?.status,
-                data: e?.response?.data,
-                message: e.message
-            });
-            setErr(e.response?.data?.error || e.message || 'Failed to load orders');
-        } finally {
-            setLoading(false);
-            // console.log('[BusinessOrders] Loading completed');
-        }
-    };
 
     // Load when we have either a shopId or (for aggregate) the user id
-    useEffect(() => {
-        // console.log('[BusinessOrders] useEffect triggered for load', {
-        //     resolvedShopId,
-        //     userId: user?.uid
-        // });
-
-        if (resolvedShopId || user?.uid) {
-            // console.log('[BusinessOrders] Conditions met, calling load()');
-            load();
-        } else {
-            // console.log('[BusinessOrders] Conditions not met, not loading orders');
-        }
-    }, [resolvedShopId, user?.uid]);
-
-    // 🕒 Polling useEffect: refresh orders every 10 seconds
 useEffect(() => {
   if (resolvedShopId || user?.uid) {
-
-    const interval = setInterval(() => {
-      
-      load();
-    }, 10000); // every 10 seconds
-
-    // cleanup interval when component unmounts
-    return () => {
-      
-      clearInterval(interval);
-    };
+    load(true); // show loader only on first load
   }
 }, [resolvedShopId, user?.uid]);
+
+useEffect(() => {
+  if (resolvedShopId || user?.uid) {
+    const interval = setInterval(() => {
+      load(false); // silent reload every 10 seconds
+    }, 10000);
+    return () => clearInterval(interval);
+  }
+}, [resolvedShopId, user?.uid]);
+
 
 
     // FCM useEffect - Fixed version
