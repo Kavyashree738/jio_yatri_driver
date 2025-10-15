@@ -399,12 +399,12 @@ async function createShipmentForOrder(orderDoc) {
   });
 
   // ✅ PROXIMITY FAN-OUT (10 km around the shop)
-  await fanOutShipmentToNearbyDrivers({
-    shipment,
-    vehicleType: shipment.vehicleType,
-    pickupPoint,
-    radiusMeters: 10_000
-  });
+await module.exports.fanOutShipmentToNearbyDrivers({
+  shipment,
+  vehicleType: shipment.vehicleType,
+  pickupPoint,
+  radiusMeters: 10_000
+});
 
   await Order.findByIdAndUpdate(orderDoc._id, { $set: { shipmentId: shipment._id } });
   return shipment;
