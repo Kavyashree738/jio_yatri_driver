@@ -360,4 +360,12 @@
 .register-btn, .login-btn {
   user-select: none;
 }
+.upload-preview p {
+  max-width: 250px;           /* Adjust width as needed */
+  white-space: nowrap;        /* Prevent wrapping */
+  overflow: hidden;           /* Hide overflow text */
+  text-overflow: ellipsis;    /* Add "..." at the end */
+  display: inline-block;
+  vertical-align: middle;
+}
 
