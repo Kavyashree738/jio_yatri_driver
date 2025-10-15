@@ -221,6 +221,11 @@ const sendNotificationToDriver = async (driverId, title, body, data = {}) => {
         ...data,
         click_action: 'FLUTTER_NOTIFICATION_CLICK'
       },
+      android: {
+      priority: 'high',
+      // Optional: uncomment if you want to force the same channel as Dart
+      // notification: { channelId: 'driver_general' },
+    },
       token: driver.fcmToken,
     };
 
@@ -295,6 +300,7 @@ module.exports = {
   notifyNewShipment,
   notifyShopNewOrder, 
 };
+
 
 
 
