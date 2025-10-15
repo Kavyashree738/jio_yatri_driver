@@ -991,3 +991,13 @@ input[type="file"] {
   width: 0;
   height: 0;
 }
+
+.hr-file-name {
+  max-width: 200px;           /* adjust as needed */
+  display: inline-block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+}
+

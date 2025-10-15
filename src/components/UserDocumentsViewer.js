@@ -151,7 +151,7 @@ const DocumentViewer = () => {
       formData.append('docType', currentDocType);
 
       const response = await axios.post(
-        'http://localhost:5000/api/upload/file',
+        'https://jio-yatri-driver.onrender.com/api/upload/file',
         formData,
         {
           headers: {

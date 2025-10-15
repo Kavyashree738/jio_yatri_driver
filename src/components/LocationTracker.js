@@ -6,6 +6,8 @@ import axios from 'axios';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useNavigate } from 'react-router-dom';
+import { ref, set } from "firebase/database";
+import { db } from "../firebase";
 
 const API_BASE_URL = 'https://jio-yatri-driver.onrender.com';
 
@@ -386,6 +388,50 @@ useEffect(() => {
     }
     return null;
   }, [geoPosition]);
+/* ----------------------- Send location to backend ----------------------- */
+useEffect(() => {
+  if (!user) return;
+
+  // 🔁 Send driver's current location every 5 seconds (MongoDB + Firebase)
+  const interval = setInterval(async () => {
+    try {
+      const stored = localStorage.getItem('lastKnownLocation');
+      if (!stored) return;
+
+      const [lng, lat] = JSON.parse(stored);
+      if (typeof lng !== 'number' || typeof lat !== 'number') return;
+
+      const token = await user.getIdToken();
+
+      // 1️⃣ Update in MongoDB (your existing backend)
+      await axios.put(
+        'https://jio-yatri-driver.onrender.com/api/driver/location',
+        {
+          coordinates: [lng, lat],
+          isLocationActive: true
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+
+      // 2️⃣ Update in Firebase (for instant real-time updates)
+      await set(ref(db, `driver_locations/${user.uid}`), {
+        lat,
+        lng,
+        updatedAt: Date.now(),
+      });
+
+      console.log('📡 Driver location updated (MongoDB + Firebase) →', [lng, lat]);
+    } catch (err) {
+      console.error('⚠️ Failed to update driver location:', err.message);
+    }
+  }, 5000);
+
+  return () => clearInterval(interval);
+}, [user]);
+
+
 
   const verifyPickupOtp = async () => {
     // console.log('🔐 verifyPickupOtp called with OTP:', enteredOtp);
@@ -528,6 +574,31 @@ useEffect(() => {
   const [distanceToReceiver, setDistanceToReceiver] = useState('');
   const [routeError, setRouteError] = useState(null);
 
+  function animateMarker(marker, newLatLng, duration = 1000) {
+  if (!marker || !window.google) return;
+
+  const startLatLng = marker.getPosition();
+  if (!startLatLng) return;
+
+  const startTime = performance.now();
+
+  function animate(currentTime) {
+    const elapsed = currentTime - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+
+    const lat = startLatLng.lat() + (newLatLng.lat - startLatLng.lat()) * progress;
+    const lng = startLatLng.lng() + (newLatLng.lng - startLatLng.lng()) * progress;
+
+    marker.setPosition(new window.google.maps.LatLng(lat, lng));
+
+    if (progress < 1) {
+      requestAnimationFrame(animate);
+    }
+  }
+
+  requestAnimationFrame(animate);
+}
+
   const updateMap = useCallback(() => {
     // console.log('🗺️ updateMap called');
     if (!mapRef.current || !activeShipment || !window.google) {
@@ -572,7 +643,7 @@ useEffect(() => {
       });
     } else {
       // console.log('📍 Updating existing driver marker');
-      markerRef.current.setPosition(driverLatLng);
+      animateMarker(markerRef.current, driverLatLng, 1000);
     }
 
     // Sender + Receiver markers (only create once)
@@ -643,31 +714,36 @@ useEffect(() => {
   }, [location, heading, activeShipment, senderLatLng, receiverLatLng]);
 
   /* --------------------------- Load Maps JS once --------------------------- */
-  useEffect(() => {
-    // console.log('🗺️ Load Maps JS effect - activeShipment:', activeShipment);
-    if (!activeShipment) {
-      // console.log('❌ No active shipment, clearing map ref');
-      mapRef.current = null;
-      return;
-    }
+// ✅ Improved Google Maps Loader — waits for location before init
+useEffect(() => {
+  if (!activeShipment) {
+    mapRef.current = null;
+    return;
+  }
 
-    if (window.google && window.google.maps) {
-      // console.log('✅ Google Maps already loaded, initializing map');
+  // ✅ Wait for valid driver location before initializing map
+  const driverLatLng = normalizeToLatLng(location);
+  if (!isValidLatLng(driverLatLng)) {
+    return;
+  }
+  
+
+  if (window.google && window.google.maps) {
+    initMap();
+  } else if (!googleMapsScriptRef.current) {
+    console.log("📜 Loading Google Maps script...");
+    const script = document.createElement('script');
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.REACT_APP_GOOGLE_API_KEY}&libraries=places`;
+    script.async = true;
+    script.defer = true;
+    script.onload = () => {
       initMap();
-    } else if (!googleMapsScriptRef.current) {
-      // console.log('📜 Loading Google Maps script...');
-      const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.REACT_APP_GOOGLE_API_KEY}&libraries=places`;
-      script.async = true;
-      script.defer = true;
-      script.onload = () => {
-        // console.log('✅ Google Maps script loaded');
-        initMap();
-      };
-      document.body.appendChild(script);
-      googleMapsScriptRef.current = script;
-    }
-  }, [activeShipment, initMap]);
+    };
+    document.body.appendChild(script);
+    googleMapsScriptRef.current = script;
+  }
+}, [activeShipment, location, initMap]);
+
 
   useEffect(() => {
     // console.log('🗺️ Map update effect - loadingMap:', loadingMap, 'location:', location);
@@ -837,7 +913,7 @@ useEffect(() => {
       {routeError && <p className="error-message">{routeError}</p>}
 
       <div className="shipment-actions">
-        {(
+         {(
           activeShipment?.status !== 'picked_up' // hide when picked_up
         ) && (
             <button
