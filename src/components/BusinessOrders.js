@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState,useRef } from 'react';
 import axios from 'axios';
 import Header from './Header';
 import '../styles/BusinessOrders.css';
@@ -19,6 +19,9 @@ const [firstLoadDone, setFirstLoadDone] = useState(false);
     const [hidePaid, setHidePaid] = useState(true);
 
     const { shopId: shopIdFromParams } = useParams();
+
+    const notifiedOrderIdsRef = useRef(new Set());
+    
     const resolvedShopId = shopId || shopIdFromParams; // undefined on /business-orders
     const navigate = useNavigate();
 
@@ -42,7 +45,29 @@ const load = async (showLoader = false) => {
     }
 
     const res = await axios.get(url);
-    setOrders(res.data.data || []);
+    const newOrders = res.data.data || [];
+const notifiedSet = notifiedOrderIdsRef.current;
+
+newOrders.forEach(order => {
+  if (!notifiedSet.has(order._id)) {
+    // Browser notification
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification('🛍️ New Order Received!', {
+        body: `Order ${order.orderCode || ''} from ${order.customer?.name || 'New Customer'}`,
+        icon: '/logo.jpg',
+      });
+    }
+
+    // Sound alert
+    const audio = new Audio('/notification.wav');
+    audio.play().catch(err => console.warn('Audio playback prevented:', err));
+
+    notifiedSet.add(order._id);
+  }
+});
+
+setOrders(newOrders);
+
   } catch (e) {
     setErr(e.response?.data?.error || e.message);
   } finally {
@@ -58,6 +83,13 @@ useEffect(() => {
     load(true); // show loader only on first load
   }
 }, [resolvedShopId, user?.uid]);
+
+    useEffect(() => {
+        if ('Notification' in window && Notification.permission !== 'granted') {
+            Notification.requestPermission();
+        }
+    }, []);
+
 
 useEffect(() => {
   if (resolvedShopId || user?.uid) {
