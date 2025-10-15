@@ -282,7 +282,7 @@ exports.registerShop = async (req, res) => {
         }
         // invalid/self referral => no credit, no block
       } catch (refErr) {
-        console.error('[Shop Referral] credit error:', refErr);
+        // console.error('[Shop Referral] credit error:', refErr);
         // do not fail registration for referral issues
       }
     }
@@ -329,7 +329,7 @@ exports.getShopsByCategory = async (req, res) => {
 
     res.status(200).json({ success: true, data: shopsWithUrls });
   } catch (err) {
-    console.error('Error in getShopsByCategory:', err);
+    // console.error('Error in getShopsByCategory:', err);
     res.status(500).json({ success: false, error: 'Failed to fetch shops' });
   }
 };
@@ -337,11 +337,11 @@ exports.getShopsByCategory = async (req, res) => {
 // Get shop by ID
 exports.getShopById = async (req, res) => {
   try {
-    console.log(`[ShopController] Fetching shop with ID: ${req.params.id}`);
+    // console.log(`[ShopController] Fetching shop with ID: ${req.params.id}`);
     const shop = await Shop.findById(req.params.id).lean();
 
     if (!shop) {
-      console.log('[ShopController] Shop not found');
+      // console.log('[ShopController] Shop not found');
       return res.status(404).json({ success: false, error: 'Shop not found' });
     }
 
@@ -360,17 +360,17 @@ exports.getShopById = async (req, res) => {
       })) || []
     };
 
-    console.log('[ShopController] Shop found:', {
-      _id: response._id,
-      shopName: response.shopName,
-      itemCount: response.items?.length
-    });
+    // console.log('[ShopController] Shop found:', {
+    //   _id: response._id,
+    //   shopName: response.shopName,
+    //   itemCount: response.items?.length
+    // });
     res.status(200).json({ success: true, data: response });
   } catch (err) {
-    console.error('[ShopController] Error in getShopById:', {
-      message: err.message,
-      params: req.params
-    });
+    // console.error('[ShopController] Error in getShopById:', {
+    //   message: err.message,
+    //   params: req.params
+    // });
     res.status(500).json({
       success: false,
       error: 'Failed to fetch shop',
@@ -382,43 +382,43 @@ exports.getShopById = async (req, res) => {
 // Get image from GridFS
 exports.getImage = async (req, res) => {
   try {
-    console.log('[ShopController] Starting getImage function');
-    console.log(`[ShopController] Image ID received: ${req.params.id}`);
+    // console.log('[ShopController] Starting getImage function');
+    // console.log(`[ShopController] Image ID received: ${req.params.id}`);
 
     await gfsPromise;
-    console.log('[ShopController] GridFS connection established');
+    // console.log('[ShopController] GridFS connection established');
 
     const fileId = new mongoose.Types.ObjectId(req.params.id);
-    console.log(`[ShopController] Converted to ObjectId: ${fileId}`);
+    // console.log(`[ShopController] Converted to ObjectId: ${fileId}`);
 
-    console.log('[ShopController] Searching for file in GridFS...');
+    // console.log('[ShopController] Searching for file in GridFS...');
     const files = await gfs.find({ _id: fileId }).toArray();
-    console.log(`[ShopController] Found ${files.length} matching files`);
+    // console.log(`[ShopController] Found ${files.length} matching files`);
 
     if (!files || files.length === 0) {
-      console.log('[ShopController] No files found');
+      // console.log('[ShopController] No files found');
       return res.status(404).json({ success: false, error: 'File not found' });
     }
 
-    console.log('[ShopController] Preparing to stream file...');
+    // console.log('[ShopController] Preparing to stream file...');
     res.set('Content-Type', files[0].contentType || 'application/octet-stream');
     const downloadStream = gfs.openDownloadStream(fileId);
 
     downloadStream.on('error', (err) => {
-      console.error('[ShopController] Error streaming file:', err);
+      // console.error('[ShopController] Error streaming file:', err);
       if (!res.headersSent) {
         res.status(500).json({ success: false, error: 'Error streaming file' });
       }
     });
 
-    console.log('[ShopController] Starting file stream');
+    // console.log('[ShopController] Starting file stream');
     downloadStream.pipe(res);
   } catch (err) {
-    console.error('[ShopController] Error in getImage:', {
-      message: err.message,
-      stack: err.stack,
-      name: err.name
-    });
+    // console.error('[ShopController] Error in getImage:', {
+    //   message: err.message,
+    //   stack: err.stack,
+    //   name: err.name
+    // });
     res.status(500).json({
       success: false,
       error: err.message,
@@ -429,7 +429,7 @@ exports.getImage = async (req, res) => {
 
 // Update shop
 exports.updateShop = async (req, res) => {
-  console.log('--- STARTING SHOP UPDATE ---');
+  // console.log('--- STARTING SHOP UPDATE ---');
   try {
     await gfsPromise;
 
@@ -513,6 +513,7 @@ exports.updateShop = async (req, res) => {
 
         case 'vegetable':
           if (it.organic !== undefined) out.organic = toBool(it.organic);
+          if (it.quantity != null && it.quantity !== '') out.quantity = Number(it.quantity);
           break;
 
         case 'provision':
@@ -559,7 +560,7 @@ exports.updateShop = async (req, res) => {
 
     return res.json({ success: true, data, message: 'Shop updated successfully' });
   } catch (error) {
-    console.error('[updateShop] failed:', error);
+    // console.error('[updateShop] failed:', error);
     return res.status(500).json({ success: false, error: error.message || 'Failed to update shop' });
   }
 };
@@ -570,17 +571,17 @@ exports.updateShop = async (req, res) => {
 // Delete shop
 exports.deleteShop = async (req, res) => {
   try {
-    console.log('[ShopController] Starting shop deletion');
+    // console.log('[ShopController] Starting shop deletion');
     const { userId } = req.body;
     const existingShop = await Shop.findById(req.params.id);
 
     if (!existingShop) {
-      console.log('[ShopController] Shop not found');
+      // console.log('[ShopController] Shop not found');
       return res.status(404).json({ success: false, error: "Shop not found" });
     }
 
     if (existingShop.userId !== userId) {
-      console.log('[ShopController] Unauthorized access attempt');
+      // console.log('[ShopController] Unauthorized access attempt');
       return res.status(403).json({ success: false, error: "Unauthorized" });
     }
 
@@ -590,24 +591,24 @@ exports.deleteShop = async (req, res) => {
       ...(existingShop.items?.map(item => item.image).filter(Boolean)) || []
     ];
 
-    console.log(`[ShopController] Deleting ${allImageIds.length} associated images`);
+    // console.log(`[ShopController] Deleting ${allImageIds.length} associated images`);
     await Promise.all(
       allImageIds.map(imageId =>
         gfs.delete(new mongoose.Types.ObjectId(imageId))
-          .then(() => console.log(`[ShopController] Deleted image ${imageId}`))
-          .catch(err => console.error(`[ShopController] Error deleting image ${imageId}:`, err))
+          .then(() => console.log(` `))
+          .catch(err => console.error(``))
       )
     );
 
     await Shop.findByIdAndDelete(req.params.id);
-    console.log('[ShopController] Shop deleted successfully');
+    // console.log('[ShopController] Shop deleted successfully');
 
     res.json({ success: true, data: {} });
   } catch (error) {
-    console.error('[ShopController] Delete failed:', {
-      message: error.message,
-      stack: error.stack
-    });
+    // console.error('[ShopController] Delete failed:', {
+    //   message: error.message,
+    //   stack: error.stack
+    // });
     res.status(500).json({
       success: false,
       error: "Failed to delete shop",
@@ -645,7 +646,7 @@ exports.getShopsByCategory = async (req, res) => {
 
     res.status(200).json({ success: true, data: shopsWithUrls });
   } catch (err) {
-    console.error('Error in getShopsByCategory:', err);
+    // console.error('Error in getShopsByCategory:', err);
     res.status(500).json({ success: false, error: 'Failed to fetch shops' });
   }
 };
@@ -670,62 +671,62 @@ exports.getShopById = async (req, res) => {
       })) || []
     };
 
-    console.log("Shop response being sent:", {
-      _id: response._id,
-      shopName: response.shopName,
-      itemCount: response.items?.length,
-      firstItemImageUrl: response.items?.[0]?.imageUrl
-    });
+    // console.log("Shop response being sent:", {
+    //   _id: response._id,
+    //   shopName: response.shopName,
+    //   itemCount: response.items?.length,
+    //   firstItemImageUrl: response.items?.[0]?.imageUrl
+    // });
 
     res.status(200).json({ success: true, data: response });
   } catch (err) {
-    console.error('Error in getShopById:', {
-      message: err.message,
-      stack: err.stack,
-      params: req.params
-    });
+    // console.error('Error in getShopById:', {
+    //   message: err.message,
+    //   stack: err.stack,
+    //   params: req.params
+    // });
     res.status(500).json({ success: false, error: 'Failed to fetch shop' });
   }
 };
 
 exports.getImage = async (req, res) => {
   try {
-    console.log('1. Starting getImage function');
-    console.log(`2. Image ID received: ${req.params.id}`);
+    // console.log('1. Starting getImage function');
+    // console.log(`2. Image ID received: ${req.params.id}`);
 
     await gfsPromise;
-    console.log('3. GridFS connection established');
+    // console.log('3. GridFS connection established');
 
     const fileId = new mongoose.Types.ObjectId(req.params.id);
-    console.log(`4. Converted to ObjectId: ${fileId}`);
+    // console.log(`4. Converted to ObjectId: ${fileId}`);
 
-    console.log('5. Searching for file in GridFS...');
+    // console.log('5. Searching for file in GridFS...');
     const files = await gfs.find({ _id: fileId }).toArray();
-    console.log(`6. Found ${files.length} matching files`);
+    // console.log(`6. Found ${files.length} matching files`);
 
     if (!files || files.length === 0) {
-      console.log('7. No files found');
+      // console.log('7. No files found');
       return res.status(404).json({ success: false, error: 'File not found' });
     }
 
-    console.log('8. Preparing to stream file...');
+    // console.log('8. Preparing to stream file...');
     res.set('Content-Type', files[0].contentType || 'application/octet-stream');
     const downloadStream = gfs.openDownloadStream(fileId);
 
     downloadStream.on('error', (err) => {
-      console.error('9. Error streaming file:', err);
+      // console.error('9. Error streaming file:', err);
       res.status(500).json({ success: false, error: 'Error streaming file' });
     });
 
-    console.log('10. Starting file stream');
+    // console.log('10. Starting file stream');
     downloadStream.pipe(res);
   } catch (err) {
-    console.error('11. Error in getImage:', err);
-    console.error('12. Error details:', {
-      message: err.message,
-      stack: err.stack,
-      name: err.name
-    });
+    // console.error('11. Error in getImage:', err);
+    // console.error('12. Error details:', {
+    //   message: err.message,
+    //   stack: err.stack,
+    //   name: err.name
+    // });
     res.status(500).json({ success: false, error: err.message });
   }
 };
@@ -838,7 +839,7 @@ exports.getImage = async (req, res) => {
 
 // Helper function with enhanced debugging
 const uploadFile = async (file) => {
-  console.log(`[DEBUG] Starting upload for file: ${file.originalname}`);
+  // console.log(`[DEBUG] Starting upload for file: ${file.originalname}`);
   return new Promise((resolve, reject) => {
     const uploadStream = gfs.openUploadStream(file.originalname, {
       contentType: file.mimetype,
@@ -849,15 +850,15 @@ const uploadFile = async (file) => {
     });
 
     uploadStream.on('finish', () => {
-      console.log(`[DEBUG] File uploaded successfully: ${file.originalname} as ${uploadStream.id}`);
+      // console.log(`[DEBUG] File uploaded successfully: ${file.originalname} as ${uploadStream.id}`);
       resolve(uploadStream.id);
     });
 
     uploadStream.on('error', (err) => {
-      console.error(`[ERROR] File upload failed for ${file.originalname}:`, {
-        message: err.message,
-        stack: err.stack
-      });
+      // console.error(`[ERROR] File upload failed for ${file.originalname}:`, {
+      //   message: err.message,
+      //   stack: err.stack
+      // });
       reject(err);
     });
 
@@ -957,7 +958,7 @@ exports.applyShopReferral = async (req, res) => {
       referrerName: referrer.shopName
     });
   } catch (error) {
-    console.error('[applyShopReferral] failed:', error);
+    // console.error('[applyShopReferral] failed:', error);
     return res.status(500).json({ success: false, error: 'Failed to validate referral code' });
   }
 };
@@ -988,7 +989,7 @@ exports.getShopReferralCode = async (req, res) => {
       shareLink
     });
   } catch (error) {
-    console.error('[getShopReferralCode] failed:', error);
+    // console.error('[getShopReferralCode] failed:', error);
     return res.status(500).json({ success: false, error: 'Failed to get referral code' });
   }
 };
@@ -1026,7 +1027,7 @@ exports.getShopReferralStats = async (req, res) => {
       }))
     });
   } catch (error) {
-    console.error('[getShopReferralStats] failed:', error);
+    // console.error('[getShopReferralStats] failed:', error);
     return res.status(500).json({ success: false, error: 'Failed to get referral stats' });
   }
 };
@@ -1044,7 +1045,7 @@ exports.getShopReferralLeaderboard = async (req, res) => {
 
     return res.json({ success: true, data: top });
   } catch (error) {
-    console.error('[getShopReferralLeaderboard] failed:', error);
+    // console.error('[getShopReferralLeaderboard] failed:', error);
     return res.status(500).json({ success: false, error: 'Failed to fetch leaderboard' });
   }
 };
@@ -1120,7 +1121,7 @@ exports.addItemToShop = async (req, res) => {
     });
 
   } catch (err) {
-    console.error('[addItemToShop] failed:', err);
+    // console.error('[addItemToShop] failed:', err);
     res.status(500).json({ success: false, error: err.message });
   }
 };

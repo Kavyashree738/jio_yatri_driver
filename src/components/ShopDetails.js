@@ -768,7 +768,7 @@ const [deleting, setDeleting] = useState(false);
                       )}
 
                       {/* Provision meta */}
-                      {["provision", "grocery"].includes(shop.category) && (item.brand || item.weight || item.quantity !== undefined) && (
+                      {["provision", "grocery","vegetable"].includes(shop.category) && (item.brand || item.weight || item.quantity !== undefined) && (
                         <div className="sd-provision-meta">
                           {item.brand && (
                             <span className="sd-provision-chip sd-provision-brand">

@@ -180,6 +180,7 @@ const vegetableSchema = new mongoose.Schema({
     name: { type: String, required: true },
     price: { type: Number, required: true, min: 0 },
     organic: { type: Boolean, default: false },
+    quantity: { type: Number, default: 1, min: 0 },
     image: { type: mongoose.Schema.Types.ObjectId }
   }]
 }, {
