@@ -574,6 +574,31 @@ useEffect(() => {
   const [distanceToReceiver, setDistanceToReceiver] = useState('');
   const [routeError, setRouteError] = useState(null);
 
+  function animateMarker(marker, newLatLng, duration = 1000) {
+  if (!marker || !window.google) return;
+
+  const startLatLng = marker.getPosition();
+  if (!startLatLng) return;
+
+  const startTime = performance.now();
+
+  function animate(currentTime) {
+    const elapsed = currentTime - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+
+    const lat = startLatLng.lat() + (newLatLng.lat - startLatLng.lat()) * progress;
+    const lng = startLatLng.lng() + (newLatLng.lng - startLatLng.lng()) * progress;
+
+    marker.setPosition(new window.google.maps.LatLng(lat, lng));
+
+    if (progress < 1) {
+      requestAnimationFrame(animate);
+    }
+  }
+
+  requestAnimationFrame(animate);
+}
+
   const updateMap = useCallback(() => {
     // console.log('🗺️ updateMap called');
     if (!mapRef.current || !activeShipment || !window.google) {
@@ -618,7 +643,7 @@ useEffect(() => {
       });
     } else {
       // console.log('📍 Updating existing driver marker');
-      markerRef.current.setPosition(driverLatLng);
+      animateMarker(markerRef.current, driverLatLng, 1000);
     }
 
     // Sender + Receiver markers (only create once)
@@ -701,6 +726,7 @@ useEffect(() => {
   if (!isValidLatLng(driverLatLng)) {
     return;
   }
+  
 
   if (window.google && window.google.maps) {
     initMap();
