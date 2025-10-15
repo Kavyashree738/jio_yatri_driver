@@ -689,31 +689,35 @@ useEffect(() => {
   }, [location, heading, activeShipment, senderLatLng, receiverLatLng]);
 
   /* --------------------------- Load Maps JS once --------------------------- */
-  useEffect(() => {
-    // console.log('🗺️ Load Maps JS effect - activeShipment:', activeShipment);
-    if (!activeShipment) {
-      // console.log('❌ No active shipment, clearing map ref');
-      mapRef.current = null;
-      return;
-    }
+// ✅ Improved Google Maps Loader — waits for location before init
+useEffect(() => {
+  if (!activeShipment) {
+    mapRef.current = null;
+    return;
+  }
 
-    if (window.google && window.google.maps) {
-      // console.log('✅ Google Maps already loaded, initializing map');
+  // ✅ Wait for valid driver location before initializing map
+  const driverLatLng = normalizeToLatLng(location);
+  if (!isValidLatLng(driverLatLng)) {
+    return;
+  }
+
+  if (window.google && window.google.maps) {
+    initMap();
+  } else if (!googleMapsScriptRef.current) {
+    console.log("📜 Loading Google Maps script...");
+    const script = document.createElement('script');
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.REACT_APP_GOOGLE_API_KEY}&libraries=places`;
+    script.async = true;
+    script.defer = true;
+    script.onload = () => {
       initMap();
-    } else if (!googleMapsScriptRef.current) {
-      // console.log('📜 Loading Google Maps script...');
-      const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.REACT_APP_GOOGLE_API_KEY}&libraries=places`;
-      script.async = true;
-      script.defer = true;
-      script.onload = () => {
-        // console.log('✅ Google Maps script loaded');
-        initMap();
-      };
-      document.body.appendChild(script);
-      googleMapsScriptRef.current = script;
-    }
-  }, [activeShipment, initMap]);
+    };
+    document.body.appendChild(script);
+    googleMapsScriptRef.current = script;
+  }
+}, [activeShipment, location, initMap]);
+
 
   useEffect(() => {
     // console.log('🗺️ Map update effect - loadingMap:', loadingMap, 'location:', location);
