@@ -38,7 +38,7 @@ const FIELDS_BY_CATEGORY = {
   vegetable: [
     { key: 'price', label: 'Price (₹)', type: 'number', required: true, min: 0 },
     { key: 'organic', label: 'Organic', type: 'boolean', def: false },
-     { key: 'quantity', label: 'Quantity (stock available)', type: 'number', required: true, min: 0, def: 1 },
+        { key: 'weight', label: 'Weight (e.g., 1kg / 500g)', type: 'text' },
   ],
   medical: [
     { key: 'price', label: 'Price (₹)', type: 'number', required: true, min: 0 },

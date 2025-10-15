@@ -520,7 +520,7 @@ exports.updateShop = async (req, res) => {
 
         case 'vegetable':
           if (it.organic !== undefined) out.organic = toBool(it.organic);
-          if (it.quantity != null && it.quantity !== '') out.quantity = Number(it.quantity);
+          if (it.weight != null && it.weight !== '') out.weight = String(it.weight);
           break;
 
         case 'provision':
