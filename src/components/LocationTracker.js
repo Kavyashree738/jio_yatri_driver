@@ -6,6 +6,8 @@ import axios from 'axios';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useNavigate } from 'react-router-dom';
+import { ref, set } from "firebase/database";
+import { db } from "../firebase";
 
 const API_BASE_URL = 'https://jio-yatri-driver.onrender.com';
 
@@ -390,7 +392,7 @@ useEffect(() => {
 useEffect(() => {
   if (!user) return;
 
-  // 🔁 Send driver's current location every 5 seconds
+  // 🔁 Send driver's current location every 5 seconds (MongoDB + Firebase)
   const interval = setInterval(async () => {
     try {
       const stored = localStorage.getItem('lastKnownLocation');
@@ -401,6 +403,7 @@ useEffect(() => {
 
       const token = await user.getIdToken();
 
+      // 1️⃣ Update in MongoDB (your existing backend)
       await axios.put(
         'https://jio-yatri-driver.onrender.com/api/driver/location',
         {
@@ -412,7 +415,14 @@ useEffect(() => {
         }
       );
 
-      console.log('📡 Driver location updated →', [lng, lat]);
+      // 2️⃣ Update in Firebase (for instant real-time updates)
+      await set(ref(db, `driver_locations/${user.uid}`), {
+        lat,
+        lng,
+        updatedAt: Date.now(),
+      });
+
+      console.log('📡 Driver location updated (MongoDB + Firebase) →', [lng, lat]);
     } catch (err) {
       console.error('⚠️ Failed to update driver location:', err.message);
     }
@@ -422,10 +432,6 @@ useEffect(() => {
 }, [user]);
 
 
-  
-
-
-  
 
   const verifyPickupOtp = async () => {
     // console.log('🔐 verifyPickupOtp called with OTP:', enteredOtp);
