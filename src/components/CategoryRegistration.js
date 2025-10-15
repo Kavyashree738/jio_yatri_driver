@@ -13,6 +13,15 @@ import { useAuth } from '../context/AuthContext';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 
+
+import groceryImg from '../assets/images/category/groceries.png';
+import vegetableImg from '../assets/images/category/vegetable.png';
+import provisionImg from '../assets/images/category/provision.png';
+import medicalImg from '../assets/images/category/medical.png';
+import hotelImg from '../assets/images/category/hotel.png';
+import bakeryImg from '../assets/images/category/bakery.png';
+import cafeImg from '../assets/images/category/cafe.png';
+
 // Basic UPI VPA shape check: <id>@<handle>
 const vpaRegex = /^[a-z0-9.\-_]{2,}@[a-z]{2,}$/i;
 
@@ -89,15 +98,15 @@ const CATEGORY_CONFIG = {
 };
 
 const categoriesForGrid = [
-    { name: 'Groceries', value: 'grocery', icon: <FaStore />, color: CATEGORY_CONFIG.grocery.color },
-    { name: 'Vegetables', value: 'vegetable', icon: <FaCarrot />, color: CATEGORY_CONFIG.vegetable.color },
-    { name: 'Provisions', value: 'provision', icon: <FaBoxes />, color: CATEGORY_CONFIG.provision.color },
-    { name: 'Medical', value: 'medical', icon: <FaMedkit />, color: CATEGORY_CONFIG.medical.color },
-    { name: 'Food Service', value: 'hotel', icon: <MdLocalDining />, color: CATEGORY_CONFIG.hotel.color },
-    // NEW:
-    { name: 'Bakery', value: 'bakery', icon: <FaBreadSlice />, color: CATEGORY_CONFIG.bakery.color },
-    { name: 'Cafe', value: 'cafe', icon: <FaCoffee />, color: CATEGORY_CONFIG.cafe.color },
+  { name: 'Groceries-Shop', value: 'grocery', image: groceryImg, color: CATEGORY_CONFIG.grocery.color },
+  { name: 'Vegetables-Shop', value: 'vegetable', image: vegetableImg, color: CATEGORY_CONFIG.vegetable.color },
+  { name: 'Provisions-Shop', value: 'provision', image: provisionImg, color: CATEGORY_CONFIG.provision.color },
+  { name: 'Medical-Shop', value: 'medical', image: medicalImg, color: CATEGORY_CONFIG.medical.color },
+  { name: 'Hotel', value: 'hotel', image: hotelImg, color: CATEGORY_CONFIG.hotel.color },
+  { name: 'Bakery', value: 'bakery', image: bakeryImg, color: CATEGORY_CONFIG.bakery.color },
+  { name: 'Cafe', value: 'cafe', image: cafeImg, color: CATEGORY_CONFIG.cafe.color },
 ];
+
 
 const CategoryRegistration = () => {
     const navigate = useNavigate();
@@ -408,7 +417,7 @@ const CategoryRegistration = () => {
     }
 
     // Category selection
-    if (showCategorySelection || !selectedCategory) {
+        if (showCategorySelection || !selectedCategory) {
         return (
             <>
                 <Header />
@@ -424,14 +433,18 @@ const CategoryRegistration = () => {
                                 <div
                                     key={category.value}
                                     className="hr-category-card"
-                                    style={{ backgroundColor: category.color }}
                                     onClick={() => handleCategorySelect(category.value)}
                                 >
-                                    <div className="hr-category-icon">{category.icon}</div>
+                                    <img
+                                        src={category.image}
+                                        alt={category.name}
+                                        className="hr-category-image"
+                                    />
                                     <h3 className="hr-category-name">{category.name}</h3>
                                 </div>
                             ))}
                         </div>
+
                     </div>
                 </div>
                 <Footer />
