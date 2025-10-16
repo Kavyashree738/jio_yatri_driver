@@ -544,11 +544,16 @@ useEffect(() => {
     const center = isValidLatLng(cObj) ? cObj : { lat: 12.9716, lng: 77.5946 };
     // console.log('🗺️ Map center set to:', center);
 
-    mapRef.current = new window.google.maps.Map(mapContainerRef.current, {
-      zoom: 15,
-      center,
-      mapTypeId: 'roadmap',
-    });
+mapRef.current = new window.google.maps.Map(mapContainerRef.current, {
+  zoom: 15,
+  center,
+  mapTypeId: 'roadmap',
+  gestureHandling: 'greedy', // allow all gestures (drag, zoom, rotate)
+  tilt: 45,                  // enable tilt
+  heading: 0,                // optional initial heading
+  rotateControl: true        // optional rotation control
+});
+
 
 
     directionsRendererRef.current = new window.google.maps.DirectionsRenderer({
@@ -566,6 +571,35 @@ useEffect(() => {
     setLoadingMap(false);
     // console.log('🗺️ Directions services initialized, loadingMap set to false');
   }, [location, activeShipment]);
+
+
+  // 🔄 Rotate map based on device orientation (optional)
+useEffect(() => {
+  if (!mapRef.current || !window.DeviceOrientationEvent) return;
+
+  // Ask for permission on iOS devices
+  if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+    DeviceOrientationEvent.requestPermission().then((response) => {
+      if (response === 'granted') {
+        window.addEventListener('deviceorientationabsolute', handleOrientation, true);
+      }
+    });
+  } else {
+    window.addEventListener('deviceorientationabsolute', handleOrientation, true);
+  }
+
+  function handleOrientation(event) {
+    const compassHeading = event.alpha;
+    if (Number.isFinite(compassHeading)) {
+      mapRef.current.setHeading(compassHeading);
+    }
+  }
+
+  return () => {
+    window.removeEventListener('deviceorientationabsolute', handleOrientation, true);
+  };
+}, []);
+
 
   /* -------------------------------- Map update ------------------------------- */
   const [etaToSender, setEtaToSender] = useState('');
