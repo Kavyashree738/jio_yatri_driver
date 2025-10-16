@@ -17,7 +17,7 @@ import useDriverHeartbeat from '../hooks/useDriverHeartbeat';
 import 'moment/locale/en-in'; // Import the locale you need
 import DailyEarningsFilter from './DailyEarningsFilter';
 import { FaUpload } from 'react-icons/fa'
-import img from '../assets/images/avatar.jpg'
+import avatarImg from '../assets/images/avatar.jpg'
 // import useDriverHeartbeat from '../hooks/useDriverHeartbeat';
 // Initialize moment with the desired locale
 moment.locale('en-in');
