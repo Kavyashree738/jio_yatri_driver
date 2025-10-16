@@ -17,6 +17,7 @@ import useDriverHeartbeat from '../hooks/useDriverHeartbeat';
 import 'moment/locale/en-in'; // Import the locale you need
 import DailyEarningsFilter from './DailyEarningsFilter';
 import { FaUpload } from 'react-icons/fa'
+import img from '../assets/images/avatar.jpg'
 // import useDriverHeartbeat from '../hooks/useDriverHeartbeat';
 // Initialize moment with the desired locale
 moment.locale('en-in');
@@ -52,7 +53,7 @@ const DriverDashboard = () => {
     const [showPreview, setShowPreview] = useState(false);
     const pressTimer = useRef(null);
 
-     const [passbookUploaded, setPassbookUploaded] = useState(false);
+    const [passbookUploaded, setPassbookUploaded] = useState(false);
     const passbookInputRef = useRef(null);
 
 
@@ -199,13 +200,22 @@ const DriverDashboard = () => {
                 pending: settlementData.pending || []
             });
 
-            if (imageRes.ok) {
-                const blob = await imageRes.blob();
-                const imageUrl = URL.createObjectURL(blob);
-                setProfileImage(imageUrl);
-            } else if (user.photoURL) {
-                setProfileImage(user.photoURL);
+            try {
+                if (imageRes.ok) {
+                    const blob = await imageRes.blob();
+                    const imageUrl = URL.createObjectURL(blob);
+                    setProfileImage(imageUrl);
+                } else if (user.photoURL) {
+                    setProfileImage(user.photoURL);
+                } else {
+                    // console.warn('⚠️ No profile image found — using default avatar.');
+                    setProfileImage(avatarImg); // 👈 use imported image
+                }
+            } catch (imgErr) {
+                // console.warn('⚠️ Profile image fetch failed:', imgErr.message);
+                setProfileImage(avatarImg); // 👈 fallback again
             }
+
         } catch (err) {
             setError(err.message);
         } finally {
@@ -704,34 +714,34 @@ const DriverDashboard = () => {
                 </div>
 
                 {!passbookUploaded && (
-                        <div className={`dd-passbook-alert ${passbookUploaded ? 'dd-passbook-hide' : ''}`}>
-                            <div className="dd-passbook-marquee-container">
-                                <div className="dd-passbook-marquee-content">
-                                    <span className="dd-passbook-marquee-text">
-                                        Please upload your passbook for payment settlements. We keep your information safe and secure.
-                                    </span>
-                                    <span className="dd-passbook-marquee-text dd-passbook-marquee-duplicate">
-                                        Please upload your passbook for payment settlements. We keep your information safe and secure.
-                                    </span>
-                                </div>
+                    <div className={`dd-passbook-alert ${passbookUploaded ? 'dd-passbook-hide' : ''}`}>
+                        <div className="dd-passbook-marquee-container">
+                            <div className="dd-passbook-marquee-content">
+                                <span className="dd-passbook-marquee-text">
+                                    Please upload your passbook for payment settlements. We keep your information safe and secure.
+                                </span>
+                                <span className="dd-passbook-marquee-text dd-passbook-marquee-duplicate">
+                                    Please upload your passbook for payment settlements. We keep your information safe and secure.
+                                </span>
                             </div>
-
-                            <button
-                                className="dd-passbook-upload-btn"
-                                onClick={() => passbookInputRef.current.click()}
-                            >
-                                <FaUpload style={{ marginRight: '6px' }} />
-                            </button>
-
-                            <input
-                                type="file"
-                                accept="image/*,application/pdf"
-                                ref={passbookInputRef}
-                                style={{ display: 'none' }}
-                                onChange={handlePassbookUpload}
-                            />
                         </div>
-                    )}
+
+                        <button
+                            className="dd-passbook-upload-btn"
+                            onClick={() => passbookInputRef.current.click()}
+                        >
+                            <FaUpload style={{ marginRight: '6px' }} />
+                        </button>
+
+                        <input
+                            type="file"
+                            accept="image/*,application/pdf"
+                            ref={passbookInputRef}
+                            style={{ display: 'none' }}
+                            onChange={handlePassbookUpload}
+                        />
+                    </div>
+                )}
 
                 <div className="dd-profile">
                     <div className="dd-profile-card">
@@ -741,7 +751,7 @@ const DriverDashboard = () => {
                                     <div className="dd-spinner"></div>
                                 ) : profileImage ? (
                                     <img
-                                        src={profileImage}
+                                        src={profileImage || avatarImg}   // 👈 fallback to default if profileImage is null
                                         className="dd-profile-image"
                                         alt="Profile"
                                         onClick={() => fileInputRef.current.click()}
@@ -751,7 +761,13 @@ const DriverDashboard = () => {
                                         onTouchStart={handleLongPressStart}
                                         onTouchEnd={handleLongPressEnd}
                                         style={{ cursor: 'pointer' }}
+                                        onError={(e) => {
+                                            // console.warn('⚠️ Profile image failed to load, switching to default avatar.');
+                                            e.target.onerror = null;        // prevent infinite loop
+                                            e.target.src = avatarImg;       // 👈 load fallback image
+                                        }}
                                     />
+
                                 ) : (
                                     <FaUser
                                         className="dd-default-avatar"
@@ -934,5 +950,4 @@ const DriverDashboard = () => {
 };
 
 export default DriverDashboard;
-
 
