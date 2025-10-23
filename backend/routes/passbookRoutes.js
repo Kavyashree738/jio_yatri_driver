@@ -16,7 +16,7 @@ router.post(
 
 // Get passbook
 router.get(
-  '/passbook/:userId',
+  '/:userId',
   verifyToken,
   passbookController.getPassbook
 );
