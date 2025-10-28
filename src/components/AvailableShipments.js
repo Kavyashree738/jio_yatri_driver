@@ -12,6 +12,8 @@ function AvailableShipments() {
   const [loading, setLoading] = useState(true);
   const [activeShipment, setActiveShipment] = useState(null);
   const [isMobile, setIsMobile] = useState(false);
+  const sectionRef = useRef(null);
+
   const notifiedShipmentIdsRef = useRef(new Set());
 
    useEffect(() => {
@@ -28,6 +30,19 @@ function AvailableShipments() {
     };
     setIsMobile(checkIfMobile());
   }, []);
+
+  useEffect(() => {
+  const params = new URLSearchParams(window.location.search);
+  const scrollTo = params.get("scrollTo");
+
+  if (scrollTo === "shipments" && sectionRef.current) {
+    // delay to ensure the page and components are rendered
+    setTimeout(() => {
+      sectionRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 600);
+  }
+}, []);
+
 
   useEffect(() => {
     fetchData();
@@ -204,7 +219,7 @@ const handleStatusUpdate = useCallback((newStatus) => {
 
 
  return (
-  <div className="available-shipments">
+  <div ref={sectionRef} className="available-shipments">
     <ToastContainer 
       position={isMobile ? "top-center" : "top-right"}
       autoClose={5000} 
@@ -304,6 +319,7 @@ const handleStatusUpdate = useCallback((newStatus) => {
 }
 
 export default AvailableShipments;
+
 
 
 
