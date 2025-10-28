@@ -291,22 +291,38 @@ const DriverDashboard = () => {
     }, [])
 
 
-    useEffect(() => {
+  useEffect(() => {
   const params = new URLSearchParams(window.location.search);
   const scrollTo = params.get("scrollTo");
 
-  if (scrollTo === "shipments" && shipmentsRef.current) {
+  if (scrollTo === "shipments") {
     console.log("📦 Scrolling to Available Shipments section...");
 
-    // Wait for layout and data to finish loading
-    setTimeout(() => {
-      shipmentsRef.current.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-      });
-    }, 1200); // 1.2 seconds delay ensures child is mounted
+    // Keep trying until the section is rendered
+    const tryScroll = () => {
+      if (shipmentsRef.current) {
+        shipmentsRef.current.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+        console.log("✅ Scrolled to Available Shipments section");
+        clearInterval(timer); // stop retrying once done
+      } else {
+        console.warn("⚠️ shipmentsRef not ready yet, retrying...");
+      }
+    };
+
+    // Check every 500ms up to 5 seconds
+    const timer = setInterval(tryScroll, 500);
+
+    // Stop after 5 seconds to avoid infinite loop
+    setTimeout(() => clearInterval(timer), 5000);
+
+    return () => clearInterval(timer);
   }
-}, [shipmentsRef]);
+}, [shipments.length]);
+
+
 
 
     // const allDocumentsVerified = useMemo(() => {
