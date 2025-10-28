@@ -18,6 +18,8 @@ import 'moment/locale/en-in'; // Import the locale you need
 import DailyEarningsFilter from './DailyEarningsFilter';
 import { FaUpload } from 'react-icons/fa'
 import avatarImg from '../assets/images/avatar.jpg'
+import { useLocation } from "react-router-dom";
+
 // import useDriverHeartbeat from '../hooks/useDriverHeartbeat';
 // Initialize moment with the desired locale
 moment.locale('en-in');
@@ -55,6 +57,8 @@ const DriverDashboard = () => {
 
     const [passbookUploaded, setPassbookUploaded] = useState(false);
     const passbookInputRef = useRef(null);
+
+    const location = useLocation();
 
 
     const shipmentsRef = useRef(null);
@@ -248,6 +252,28 @@ const DriverDashboard = () => {
             window.removeEventListener('unhandledrejection', onRej);
         };
     }, []);
+
+    useEffect(() => {
+  if (location.pathname === "/orders") {
+    console.log("📦 Scrolling to Available Shipments (via /orders)");
+    const tryScroll = () => {
+      if (shipmentsRef.current) {
+        shipmentsRef.current.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+        clearInterval(timer);
+      }
+    };
+
+    // Retry until AvailableShipments is rendered
+    const timer = setInterval(tryScroll, 500);
+    setTimeout(() => clearInterval(timer), 5000);
+
+    return () => clearInterval(timer);
+  }
+}, [location.pathname, shipments.length]);
+
 
 
     useEffect(() => {
