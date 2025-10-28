@@ -219,6 +219,7 @@ const sendNotificationToDriver = async (driverId, title, body, data = {}) => {
     ...Object.fromEntries(Object.entries(data).map(([k, v]) => [k, String(v)])), // make sure values are strings
     title,
     body,
+    link: '/orders?scrollTo=shipments',
     click_action: 'FLUTTER_NOTIFICATION_CLICK',
   },
 };
@@ -295,6 +296,7 @@ module.exports = {
   notifyNewShipment,
   notifyShopNewOrder, 
 };
+
 
 
 
