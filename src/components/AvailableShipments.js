@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useCallback, useRef,forwardRef } from 'react';
 import axios from 'axios';
 import { getAuth } from 'firebase/auth';
 import { ToastContainer, toast } from 'react-toastify';
@@ -6,7 +6,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import '../styles/AvailableShipments.css';
 import LocationTracker from './LocationTracker';
 
-function AvailableShipments() {
+const AvailableShipments = forwardRef((props, ref) => {
   const [shipments, setShipments] = useState([]);
   const [driverStatus, setDriverStatus] = useState('inactive');
   const [loading, setLoading] = useState(true);
@@ -239,7 +239,7 @@ const handleStatusUpdate = useCallback((newStatus) => {
 
 
  return (
-  <div ref={sectionRef} className="available-shipments">
+  <div ref={ref} className="available-shipments">
     <ToastContainer 
       position={isMobile ? "top-center" : "top-right"}
       autoClose={5000} 
@@ -339,6 +339,7 @@ const handleStatusUpdate = useCallback((newStatus) => {
 }
 
 export default AvailableShipments;
+
 
 
 
