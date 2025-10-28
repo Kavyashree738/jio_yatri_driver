@@ -57,6 +57,9 @@ const DriverDashboard = () => {
     const passbookInputRef = useRef(null);
 
 
+    const shipmentsRef = useRef(null);
+
+
     const loadRazorpay = () => {
         return new Promise((resolve) => {
             if (window.Razorpay) {
@@ -286,6 +289,25 @@ const DriverDashboard = () => {
 
         return () => clearInterval(interval);
     }, [])
+
+
+    useEffect(() => {
+  const params = new URLSearchParams(window.location.search);
+  const scrollTo = params.get("scrollTo");
+
+  if (scrollTo === "shipments" && shipmentsRef.current) {
+    console.log("📦 Scrolling to Available Shipments section...");
+
+    // Wait for layout and data to finish loading
+    setTimeout(() => {
+      shipmentsRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 1200); // 1.2 seconds delay ensures child is mounted
+  }
+}, [shipmentsRef]);
+
 
     // const allDocumentsVerified = useMemo(() => {
     //     if (!driverInfo?.documentVerification) return false;
@@ -923,7 +945,7 @@ const DriverDashboard = () => {
                 </div>
             </div>
 
-            <AvailableShipments />
+            <AvailableShipments ref={shipmentsRef}/>
             {cropMode && (
                 <ImageCropper
                     image={selectedImage}
