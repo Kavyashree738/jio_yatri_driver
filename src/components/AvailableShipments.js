@@ -32,16 +32,31 @@ function AvailableShipments() {
   }, []);
 
   useEffect(() => {
-  const params = new URLSearchParams(window.location.search);
-  const scrollTo = params.get("scrollTo");
+  const handleScrollCheck = () => {
+    const params = new URLSearchParams(window.location.search);
+    const scrollTo = params.get("scrollTo");
 
-  if (scrollTo === "shipments" && sectionRef.current) {
-    // delay to ensure the page and components are rendered
-    setTimeout(() => {
-      sectionRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 600);
-  }
+    if (scrollTo === "shipments" && sectionRef.current) {
+      console.log("📦 Scrolling to shipments...");
+      setTimeout(() => {
+        sectionRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 500);
+    }
+  };
+
+  // Run immediately
+  handleScrollCheck();
+
+  // Listen for changes in history or notification navigation
+  window.addEventListener("focus", handleScrollCheck);   // 👈 Runs when user returns from background
+  window.addEventListener("popstate", handleScrollCheck); // 👈 Runs when URL changes
+
+  return () => {
+    window.removeEventListener("focus", handleScrollCheck);
+    window.removeEventListener("popstate", handleScrollCheck);
+  };
 }, []);
+
 
 
   useEffect(() => {
@@ -319,6 +334,7 @@ const handleStatusUpdate = useCallback((newStatus) => {
 }
 
 export default AvailableShipments;
+
 
 
 
