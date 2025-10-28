@@ -31,31 +31,36 @@ function AvailableShipments() {
     setIsMobile(checkIfMobile());
   }, []);
 
-  useEffect(() => {
-  const handleScrollCheck = () => {
+ useEffect(() => {
+  const tryScrollToShipments = () => {
     const params = new URLSearchParams(window.location.search);
     const scrollTo = params.get("scrollTo");
 
     if (scrollTo === "shipments" && sectionRef.current) {
       console.log("📦 Scrolling to shipments...");
-      setTimeout(() => {
-        sectionRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
-      }, 500);
+      sectionRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+      return true;
     }
+    return false;
   };
 
-  // Run immediately
-  handleScrollCheck();
+  // Retry scroll until content fully loads (up to 5s)
+  let attempts = 0;
+  const interval = setInterval(() => {
+    const done = tryScrollToShipments();
+    attempts++;
+    if (done || attempts > 10) clearInterval(interval);
+  }, 500);
 
-  // Listen for changes in history or notification navigation
-  window.addEventListener("focus", handleScrollCheck);   // 👈 Runs when user returns from background
-  window.addEventListener("popstate", handleScrollCheck); // 👈 Runs when URL changes
+  // Trigger again when returning from background
+  window.addEventListener("focus", tryScrollToShipments);
 
   return () => {
-    window.removeEventListener("focus", handleScrollCheck);
-    window.removeEventListener("popstate", handleScrollCheck);
+    clearInterval(interval);
+    window.removeEventListener("focus", tryScrollToShipments);
   };
-}, []);
+}, [loading, shipments.length]);
+
 
 
 
@@ -334,6 +339,7 @@ const handleStatusUpdate = useCallback((newStatus) => {
 }
 
 export default AvailableShipments;
+
 
 
 
