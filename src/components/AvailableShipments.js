@@ -334,11 +334,12 @@ const handleStatusUpdate = useCallback((newStatus) => {
         ))}
       </ul>
     )}
-  </div>
+ </div>
 );
-}
+});
 
 export default AvailableShipments;
+
 
 
 
