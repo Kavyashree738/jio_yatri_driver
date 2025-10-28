@@ -121,10 +121,7 @@ const sendToToken = async (token, { title, body, data = {} }) => {
 
     // ✅ ANDROID APP (native FCM in WebView)
     // This is what makes msg.notification non-null in your Dart code
-    notification: {
-      title,
-      body,
-    },
+   
     android: {
       priority: 'high',
       // Optional: uncomment if you want to force the same channel as Dart
@@ -298,6 +295,7 @@ module.exports = {
   notifyNewShipment,
   notifyShopNewOrder, 
 };
+
 
 
 
