@@ -216,18 +216,16 @@ const sendNotificationToDriver = async (driverId, title, body, data = {}) => {
     console.log('[SEND] FCM token found:', driver.fcmToken);
 
     const message = {
-      notification: { title, body },
-      data: {
-        ...data,
-        click_action: 'FLUTTER_NOTIFICATION_CLICK'
-      },
-      android: {
-      priority: 'high',
-      // Optional: uncomment if you want to force the same channel as Dart
-      // notification: { channelId: 'driver_general' },
-    },
-      token: driver.fcmToken,
-    };
+  token: driver.fcmToken,
+  android: { priority: 'high' },
+  data: {
+    ...Object.fromEntries(Object.entries(data).map(([k, v]) => [k, String(v)])), // make sure values are strings
+    title,
+    body,
+    click_action: 'FLUTTER_NOTIFICATION_CLICK',
+  },
+};
+
 
     console.log('[SEND] Sending message via FCM:', JSON.stringify(message, null, 2));
 
@@ -300,6 +298,7 @@ module.exports = {
   notifyNewShipment,
   notifyShopNewOrder, 
 };
+
 
 
 
