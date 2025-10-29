@@ -58,6 +58,11 @@ const DriverDashboard = () => {
     const [passbookUploaded, setPassbookUploaded] = useState(false);
     const passbookInputRef = useRef(null);
 
+    // 👇 add this near your other useStates
+const [showCropper, setShowCropper] = useState(false);
+const [imageToCrop, setImageToCrop] = useState(null);
+
+
     const location = useLocation();
 
 
@@ -398,6 +403,30 @@ const DriverDashboard = () => {
             setIsUpdating(false);
         }
     };
+    // 📸 Handles both PDF and Image selection (camera or file)
+const handlePassbookSelect = (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const isImage = file.type.startsWith('image/');
+  const isPDF = file.type === 'application/pdf';
+
+  if (isPDF) {
+    // Direct upload if it's a PDF
+    handlePassbookUpload(file);
+  } else if (isImage) {
+    // Open cropper for image
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImageToCrop(reader.result);
+      setShowCropper(true);
+    };
+    reader.readAsDataURL(file);
+  } else {
+    setMessage({ text: 'Only image or PDF files are allowed.', isError: true });
+  }
+};
+
 
     const handleShareClick = async () => {
         try {
@@ -413,31 +442,44 @@ const DriverDashboard = () => {
         }
     };
 
-    const handlePassbookUpload = async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
+   // 🆕 Updated to receive File directly (no event)
+const handlePassbookUpload = async (file) => {
+  if (!file) return;
 
-        try {
-            const token = await user.getIdToken();
-            const formData = new FormData();
-            formData.append('file', file);
+  try {
+    const token = await user.getIdToken();
+    const formData = new FormData();
+    formData.append('file', file);
 
-            const res = await fetch('https://jio-yatri-driver.onrender.com/api/passbook/upload-passbook', {
-                method: 'POST',
-                headers: { Authorization: `Bearer ${token}` },
-                body: formData
-            });
+    const res = await fetch('https://jio-yatri-driver.onrender.com/api/passbook/upload-passbook', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData,
+    });
 
-            if (!res.ok) throw new Error('Passbook upload failed');
-            const data = await res.json();
+    if (!res.ok) throw new Error('Passbook upload failed');
 
-            setPassbookUploaded(true);
-            setMessage({ text: 'Passbook uploaded successfully', isError: false });
-        } catch (err) {
-            console.error('Error uploading passbook:', err);
-            setMessage({ text: err.message, isError: true });
-        }
-    };
+    setPassbookUploaded(true);
+    setMessage({ text: 'Passbook uploaded successfully', isError: false });
+  } catch (err) {
+    console.error('Error uploading passbook:', err);
+    setMessage({ text: err.message, isError: true });
+  }
+};
+
+    // ✅ Called after cropping done
+const handleCroppedPassbook = async (croppedImageUrl) => {
+  setShowCropper(false);
+
+  const response = await fetch(croppedImageUrl);
+  const blob = await response.blob();
+  const croppedFile = new File([blob], 'passbook.jpg', { type: 'image/jpeg' });
+
+  await handlePassbookUpload(croppedFile);
+  setImageToCrop(null);
+};
+
+
 
     const handleImageUpload = (e) => {
         const file = e.target.files[0];
@@ -797,13 +839,15 @@ const DriverDashboard = () => {
                             <FaUpload style={{ marginRight: '6px' }} />
                         </button>
 
-                        <input
-                            type="file"
-                            accept="image/*,application/pdf"
-                            ref={passbookInputRef}
-                            style={{ display: 'none' }}
-                            onChange={handlePassbookUpload}
-                        />
+<input
+  type="file"
+  accept="image/*,.pdf"
+  capture="environment"    // 👈 allows camera directly in mobile/WebView
+  ref={passbookInputRef}
+  style={{ display: 'none' }}
+  onChange={(e) => handlePassbookSelect(e)}
+/>
+
                     </div>
                 )}
 
@@ -1007,6 +1051,21 @@ const DriverDashboard = () => {
                     </div>
                 </div>
             )}
+{showCropper && (
+  <div className="cropper-overlay">
+    <div className="cropper-modal">
+      <ImageCropper
+        image={imageToCrop}
+        onCropComplete={handleCroppedPassbook}
+        onCancel={() => {
+          setShowCropper(false);
+          setImageToCrop(null);
+        }}
+      />
+    </div>
+  </div>
+)}
+
 
             <Footer />
         </>
