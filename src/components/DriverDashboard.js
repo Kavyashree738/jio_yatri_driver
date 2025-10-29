@@ -1115,6 +1115,22 @@ const handleCroppedPassbook = async (croppedImageUrl) => {
   </div>
 )}
 
+    {status === 'inactive' && (
+  <div className="go-overlay">
+    <div className="go-container">
+      <div className="go-circle" onClick={toggleStatus}>
+        Go!
+      </div>
+      <div className="go-bottom">
+        <p className="go-message">
+          You are currently offline.<br />
+          Tap below to go online and start receiving shipments!
+        </p>
+      </div>
+    </div>
+  </div>
+)}
+
 
 
             <Footer />
