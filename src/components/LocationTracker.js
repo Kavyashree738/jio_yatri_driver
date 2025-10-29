@@ -8,6 +8,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import { useNavigate } from 'react-router-dom';
 import { ref, set } from "firebase/database";
 import { db } from "../firebase";
+import { FaPhone } from 'react-icons/fa';
 
 const API_BASE_URL = 'https://jio-yatri-driver.onrender.com';
 
@@ -87,6 +88,12 @@ function isValidLatLng(p) {
   return result;
 }
 
+const handleCall = (phone) => {
+  if (!phone) return alert('Phone number not available');
+  const rawPhone = phone.replace(/\D/g, '');
+  const phoneNumber = rawPhone.startsWith('91') ? rawPhone : '91' + rawPhone;
+  window.open(`tel:${phoneNumber}`, '_self');
+};
 /* ---------------------------- Geolocation hook ---------------------------- */
 const useGeolocation = (options) => {
   const [position, setPosition] = useState(null);
@@ -190,6 +197,12 @@ const ShipmentDetailsCard = ({ shipment }) => {
             </p>
             <p>
               <strong>Phone:</strong> {shipment.sender?.phone}
+        {shipment.sender?.phone && (
+    <FaPhone
+      className="call-icons"
+      onClick={() => handleCall(shipment.sender?.phone)}
+    />
+  )}
             </p>
             <p>{shipment.sender?.address?.addressLine1}</p>
           </div>
@@ -200,6 +213,12 @@ const ShipmentDetailsCard = ({ shipment }) => {
             </p>
             <p>
               <strong>Phone:</strong> {shipment.receiver?.phone}
+               {shipment.receiver?.phone && (
+    <FaPhone
+      className="call-icons"
+      onClick={() => handleCall(shipment.receiver?.phone)}
+    />
+  )}
             </p>
             <p>{shipment.receiver?.address?.addressLine1}</p>
           </div>
