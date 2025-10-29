@@ -62,6 +62,9 @@ const DriverDashboard = () => {
 const [showCropper, setShowCropper] = useState(false);
 const [imageToCrop, setImageToCrop] = useState(null);
 
+    const [showUploadOptions, setShowUploadOptions] = useState(false);
+
+
 
     const location = useLocation();
 
@@ -834,18 +837,30 @@ const handleCroppedPassbook = async (croppedImageUrl) => {
 
                         <button
                             className="dd-passbook-upload-btn"
-                            onClick={() => passbookInputRef.current.click()}
+                            onClick={() => setShowUploadOptions(true)}
                         >
                             <FaUpload style={{ marginRight: '6px' }} />
                         </button>
 
+{/* Hidden input for picking from Files/Gallery */}
 <input
   type="file"
-  accept="image/*,.pdf"
-  ref={passbookInputRef}
+  accept="image/*"
+  id="fileInput"
   style={{ display: 'none' }}
   onChange={(e) => handlePassbookSelect(e)}
 />
+
+{/* Hidden input for directly opening Camera */}
+<input
+  type="file"
+  accept="image/*"
+  capture="environment"
+  id="cameraInput"
+  style={{ display: 'none' }}
+  onChange={(e) => handlePassbookSelect(e)}
+/>
+
 
                     </div>
                 )}
@@ -1064,6 +1079,42 @@ const handleCroppedPassbook = async (croppedImageUrl) => {
     </div>
   </div>
 )}
+
+{showUploadOptions && (
+  <div className="upload-bottomsheet-overlay" onClick={() => setShowUploadOptions(false)}>
+    <div className="upload-bottomsheet" onClick={(e) => e.stopPropagation()}>
+      <h3>Select Upload Option</h3>
+
+      <button
+        className="upload-option"
+        onClick={() => {
+          document.getElementById("cameraInput").click();
+          setShowUploadOptions(false);
+        }}
+      >
+        📷 Camera
+      </button>
+
+      <button
+        className="upload-option"
+        onClick={() => {
+          document.getElementById("fileInput").click();
+          setShowUploadOptions(false);
+        }}
+      >
+        📂 Gallery / Files
+      </button>
+
+      <button
+        className="upload-cancel"
+        onClick={() => setShowUploadOptions(false)}
+      >
+        Cancel
+      </button>
+    </div>
+  </div>
+)}
+
 
 
             <Footer />
