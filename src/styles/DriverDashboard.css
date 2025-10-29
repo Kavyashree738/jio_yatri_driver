@@ -2493,3 +2493,71 @@
   .dd-passbook-marquee-text { font-size: 0.85rem; }
   .dd-passbook-upload-btn { width: 32px; height: 32px; }
 }
+
+
+.upload-bottomsheet-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.upload-bottomsheet {
+  background: #fff;
+  width: 100%;
+  max-width: 420px;
+  border-radius: 16px 16px 0 0;
+  padding: 20px;
+  animation: slideUp 0.3s ease;
+}
+
+.upload-bottomsheet h3 {
+  text-align: center;
+  margin-bottom: 16px;
+  font-size: 18px;
+  color: #333;
+}
+
+.upload-option {
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 10px;
+  background: #f5f5f5;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.upload-option:hover {
+  background: #e0e0e0;
+}
+
+.upload-cancel {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  background: #f8f8f8;
+  font-size: 16px;
+  color: #d33;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
