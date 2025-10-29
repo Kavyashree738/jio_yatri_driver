@@ -842,7 +842,6 @@ const handleCroppedPassbook = async (croppedImageUrl) => {
 <input
   type="file"
   accept="image/*,.pdf"
-  capture="environment"    // 👈 allows camera directly in mobile/WebView
   ref={passbookInputRef}
   style={{ display: 'none' }}
   onChange={(e) => handlePassbookSelect(e)}
