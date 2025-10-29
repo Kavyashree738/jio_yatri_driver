@@ -845,7 +845,7 @@ const handleCroppedPassbook = async (croppedImageUrl) => {
 {/* Hidden input for picking from Files/Gallery */}
 <input
   type="file"
-  accept="image/*"
+ accept="image/*,.pdf"
   id="fileInput"
   style={{ display: 'none' }}
   onChange={(e) => handlePassbookSelect(e)}
