@@ -464,6 +464,7 @@ const handlePassbookUpload = async (file) => {
 
     setPassbookUploaded(true);
     setMessage({ text: 'Passbook uploaded successfully', isError: false });
+    await fetchDriverInfo();
   } catch (err) {
     console.error('Error uploading passbook:', err);
     setMessage({ text: err.message, isError: true });
