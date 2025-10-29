@@ -917,4 +917,26 @@
 .payment-badge.cod {
   background-color: #28a745; /* green */
 }
+.call-icons {
+  color: white;
+  background: radial-gradient(circle, #2dff1a 0%, #2bff00 70%);
+  width: 20px;              /* fixed width */
+  height: 20px;             /* fixed height */
+  line-height: 20px;        /* vertically center the icon */
+  border-radius: 50%;       /* make it circular */
+  text-align: center;       /* horizontally center */
+  font-size: 20px;          /* control icon size */
+  margin-left: 8px;
+  cursor: pointer;
+  box-shadow: 0 0 15px rgb(0, 255, 0);
+  animation: pulseUpDown 5s ease-in-out infinite;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  padding:3px;
+}
+
+.call-icons:hover {
+  transform: scale(1.2);
+  box-shadow: 0 0 25px rgba(0, 255, 34, 0.8);
+}
+
 
