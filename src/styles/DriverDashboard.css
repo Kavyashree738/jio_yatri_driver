@@ -2561,3 +2561,71 @@
   }
 }
 
+/* Full-screen blurred overlay */
+.go-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  z-index: 9999;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  overflow: hidden; /* disable scrolling */
+}
+
+/* Container holding circle + white curve */
+.go-container {
+  width: 100%;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Green “Go!” Circle */
+.go-circle {
+  width: 130px;
+  height: 130px;
+  background: #00c853;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 40px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: -45px; /* makes it overlap top of white base */
+  box-shadow: 0 6px 25px rgba(0, 200, 83, 0.4);
+  cursor: pointer;
+  z-index: 2;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.go-circle:hover {
+  transform: scale(1.08);
+  box-shadow: 0 8px 35px rgba(0, 200, 83, 0.6);
+}
+
+/* White curved base */
+.go-bottom {
+  width: 100%;
+  background: #ffffff;
+  border-top-left-radius: 50px;
+  border-top-right-radius: 50px;
+  padding-top: 70px; /* space for circle overlap */
+  padding-bottom: 90px;
+  box-shadow: 0 -2px 15px rgba(0, 0, 0, 0.15);
+  z-index: 1;
+}
+
+/* Kannada text below */
+.go-message {
+  font-size: 15px;
+  color: #333;
+  line-height: 1.6;
+  font-weight: 500;
+}
+
+
