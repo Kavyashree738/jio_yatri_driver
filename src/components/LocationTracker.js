@@ -90,10 +90,10 @@ function isValidLatLng(p) {
 
 const handleCall = (phone) => {
   if (!phone) return alert('Phone number not available');
-  const rawPhone = phone.replace(/\D/g, '');
-  const phoneNumber = rawPhone.startsWith('91') ? rawPhone : '91' + rawPhone;
-  window.open(`tel:${phoneNumber}`, '_self');
+  const cleaned = phone.replace(/\D/g, '');  // just remove non-digits
+  window.open(`tel:${cleaned}`, '_self');
 };
+
 /* ---------------------------- Geolocation hook ---------------------------- */
 const useGeolocation = (options) => {
   const [position, setPosition] = useState(null);
