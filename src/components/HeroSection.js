@@ -141,6 +141,35 @@ const [driverData, setDriverData] = useState(() => {
         }
     }, [isInView, controls]);
 
+    // 🧠 Prevent unwanted back navigation during registration,
+// but allow it for external pages like Terms or Privacy Policy
+useEffect(() => {
+  const handlePopState = (e) => {
+    const currentUrl = window.location.href;
+
+    // ✅ Allow normal back navigation for Terms or Privacy pages
+    if (
+      currentUrl.includes("terms") ||
+      currentUrl.includes("privacy-policy")
+    ) {
+      return; // do nothing → allow WebView/browser to handle back normally
+    }
+
+    // 🛑 Block going back during driver registration steps
+    if (registrationStep > 0 && registrationStep < 4) {
+      e.preventDefault();
+      window.history.pushState(null, "", window.location.href);
+    }
+  };
+
+  // Push current state so the next back press triggers popstate
+  window.history.pushState(null, "", window.location.href);
+  window.addEventListener("popstate", handlePopState);
+
+  return () => window.removeEventListener("popstate", handlePopState);
+}, [registrationStep]);
+
+
     useEffect(() => {
         const savedOtpSession = localStorage.getItem("otpSession");
         if (savedOtpSession) {
