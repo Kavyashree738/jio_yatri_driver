@@ -5,6 +5,7 @@ import Footer from './Footer';
 import privacy from '../assets/images/privacy.png'
 import { useNavigate } from "react-router-dom";
 const PrivacyPolicy = () => {
+  const navigate = useNavigate();
   return (
     <>
       <Header />
