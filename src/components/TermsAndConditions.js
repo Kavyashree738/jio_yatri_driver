@@ -13,11 +13,13 @@ const TermsAndConditions = () => {
 
         <div className="privacy-back">
           <button
-            onClick={() => window.history.back()}
-            className="back-btn"
-          >
-            ← Back
-          </button>
+        onClick={() => {
+          navigate("/home"); // 👈 Go directly to /home instead of reloading
+        }}
+        className="back-btn"
+      >
+        ← Back
+      </button>
         </div>
 
         <div className="terms-header">
