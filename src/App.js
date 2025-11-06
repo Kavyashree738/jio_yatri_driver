@@ -68,6 +68,8 @@ import KycPending from './components/KycPending';
 import RequireKycVerified from './components/RequireKycVerified';
 import OwnerDocumentViews from './components/OwnerDocumentViews';
 import OfflineHandler from './components/OfflineHandler';
+import PrivacyPolicy from './components/PrivacyPolicy';
+import TermsAndConditions from './components/TermsAndConditions';
 
 
 // Smart landing
@@ -112,6 +114,8 @@ const App = () => {
           <Route path="/home" element={<Home />} />
 
           <Route path="/shop/:shopId/menu" element={<ShopMenuManager />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/terms" element={<TermsAndConditions />} />
 
           {/* DRIVER-ONLY */}
           <Route path="/orders" element={

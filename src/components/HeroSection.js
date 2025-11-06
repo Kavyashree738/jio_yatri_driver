@@ -36,6 +36,23 @@ import delivery from '../assets/images/delivery-service.png';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import driver from '../assets/images/driver.png'
 import partner from '../assets/images/business-partner.jpg'
+
+import ImageCropper from './ImageCropper';
+
+
+import twoWheelerImg from '../assets/images/vehicles/two-wheeler.png';
+import threeWheelerImg from '../assets/images/vehicles/three-wheeler.png';
+import truckImg from '../assets/images/vehicles/tata-407.png';
+import pickupImg from '../assets/images/vehicles/bulara.png';
+import tata407Img from '../assets/images/vehicles/tata-407.png';
+
+
+import ownerIllustration from '../assets/images/owner.png';   // step 1 image
+import vehicleIllustration from '../assets/images/vehicle-image.png'; // step 2 image
+import driverIllustration from '../assets/images/owner.png';   // step 3 image
+
+
+
 const HeroSection = () => {
     const controls = useAnimation();
     const [phoneNumber, setPhoneNumber] = useState('');
@@ -64,14 +81,18 @@ const HeroSection = () => {
         rcFileId: null,
         insuranceFileId: null,
         aadharFileId: null,
-        panFileId: null
+        panFileId: null,
+        selfieFile: null,
+        selfieFileId: null,
+
     });
     const [fileUploadProgress, setFileUploadProgress] = useState({
         aadhar: 0,
         pan: 0,
         license: 0,
         rc: 0,
-        insurance: 0
+        insurance: 0,
+        selfie: 0
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isRegistered, setIsRegistered] = useState(false);
@@ -87,6 +108,15 @@ const HeroSection = () => {
     const hasRoutedRef = useRef(false);
 
 
+    const [showCropper, setShowCropper] = useState(false);
+    const [imageToCrop, setImageToCrop] = useState(null);
+    const [showUploadOptions, setShowUploadOptions] = useState(false);
+    const [currentDocType, setCurrentDocType] = useState(null);
+
+
+
+
+
     const TEST_PHONE = "+911234567898";
     const TEST_OTP = "1234";
     useEffect(() => {
@@ -94,6 +124,47 @@ const HeroSection = () => {
             controls.start('visible');
         }
     }, [isInView, controls]);
+
+    useEffect(() => {
+        const savedOtpSession = localStorage.getItem("otpSession");
+        if (savedOtpSession) {
+            const { phone, expiry } = JSON.parse(savedOtpSession);
+            const now = Date.now();
+
+            if (now < expiry) {
+                // ✅ OTP still valid — reopen automatically
+                setPhoneNumber(phone);
+                setShowOtpComponent(true);
+
+                // Continue countdown
+                const remaining = Math.floor((expiry - now) / 1000);
+                setOtpResendTime(remaining);
+                startResendTimer();
+            } else {
+                // OTP expired — remove saved session
+                localStorage.removeItem("otpSession");
+            }
+        }
+    }, []);
+
+
+    // ✅ Restore pending role if saved (helps fix "Please select a role first" on reload)
+    useEffect(() => {
+        const savedRole = localStorage.getItem('pendingUserRole');
+        if (savedRole) {
+            setUserRole(savedRole);
+        }
+    }, []);
+
+
+
+    useEffect(() => {
+        const savedPhone = localStorage.getItem('driverPhone');
+        if (savedPhone) {
+            setDriverData(prev => ({ ...prev, phone: savedPhone }));
+        }
+    }, []);
+
 
     useEffect(() => {
         let timer;
@@ -163,65 +234,65 @@ const HeroSection = () => {
     // }, [softSignedOut, location.pathname]); // include pathname so it re-evaluates on Home clicks
 
     useEffect(() => {
-  const run = async () => {
-    setCheckingRegistration(true);
-    if (softSignedOut || !auth.currentUser) {
-      setIsRegistered(false);
-      setRegistrationStep(0);
-      setCheckingRegistration(false);
-      return;
-    }
+        const run = async () => {
+            setCheckingRegistration(true);
+            if (softSignedOut || !auth.currentUser) {
+                setIsRegistered(false);
+                setRegistrationStep(0);
+                setCheckingRegistration(false);
+                return;
+            }
 
-    const { isRegistered, role } = await checkRegistrationStatus();
-    setIsRegistered(!!isRegistered);
-    setUserRole(role || null);
+            const { isRegistered, role } = await checkRegistrationStatus();
+            setIsRegistered(!!isRegistered);
+            setUserRole(role || null);
 
-    const onHome = location.pathname === '/' || location.pathname === '/home';
+            const onHome = location.pathname === '/' || location.pathname === '/home';
 
-    // ✅ Business: not registered → force /register
-    if (role === 'business' && !isRegistered && location.pathname !== '/register') {
-      if (!hasRoutedRef.current) {
-        hasRoutedRef.current = true;
-        navigate('/register', { replace: true });
-      }
-       setCheckingRegistration(false);
-      return;
-    }
+            // ✅ Business: not registered → force /register
+            if (role === 'business' && !isRegistered && location.pathname !== '/register') {
+                if (!hasRoutedRef.current) {
+                    hasRoutedRef.current = true;
+                    navigate('/register', { replace: true });
+                }
+                setCheckingRegistration(false);
+                return;
+            }
 
-    // ✅ Business: registered → dashboard (unless already on home)
-    if (role === 'business' && isRegistered && !onHome) {
-      if (!hasRoutedRef.current) {
-        hasRoutedRef.current = true;
-        navigate('/business-dashboard', { replace: true });
-      }
-      setCheckingRegistration(false);
-      return;
-    }
+            // ✅ Business: registered → dashboard (unless already on home)
+            if (role === 'business' && isRegistered && !onHome) {
+                if (!hasRoutedRef.current) {
+                    hasRoutedRef.current = true;
+                    navigate('/business-dashboard', { replace: true });
+                }
+                setCheckingRegistration(false);
+                return;
+            }
 
-    // ✅ Driver: registered → orders
-    if (role === 'driver' && isRegistered && !onHome) {
-      if (!hasRoutedRef.current) {
-        hasRoutedRef.current = true;
-        navigate('/orders', { replace: true });
-      }
-      return;
-    }
+            // ✅ Driver: registered → orders
+            if (role === 'driver' && isRegistered && !onHome) {
+                if (!hasRoutedRef.current) {
+                    hasRoutedRef.current = true;
+                    navigate('/orders', { replace: true });
+                }
+                return;
+            }
 
-    // ✅ Driver: not registered → show driver wizard on Home
-    if (role === 'driver') {
-      setRegistrationStep(isRegistered ? 4 : 2);
-       setCheckingRegistration(false);
-      return;
-    }
+            // ✅ Driver: not registered → show driver wizard on Home
+            if (role === 'driver') {
+                setRegistrationStep(isRegistered ? 4 : 2);
+                setCheckingRegistration(false);
+                return;
+            }
 
-    // ✅ Generic fallback
-    setRegistrationStep(isRegistered ? 4 : 0);
-    setCheckingRegistration(false); 
-  };
+            // ✅ Generic fallback
+            setRegistrationStep(isRegistered ? 4 : 0);
+            setCheckingRegistration(false);
+        };
 
-  const unsub = auth.onAuthStateChanged(run);
-  return () => unsub();
-}, [softSignedOut, location.pathname, navigate]);
+        const unsub = auth.onAuthStateChanged(run);
+        return () => unsub();
+    }, [softSignedOut, location.pathname, navigate]);
 
 
     const variants = {
@@ -236,7 +307,7 @@ const HeroSection = () => {
     };
     const persistRole = async (role) => {
         const idToken = await auth.currentUser.getIdToken();
-        await fetch('https://jio-yatri-driver.onrender.com/api/user/set-role', {
+        await fetch('http://localhost:5000/api/user/set-role', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -250,10 +321,30 @@ const HeroSection = () => {
         });
     };
     const handlePhoneChange = (value, country) => {
-        const formattedValue = value.startsWith('+') ? value : `+${value}`;
-        setPhoneNumber(formattedValue);
-        validatePhoneNumber(formattedValue);
+        // Always ensure the + sign exists
+        let cleanedValue = value.startsWith('+') ? value : `+${value}`;
+
+        // Remove all spaces and non-digit characters except '+'
+        cleanedValue = cleanedValue.replace(/[^\d+]/g, '');
+
+        // Ensure prefix +91
+        if (!cleanedValue.startsWith('+91')) {
+            cleanedValue = '+91' + cleanedValue.replace('+', '').replace(/^91/, '');
+        }
+
+        // Extract digits after +91
+        const digitsAfter91 = cleanedValue.replace('+91', '');
+
+        // ✅ Keep only last 10 digits if user pasted long or repeated numbers
+        const last10 = digitsAfter91.slice(-10);
+
+        // Final formatted number
+        const finalNumber = '+91' + last10;
+
+        setPhoneNumber(finalNumber);
+        validatePhoneNumber(finalNumber);
     };
+
 
     const startResendTimer = () => {
         setOtpResendTime(300);
@@ -388,6 +479,13 @@ const HeroSection = () => {
             setMessage({ text: `OTP sent to ${phoneNumber} (Test Mode)`, isError: false });
             setShowOtpComponent(true);
             startResendTimer();
+            // ✅ Save OTP session info (valid for 5 minutes)
+            const otpExpiry = Date.now() + 300000; // 5 minutes = 300 sec
+            localStorage.setItem("otpSession", JSON.stringify({
+                phone: phoneNumber,
+                expiry: otpExpiry,
+            }));
+
             return;
         }
 
@@ -395,7 +493,7 @@ const HeroSection = () => {
             setIsLoading(true);
             setMessage({ text: '', isError: false });
 
-            const data = await handleApiRequest(`https://jio-yatri-driver.onrender.com/api/auth/send-otp`, {
+            const data = await handleApiRequest(`http://localhost:5000/api/auth/send-otp`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ phoneNumber })
@@ -407,6 +505,12 @@ const HeroSection = () => {
             });
             setShowOtpComponent(true);
             startResendTimer();
+
+            const otpExpiry = Date.now() + 300000; // 5 minutes = 300 sec
+            localStorage.setItem("otpSession", JSON.stringify({
+                phone: phoneNumber,
+                expiry: otpExpiry,
+            }));
 
             if (process.env.NODE_ENV === 'development' && data.otp) {
                 console.log(`[DEV] OTP: ${data.otp}`);
@@ -436,7 +540,7 @@ const HeroSection = () => {
 
         try {
             setIsLoading(true);
-            const data = await handleApiRequest(`https://jio-yatri-driver.onrender.com/api/auth/verify-otp`, {
+            const data = await handleApiRequest(`http://localhost:5000/api/auth/verify-otp`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -451,6 +555,10 @@ const HeroSection = () => {
             const userCredential = await signInWithCustomToken(auth, data.token);
             setMessage({ text: 'Verification successful!', isError: false });
             setShowOtpComponent(false);
+            localStorage.removeItem("otpSession");
+
+            localStorage.removeItem('pendingUserRole'); // ✅ clear saved role
+            setUserRole(null);
 
             // Redirect business partners to their registration
             // Persist the role we selected on the server
@@ -477,9 +585,10 @@ const HeroSection = () => {
                     setIsRegistered(false);
                     setRegistrationStep(2); // show driver wizard
                     setDriverData(prev => ({ ...prev, phone: phoneNumber }));
+                    localStorage.setItem('driverPhone', phoneNumber);
                 }
             }
-        }  catch (error) {
+        } catch (error) {
             setMessage({
                 text: error.message || 'OTP verification failed',
                 isError: true
@@ -492,16 +601,16 @@ const HeroSection = () => {
     // after verifyOtp()
 
     // ✅ Auto-verify when OTP is fully entered or auto-filled
-useEffect(() => {
-  // Ensure OTP modal is visible, 4 digits entered, and no current verification running
-  if (showOtpComponent && otp.length === 4 && !isLoading) {
-    const timer = setTimeout(() => {
-      verifyOtp(); // trigger verification automatically
-    }, 200); // small delay to ensure autofill completes
+    useEffect(() => {
+        // Ensure OTP modal is visible, 4 digits entered, and no current verification running
+        if (showOtpComponent && otp.length === 4 && !isLoading) {
+            const timer = setTimeout(() => {
+                verifyOtp(); // trigger verification automatically
+            }, 200); // small delay to ensure autofill completes
 
-    return () => clearTimeout(timer); // cleanup if OTP changes fast
-  }
-}, [otp, showOtpComponent]);
+            return () => clearTimeout(timer); // cleanup if OTP changes fast
+        }
+    }, [otp, showOtpComponent]);
 
 
 
@@ -568,7 +677,7 @@ useEffect(() => {
                 }
             });
 
-            const response = await fetch('https://jio-yatri-driver.onrender.com/api/upload/file', {
+            const response = await fetch('http://localhost:5000/api/upload/file', {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`
@@ -600,6 +709,43 @@ useEffect(() => {
             }));
         }
     };
+
+    // ✅ Choose Camera or Gallery and prepare for cropping or direct upload
+    const handleDocSelect = (e, type) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const isImage = file.type.startsWith('image/');
+        const isPDF = file.type === 'application/pdf';
+
+        if (isPDF) {
+            handleFileUpload(file, type); // direct upload
+        } else if (isImage) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setImageToCrop(reader.result);
+                setShowCropper(true);
+                setCurrentDocType(type);
+            };
+            reader.readAsDataURL(file);
+        } else {
+            setMessage({ text: 'Only image or PDF allowed.', isError: true });
+        }
+    };
+
+    // ✅ After cropping complete
+    const handleCroppedImage = async (croppedImageUrl) => {
+        setShowCropper(false);
+
+        const response = await fetch(croppedImageUrl);
+        const blob = await response.blob();
+        const croppedFile = new File([blob], 'cropped.jpg', { type: 'image/jpeg' });
+
+        await handleFileUpload(croppedFile, currentDocType);
+        setImageToCrop(null);
+        setCurrentDocType(null);
+    };
+
 
     const validateVehicleNumber = (number) => {
         const regex = /^[A-Z]{2}[0-9]{1,2}[A-Z]{1,2}[0-9]{4}$/;
@@ -685,51 +831,51 @@ useEffect(() => {
     //         return false;
     //     }
     // };
-   const checkRegistrationStatus = async () => {
-  try {
-    const u = auth.currentUser;
-    if (!u) return { isRegistered: false, role: null };
+    const checkRegistrationStatus = async () => {
+        try {
+            const u = auth.currentUser;
+            if (!u) return { isRegistered: false, role: null };
 
-    // ✅ Try reading from localStorage first
-    const cached = localStorage.getItem(`registration_${u.uid}`);
-    if (cached) {
-      const parsed = JSON.parse(cached);
-      console.log('⚡ Loaded registration from localStorage');
-      setIsRegistered(parsed.isRegistered);
-      setUserRole(parsed.role);
-      return parsed; // instantly return cached data
-    }
+            // ✅ Try reading from localStorage first
+            const cached = localStorage.getItem(`registration_${u.uid}`);
+            if (cached) {
+                const parsed = JSON.parse(cached);
+                console.log('⚡ Loaded registration from localStorage');
+                setIsRegistered(parsed.isRegistered);
+                setUserRole(parsed.role);
+                return parsed; // instantly return cached data
+            }
 
-    // 🧠 If not in cache → fetch fresh from backend
-    const token = await u.getIdToken();
-    const res = await fetch(
-      `https://jio-yatri-driver.onrender.com/api/user/check-registration/${u.uid}`,
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
+            // 🧠 If not in cache → fetch fresh from backend
+            const token = await u.getIdToken();
+            const res = await fetch(
+                `http://localhost:5000/api/user/check-registration/${u.uid}`,
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
 
-    if (!res.ok) return { isRegistered: false, role: null };
-    const json = await res.json();
-    if (!json.success) return { isRegistered: false, role: null };
+            if (!res.ok) return { isRegistered: false, role: null };
+            const json = await res.json();
+            if (!json.success) return { isRegistered: false, role: null };
 
-    const { role, driverRegistered, businessRegistered } = json.data;
-    const isRegistered =
-      role === 'driver' ? !!driverRegistered : !!businessRegistered;
+            const { role, driverRegistered, businessRegistered } = json.data;
+            const isRegistered =
+                role === 'driver' ? !!driverRegistered : !!businessRegistered;
 
-    setIsRegistered(isRegistered);
-    setUserRole(role || '');
+            setIsRegistered(isRegistered);
+            setUserRole(role || '');
 
-    // ✅ Save for next time (instant load)
-    localStorage.setItem(
-      `registration_${u.uid}`,
-      JSON.stringify({ isRegistered, role })
-    );
+            // ✅ Save for next time (instant load)
+            localStorage.setItem(
+                `registration_${u.uid}`,
+                JSON.stringify({ isRegistered, role })
+            );
 
-    return { isRegistered, role };
-  } catch (error) {
-    console.error('Error checking registration:', error);
-    return { isRegistered: false, role: null };
-  }
-};
+            return { isRegistered, role };
+        } catch (error) {
+            console.error('Error checking registration:', error);
+            return { isRegistered: false, role: null };
+        }
+    };
 
 
 
@@ -783,7 +929,7 @@ useEffect(() => {
             const token = await auth.currentUser.getIdToken();
             const userId = auth.currentUser.uid;
 
-            const response = await fetch('https://jio-yatri-driver.onrender.com/api/driver/register', {
+            const response = await fetch('http://localhost:5000/api/driver/register', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -800,6 +946,7 @@ useEffect(() => {
                     licenseFileId: driverData.licenseFileId,
                     rcFileId: driverData.rcFileId,
                     insuranceFileId: driverData.insuranceFileId,
+                    selfieFileId: driverData.selfieFileId,
                     referralCode: referralCode || undefined
                 })
             });
@@ -814,6 +961,7 @@ useEffect(() => {
             setMessage({ text: 'Registration successful!', isError: false });
             if (!hasRoutedRef.current) hasRoutedRef.current = true;     // optional guard
             navigate('/orders', { replace: true });
+            localStorage.removeItem('driverPhone');
             setRegistrationStep(4);
         } catch (error) {
             if (error.message.includes('duplicate key')) {
@@ -836,7 +984,7 @@ useEffect(() => {
             localStorage.removeItem('token');
             localStorage.removeItem(`driverRegistered_${auth.currentUser?.uid}`);
             localStorage.removeItem('userRole');
-             localStorage.removeItem(`driverRegistered_${uid}`);
+            localStorage.removeItem(`driverRegistered_${uid}`);
             localStorage.removeItem('isRegistered');
             setRegistrationStep(0); // Reset to role selection
             setRegistrationSubStep(1);
@@ -864,30 +1012,63 @@ useEffect(() => {
         }
     };
 
-    const StepIndicator = ({ currentStep }) => {
+    const StepIndicator = ({ currentStep, onStepChange }) => {
         const steps = [
             { number: 1, title: 'Owner', icon: <MdPerson /> },
             { number: 2, title: 'Vehicle', icon: <MdDirectionsCar /> },
-            { number: 3, title: 'Driver', icon: <MdCreditCard /> }
+            { number: 3, title: 'Driver', icon: <MdCreditCard /> },
         ];
 
+        const getStepImage = () => {
+            switch (currentStep) {
+                case 1:
+                    return ownerIllustration;
+                case 2:
+                    return vehicleIllustration;
+                case 3:
+                    return driverIllustration;
+                default:
+                    return ownerIllustration;
+            }
+        };
+
+        const handleStepClick = (stepNumber) => {
+            // ✅ Only allow clicking current or previous steps
+            if (stepNumber <= currentStep) {
+                onStepChange(stepNumber);
+            }
+        };
+
         return (
-            <div className="step-indicator">
-                {steps.map((step) => (
-                    <div
-                        key={step.number}
-                        className={`step ${currentStep === step.number ? 'active' : ''} ${currentStep > step.number ? 'completed' : ''}`}
-                    >
-                        <div className="step-icon">{step.icon}</div>
-                        <div className="step-infos">
-                            <div className="step-numbers">Step {step.number}</div>
-                            <div className="step-titles">{step.title}</div>
+            <div className="step-container">
+                <div className="step-illustration">
+                    <img src={getStepImage()} alt="Step illustration" />
+                </div>
+
+                <div className="step-indicator">
+                    {steps.map((step) => (
+                        <div
+                            key={step.number}
+                            className={`step ${currentStep === step.number ? 'active' : ''} ${currentStep > step.number ? 'completed' : ''
+                                }`}
+                            onClick={() => handleStepClick(step.number)}
+                            style={{
+                                cursor: step.number <= currentStep ? 'pointer' : 'not-allowed',
+                                opacity: step.number > currentStep ? 0.5 : 1,
+                            }}
+                        >
+                            <div className="step-icon">{step.icon}</div>
+                            <div className="step-infos">
+                                <div className="step-numbers">Step {step.number}</div>
+                                <div className="step-titles">{step.title}</div>
+                            </div>
                         </div>
-                    </div>
-                ))}
+                    ))}
+                </div>
             </div>
         );
     };
+
 
     const RoleSelection = () => (
         <div className="role-selection-container">
@@ -897,12 +1078,13 @@ useEffect(() => {
                     className="role-option driver"
                     onClick={() => {
                         setUserRole('driver');
+                        localStorage.setItem('pendingUserRole', 'driver');
                         setRegistrationStep(1);
                     }}
                 >
-                  
-                  
-                    <img src={driver} style={{ width: "50px" ,height:"50px" ,marginBottom:"10px" }} alt="Driver" />
+
+
+                    <img src={driver} style={{ width: "50px", height: "50px", marginBottom: "10px" }} alt="Driver" />
                     <span>Driver</span>
                     <p>Deliver packages and earn money</p>
                 </button>
@@ -910,12 +1092,13 @@ useEffect(() => {
                     className="role-option business"
                     onClick={() => {
                         setUserRole('business');
+                        localStorage.setItem('pendingUserRole', 'business');
                         setRegistrationStep(1);
                     }}
                 >
-                   
-            
-                        <img src={partner} style={{ width: "80px" ,height:"60px" ,marginBottom:"10px" }} alt="Partner" />
+
+
+                    <img src={partner} style={{ width: "80px", height: "60px", marginBottom: "10px" }} alt="Partner" />
                     <span>Business Partner</span>
                     <p>List your business and reach more customers</p>
                 </button>
@@ -927,22 +1110,27 @@ useEffect(() => {
         <section className="hero-section" id="hero">
             <div className="hero-bg-blur" />
             <div className="hero-content-wrapper" ref={ref}>
-                <motion.div
-                    className="hero-text"
-                    initial="hidden"
-                    animate={controls}
-                    variants={variants}
-                    transition={{ duration: 0.8 }}
-                >
-                    <div className="text">
-                        <h1>JIOYATRI</h1>
-                        <h2>Delivery</h2>
-                    </div>
-                    <h2>Drive, Deliver & Earn with Jioyatri</h2>
-                    <p>
-                        Join our trusted driver network and earn by delivering packages across 19,000+ destinations in India. Flexible timings, secure payouts, and a seamless delivery experience.
-                    </p>
-                </motion.div>
+                {!(registrationStep === 2 && [1, 2, 3].includes(registrationSubStep)) && (
+                    <motion.div
+                        className="hero-text"
+                        initial="hidden"
+                        animate={controls}
+                        variants={variants}
+                        transition={{ duration: 0.8 }}
+                    >
+                        <div className="text">
+                            <h1>JIOYATRI</h1>
+                            <h2>Delivery</h2>
+                        </div>
+                        <h2>Drive, Deliver & Earn with Jioyatri</h2>
+                        <p>
+                            Join our trusted driver network and earn by delivering packages across
+                            19,000+ destinations in India. Flexible timings, secure payouts, and a
+                            seamless delivery experience.
+                        </p>
+                    </motion.div>
+                )}
+
                 <motion.div
                     className="hero-image"
                     initial="hidden"
@@ -951,10 +1139,10 @@ useEffect(() => {
                     transition={{ duration: 0.8, delay: 0.3 }}
                 >
                     {checkingRegistration ? (
-    <div className="loading-role">
-        <div className="loading-circle"></div>
-    </div>
-) : registrationStep === 0 ? (
+                        <div className="loading-role">
+                            <div className="loading-circle"></div>
+                        </div>
+                    ) : registrationStep === 0 ? (
                         <RoleSelection />
                     ) : registrationStep === 1 ? (
                         <form className="registration-form hero-form" onSubmit={(e) => e.preventDefault()}>
@@ -963,12 +1151,16 @@ useEffect(() => {
                             <div className="phone-input-group">
                                 <PhoneInput
                                     country={'in'}
+                                    onlyCountries={['in']}
+                                    countryCodeEditable={false}   // user cannot change +91
                                     value={phoneNumber}
                                     onChange={handlePhoneChange}
                                     placeholder="+91 9876543210"
-                                    inputClass={`phone-input ${!isValidPhone && phoneNumber ? 'error' : ''}`}
+                                    inputClass="phone-input"
                                     containerClass="phone-input-container"
                                 />
+
+
                                 {!isValidPhone && phoneNumber && (
                                     <p className="phone-error-message">
                                         Please enter in international format (e.g., +91XXXXXXXXXX)
@@ -1003,7 +1195,11 @@ useEffect(() => {
                         </form>
                     ) : registrationStep === 2 ? (
                         <div className="driver-registration-form">
-                            <StepIndicator currentStep={registrationSubStep} />
+                            <StepIndicator
+                                currentStep={registrationSubStep}
+                                onStepChange={(step) => setRegistrationSubStep(step)}
+                            />
+
 
                             {registrationSubStep === 1 && (
                                 <>
@@ -1012,7 +1208,7 @@ useEffect(() => {
                                             type="text"
                                             value={driverData.name}
                                             onChange={(e) => setDriverData({ ...driverData, name: e.target.value })}
-                                            placeholder="Full Name"
+                                            // placeholder="Full Name"
                                             required
                                             id="name-input"
                                         />
@@ -1022,16 +1218,18 @@ useEffect(() => {
                                     <div className="document-upload-row">
                                         <div className="document-upload-group">
                                             <span className="document-label">Owner Aadhar Card*</span>
-                                            <label htmlFor="aadhar-upload" className="document-upload-btn">
+                                            <button
+                                                type="button"
+                                                className="document-upload-btn"
+                                                onClick={() => {
+                                                    setCurrentDocType('aadhar'); // store which doc is being uploaded
+                                                    setShowUploadOptions(true);  // open camera/gallery selection
+                                                }}
+                                            >
                                                 <FaUpload className="upload-icon" />
-                                                <input
-                                                    type="file"
-                                                    id="aadhar-upload"
-                                                    accept="image/*,.pdf"
-                                                    onChange={(e) => handleFileUpload(e.target.files[0], 'aadhar')}
-                                                    hidden
-                                                />
-                                            </label>
+
+                                            </button>
+
                                         </div>
                                         {driverData.aadharFileId && (
                                             <div className="uploaded-indicator">
@@ -1043,20 +1241,53 @@ useEffect(() => {
                                             <progress value={fileUploadProgress.aadhar} max="100" />
                                         )}
                                     </div>
+                                    {/* ✅ Selfie Upload Section */}
+                                    <div className="document-upload-row">
+                                        <div className="document-upload-group">
+                                            <span className="document-label">Owner Selfie*</span>
+                                            <button
+                                                type="button"
+                                                className="document-upload-btn"
+                                                onClick={() => {
+                                                    setCurrentDocType('selfie');   // mark this as selfie doc type
+                                                    setShowUploadOptions(true);     // open bottom sheet (camera/gallery)
+                                                }}
+                                            >
+                                                <FaUpload className="upload-icon" />
+                                            </button>
+                                        </div>
+
+                                        {/* ✅ Uploaded indicator */}
+                                        {driverData.selfieFileId && (
+                                            <div className="uploaded-indicator">
+                                                <IoCloudDone className="uploaded-icon" />
+                                                <span>Uploaded</span>
+                                            </div>
+                                        )}
+
+                                        {/* ✅ Upload progress */}
+                                        {fileUploadProgress.selfie > 0 && fileUploadProgress.selfie < 100 && (
+                                            <progress value={fileUploadProgress.selfie} max="100" />
+                                        )}
+                                    </div>
+
+
 
                                     <div className="document-upload-row">
                                         <div className="document-upload-group">
                                             <span className="document-label">Owner PAN Card*</span>
-                                            <label htmlFor="pan-upload" className="document-upload-btn">
+                                            <button
+                                                type="button"
+                                                className="document-upload-btn"
+                                                onClick={() => {
+                                                    setCurrentDocType('pan'); // mark which document is being uploaded
+                                                    setShowUploadOptions(true); // open camera/gallery chooser
+                                                }}
+                                            >
                                                 <FaUpload className="upload-icon" />
-                                                <input
-                                                    type="file"
-                                                    id="pan-upload"
-                                                    accept="image/*,.pdf"
-                                                    onChange={(e) => handleFileUpload(e.target.files[0], 'pan')}
-                                                    hidden
-                                                />
-                                            </label>
+
+                                            </button>
+
                                         </div>
                                         {driverData.panFileId && (
                                             <div className="uploaded-indicator">
@@ -1084,44 +1315,54 @@ useEffect(() => {
                                 <>
                                     <div className="form-group">
                                         <label>Vehicle Type*</label>
-                                        <div className="vehicle-options">
+                                        <div className="vehicle-optionss">
                                             <button
                                                 type="button"
                                                 className={`vehicle-btn ${driverData.vehicleType === 'TwoWheeler' ? 'active' : ''}`}
                                                 onClick={() => setDriverData({ ...driverData, vehicleType: 'TwoWheeler' })}
                                             >
-                                                <MdOutlineTwoWheeler /> Two Wheeler
+                                                <img src={twoWheelerImg} alt="Two Wheeler" className="vehicle-img" />
+                                                <span>Two Wheeler</span>
                                             </button>
+
                                             <button
                                                 type="button"
                                                 className={`vehicle-btn ${driverData.vehicleType === 'ThreeWheeler' ? 'active' : ''}`}
                                                 onClick={() => setDriverData({ ...driverData, vehicleType: 'ThreeWheeler' })}
                                             >
-                                                <MdDirectionsCar /> Three Wheeler
+                                                <img src={threeWheelerImg} alt="Three Wheeler" className="vehicle-img" />
+                                                <span>Three Wheeler</span>
                                             </button>
+
                                             <button
                                                 type="button"
                                                 className={`vehicle-btn ${driverData.vehicleType === 'Truck' ? 'active' : ''}`}
                                                 onClick={() => setDriverData({ ...driverData, vehicleType: 'Truck' })}
                                             >
-                                                <MdLocalShipping /> Truck
+                                                <img src={truckImg} alt="Truck" className="vehicle-img" />
+                                                <span>Truck</span>
                                             </button>
+
                                             <button
                                                 type="button"
                                                 className={`vehicle-btn ${driverData.vehicleType === 'Pickup9ft' ? 'active' : ''}`}
                                                 onClick={() => setDriverData({ ...driverData, vehicleType: 'Pickup9ft' })}
                                             >
-                                                <FaTruckPickup /> Pickup9ft
+                                                <img src={pickupImg} alt="Pickup9ft" className="vehicle-img" />
+                                                <span>Pickup 9ft</span>
                                             </button>
+
                                             <button
                                                 type="button"
                                                 className={`vehicle-btn ${driverData.vehicleType === 'Tata407' ? 'active' : ''}`}
                                                 onClick={() => setDriverData({ ...driverData, vehicleType: 'Tata407' })}
                                             >
-                                                <FaTruckMoving /> Tata407
+                                                <img src={tata407Img} alt="Tata 407" className="vehicle-img" />
+                                                <span>Tata 407</span>
                                             </button>
                                         </div>
                                     </div>
+
 
                                     <div className="form-group">
                                         <label>Vehicle Number</label>
@@ -1139,19 +1380,18 @@ useEffect(() => {
                                         <div className="document-upload-row">
                                             <div className="document-upload-group">
                                                 <span className="document-label">vehicle RC</span>
-                                                <label htmlFor="rc-upload" className="document-upload-btn">
+                                                <button
+                                                    type="button"
+                                                    className="document-upload-btn"
+                                                    onClick={() => {
+                                                        setCurrentDocType('rc');       // store the doc type being uploaded
+                                                        setShowUploadOptions(true);    // open camera/gallery chooser
+                                                    }}
+                                                >
                                                     <FaUpload className="upload-icon" />
-                                                    <input
-                                                        type="file"
-                                                        id="rc-upload"
-                                                        accept="image/*,.pdf"
-                                                        onChange={(e) => {
-                                                            const file = e.target.files[0];
-                                                            if (file) handleFileUpload(file, 'rc');
-                                                        }}
-                                                        hidden
-                                                    />
-                                                </label>
+
+                                                </button>
+
                                             </div>
                                             {driverData.rcFileId && (
                                                 <div className="uploaded-indicator">
@@ -1170,19 +1410,18 @@ useEffect(() => {
                                         <div className="document-upload-row">
                                             <div className="document-upload-group">
                                                 <span className="document-label">Vehicle Insurance</span>
-                                                <label htmlFor="insurance-upload" className="document-upload-btn">
+                                                <button
+                                                    type="button"
+                                                    className="document-upload-btn"
+                                                    onClick={() => {
+                                                        setCurrentDocType('insurance'); // mark document type
+                                                        setShowUploadOptions(true);     // open camera/gallery chooser
+                                                    }}
+                                                >
                                                     <FaUpload className="upload-icon" />
-                                                    <input
-                                                        type="file"
-                                                        id="insurance-upload"
-                                                        accept="image/*,.pdf"
-                                                        onChange={(e) => {
-                                                            const file = e.target.files[0];
-                                                            if (file) handleFileUpload(file, 'insurance');
-                                                        }}
-                                                        hidden
-                                                    />
-                                                </label>
+
+                                                </button>
+
                                             </div>
                                             {driverData.insuranceFileId && (
                                                 <div className="uploaded-indicator">
@@ -1241,16 +1480,18 @@ useEffect(() => {
                                         <div className="document-upload-row">
                                             <div className="document-upload-group">
                                                 <span className="document-label">Driver License</span>
-                                                <label htmlFor="license-upload" className="document-upload-btn">
+                                                <button
+                                                    type="button"
+                                                    className="document-upload-btn"
+                                                    onClick={() => {
+                                                        setCurrentDocType('license');  // identify which document is being uploaded
+                                                        setShowUploadOptions(true);    // open the camera/gallery chooser
+                                                    }}
+                                                >
                                                     <FaUpload className="upload-icon" />
-                                                    <input
-                                                        type="file"
-                                                        id="license-upload"
-                                                        accept="image/*,.pdf"
-                                                        onChange={(e) => handleFileUpload(e.target.files[0], 'license')}
-                                                        hidden
-                                                    />
-                                                </label>
+
+                                                </button>
+
                                             </div>
                                             {driverData.licenseFileId && (
                                                 <div className="uploaded-indicator">
@@ -1264,6 +1505,45 @@ useEffect(() => {
                                         </div>
                                     </div>
 
+                                    {/* ✅ Terms and Conditions Checkbox */}
+                                    <div className="form-groups terms-checkbox">
+                                        <label className="terms-label">
+                                            <input
+                                                type="checkbox"
+                                                id="termsCheckbox"
+                                                checked={driverData.acceptedTerms || false}
+                                                onChange={(e) =>
+                                                    setDriverData({ ...driverData, acceptedTerms: e.target.checked })
+                                                }
+                                                required
+                                            />
+                                            <span className="custom-checkbox">
+                                                {driverData.acceptedTerms && <FaCheck className="checkmark-icon" />}
+                                            </span>
+                                            <span className="terms-text">
+                                                I have read, understood and accept&nbsp;
+                                                <a
+                                                    href="/terms"
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="terms-link"
+                                                >
+                                                    Terms & Conditions
+                                                </a>
+                                                &nbsp;and&nbsp;
+                                                <a
+                                                    href="/privacy-policy"
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="terms-link"
+                                                >
+                                                    Privacy Policy
+                                                </a>
+                                            </span>
+                                        </label>
+                                    </div>
+
+
                                     <div className="form-navigation">
                                         <button
                                             onClick={handlePrevStep}
@@ -1273,8 +1553,8 @@ useEffect(() => {
                                         </button>
                                         <button
                                             onClick={submitDriverRegistration}
-                                            disabled={isSubmitting || !driverData.phone || !driverData.licenseFileId}
-                                            className="submit-btn"
+                                            disabled={isSubmitting || !driverData.phone || !driverData.licenseFileId||!driverData.acceptedTerms}
+                                            className={`submit-btn ${!driverData.acceptedTerms ? 'disabled' : ''}`}
                                         >
                                             {isSubmitting ? 'Registering...' : 'Register'}
                                         </button>
@@ -1312,48 +1592,48 @@ useEffect(() => {
                             <h3 className="otp-title">Enter Verification Code</h3>
                             <p className="otp-subtitle">Sent to {phoneNumber}</p>
 
-                           <form autoComplete="one-time-code"> {/* Helps iOS autofill */}
-  <div className="otp-container">
-    {[...Array(4)].map((_, index) => (
-      <input
-        key={index}
-        type="text"
-        maxLength="1"
-        value={otp[index] || ''}
-        onChange={(e) => {
-          const value = e.target.value.replace(/\D/g, '');
-          let newOtp = otp.split('');
+                            <form autoComplete="one-time-code"> {/* Helps iOS autofill */}
+                                <div className="otp-container">
+                                    {[...Array(4)].map((_, index) => (
+                                        <input
+                                            key={index}
+                                            type="text"
+                                            maxLength="1"
+                                            value={otp[index] || ''}
+                                            onChange={(e) => {
+                                                const value = e.target.value.replace(/\D/g, '');
+                                                let newOtp = otp.split('');
 
-          // ✅ If user pastes entire OTP (e.g. “1234”), auto-fill all boxes
-          if (value.length > 1) {
-            const digits = value.slice(0, 4).split('');
-            setOtp(digits.join(''));
-            return;
-          }
+                                                // ✅ If user pastes entire OTP (e.g. “1234”), auto-fill all boxes
+                                                if (value.length > 1) {
+                                                    const digits = value.slice(0, 4).split('');
+                                                    setOtp(digits.join(''));
+                                                    return;
+                                                }
 
-          newOtp[index] = value;
-          setOtp(newOtp.join('').slice(0, 4));
+                                                newOtp[index] = value;
+                                                setOtp(newOtp.join('').slice(0, 4));
 
-          // Move focus to next input automatically
-          if (value && index < 3) {
-            document.getElementById(`otp-input-${index + 1}`).focus();
-          }
-        }}
-        onKeyDown={(e) => {
-          if (e.key === 'Backspace' && !otp[index] && index > 0) {
-            document.getElementById(`otp-input-${index - 1}`).focus();
-          }
-        }}
-        className={`otp-input ${otp[index] ? 'filled' : ''}`}
-        id={`otp-input-${index}`}
-        inputMode="numeric"
-        pattern="\d*"
-        name={index === 0 ? 'otp' : undefined}           // ✅ add only on first box
-        autoComplete={index === 0 ? 'one-time-code' : undefined} // ✅ add only on first box
-      />
-    ))}
-  </div>
-</form>
+                                                // Move focus to next input automatically
+                                                if (value && index < 3) {
+                                                    document.getElementById(`otp-input-${index + 1}`).focus();
+                                                }
+                                            }}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Backspace' && !otp[index] && index > 0) {
+                                                    document.getElementById(`otp-input-${index - 1}`).focus();
+                                                }
+                                            }}
+                                            className={`otp-input ${otp[index] ? 'filled' : ''}`}
+                                            id={`otp-input-${index}`}
+                                            inputMode="numeric"
+                                            pattern="\d*"
+                                            name={index === 0 ? 'otp' : undefined}           // ✅ add only on first box
+                                            autoComplete={index === 0 ? 'one-time-code' : undefined} // ✅ add only on first box
+                                        />
+                                    ))}
+                                </div>
+                            </form>
 
 
                             {message.isError && (
@@ -1387,6 +1667,8 @@ useEffect(() => {
                                 onClick={() => {
                                     setShowOtpComponent(false);
                                     setOtp('');
+                                    localStorage.removeItem("otpSession");
+                                    localStorage.removeItem("pendingUserRole");
                                     setMessage({ text: '', isError: false });
                                 }}
                                 className="cancell-button"
@@ -1397,6 +1679,86 @@ useEffect(() => {
                     </div>
                 )}
             </div>
+
+            {/* Hidden Inputs */}
+            <input
+                type="file"
+                accept="image/*,application/pdf"
+                id="fileInput"
+                style={{ display: 'none' }}
+                onChange={(e) => handleDocSelect(e, currentDocType)}
+            />
+            <input
+                type="file"
+                accept="image/*"
+                capture="environment"
+                id="cameraInput"
+                style={{ display: 'none' }}
+                onChange={(e) => handleDocSelect(e, currentDocType)}
+            />
+            {showUploadOptions && (
+                <div className="upload-bottomsheet-overlay" onClick={() => setShowUploadOptions(false)}>
+                    <div className="upload-bottomsheet" onClick={(e) => e.stopPropagation()}>
+                        <h3>Select Upload Option</h3>
+                        <div className='media'>
+                            <div className="camera">
+                                <button
+                            className="upload-options"
+                            onClick={() => {
+                                document.getElementById("cameraInput").click();
+                                setShowUploadOptions(false);
+                            }}
+                        >
+                            📷 
+                        </button>
+                        <p>Camera</p>
+                            </div>
+
+                            
+<div className='files'>
+    <button
+                            className="upload-options"
+                            onClick={() => {
+                                document.getElementById("fileInput").click();
+                                setShowUploadOptions(false);
+                            }}
+                        >
+                            📂 
+                        </button>
+                        <p>Media picker</p>
+</div>
+                        
+
+
+
+                        </div>
+
+                        
+
+                        <button
+                            className="upload-cancel"
+                            onClick={() => setShowUploadOptions(false)}
+                        >
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            )}
+            {showCropper && (
+                <div className="cropper-overlay">
+                    <div className="cropper-modal">
+                        <ImageCropper
+                            image={imageToCrop}
+                            onCropComplete={handleCroppedImage}
+                            onCancel={() => {
+                                setShowCropper(false);
+                                setImageToCrop(null);
+                            }}
+                        />
+                    </div>
+                </div>
+            )}
+
         </section>
     );
 };

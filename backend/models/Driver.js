@@ -223,7 +223,7 @@ const driverSchema = new mongoose.Schema({
       type: mongoose.Schema.Types.ObjectId,
       ref: 'fs.files',
       required: true
-    }
+    },selfie: { type: mongoose.Schema.Types.ObjectId, ref: 'fs.files', required: false }
   },
   // Add verification status for each document type
   documentVerification: {
@@ -231,7 +231,8 @@ const driverSchema = new mongoose.Schema({
     pan: { type: String, enum: ['pending', 'verified', 'rejected'], default: 'pending' },
     license: { type: String, enum: ['pending', 'verified', 'rejected'], default: 'pending' },
     rc: { type: String, enum: ['pending', 'verified', 'rejected'], default: 'pending' },
-    insurance: { type: String, enum: ['pending', 'verified', 'rejected'], default: 'pending' }
+    insurance: { type: String, enum: ['pending', 'verified', 'rejected'], default: 'pending' },
+    selfie: { type: String, enum: ['pending', 'verified', 'rejected'], default: 'pending' } 
   },
   verificationStatus: {
     type: String,

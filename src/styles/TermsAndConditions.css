@@ -1,0 +1,133 @@
+.terms-container {
+  max-width: 950px;
+  margin: 60px auto;
+  padding: 25px;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.05);
+  font-family: "Poppins", sans-serif;
+  color: #222;
+  
+}
+
+.terms-header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.terms-header h1 {
+  font-size: 2rem;
+  color: #0078d7;
+}
+
+.terms-content h2 {
+  color: #0056a3;
+  font-size: 1.4rem;
+  margin-top: 30px;
+  margin-bottom: 10px;
+}
+
+.terms-content h3 {
+  font-size: 1.1rem;
+  margin-top: 10px;
+  color: #333;
+}
+
+.terms-content p {
+  line-height: 1.7;
+  margin-bottom: 10px;
+  color: #333;
+}
+
+.terms-content ul {
+  padding-left: 20px;
+  margin-bottom: 10px;
+}
+
+.terms-content li {
+  margin-bottom: 6px;
+  color: #444;
+}
+
+.terms-content a {
+  color: #0078d7;
+  text-decoration: none;
+}
+
+.terms-content a:hover {
+  text-decoration: underline;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .terms-container {
+    margin: 20px;
+    padding: 15px;
+    margin-bottom:50px;
+    margin-top:40px;
+  }
+
+  .terms-header h1 {
+    font-size: 1.7rem;
+  }
+
+  .terms-content h2 {
+    font-size: 1.2rem;
+  }
+
+  .terms-content p,
+  .terms-content li {
+    font-size: 0.8rem;
+  }
+}
+
+.terms-banner {
+  position: relative;
+  width: 100%;
+  height: 50vh; /* Half of the screen height */
+  overflow: hidden;
+  border-radius: 0 0 20px 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.terms-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: brightness(90%) contrast(105%);
+  transition: transform 0.8s ease;
+}
+
+.terms-banner:hover .terms-image {
+  transform: scale(1.03);
+}
+
+.overlay-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+}
+
+.overlay-text h1 {
+  font-size: 2.5rem;
+  color: #ffffff;
+  text-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
+  font-weight: 600;
+  background: rgba(0, 0, 0, 0.25);
+  padding: 10px 20px;
+  border-radius: 8px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .terms-banner {
+    height: 35vh;
+  }
+
+  .overlay-text h1 {
+    font-size: 1.8rem;
+    padding: 8px 16px;
+  }
+}

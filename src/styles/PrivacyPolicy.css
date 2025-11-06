@@ -1,151 +1,135 @@
-/* Color Variables */
-:root {
-  --primary-color: #4a6bff;
-  --primary-dark: #3a56cc;
-  --secondary-color: #f8f9fa;
-  --text-color: #333;
-  --light-text: #666;
-  --border-color: #e0e0e0;
-  --highlight-color: #f0f4ff;
-  --success-color: #28a745;
-  --warning-color: #ffc107;
-  --danger-color: #dc3545;
+/* ===== Banner Section ===== */
+.privacy-banner {
+  position: relative;
+  width: 100%;
+  height: 50vh;
+  margin-top:30px;
+  margin-bottom:10px;
+  overflow: hidden;
+  border-radius: 0 0 20px 20px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
 
-/* Base Styles */
-.privacy-container {
-  max-width: 1000px;
-  margin: 0 auto;
-  padding: 2rem 1.5rem;
-  color: var(--text-color);
-  font-size: 1rem;
-  line-height: 1.6;
+.privacy-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: brightness(90%) contrast(105%);
+  transition: transform 0.8s ease;
 }
 
-.privacy-header {
+.privacy-banner:hover .privacy-image {
+  transform: scale(1.03);
+}
+
+.banner-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   text-align: center;
-  margin-bottom: 2.5rem;
-  padding-bottom: 1.5rem;
-  border-bottom: 1px solid var(--border-color);
+  color: #fff;
 }
 
-.privacy-header h1 {
-  color: var(--primary-color);
-  font-size: 2.2rem;
-  margin-bottom: 0.5rem;
+.banner-text h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  text-shadow: 0 3px 8px rgba(0, 0, 0, 0.4);
 }
 
-.effective-date {
-  color: var(--light-text);
-  font-style: italic;
-  font-size: 0.9rem;
+.banner-text p {
+  font-size: 1rem;
+  color: #dfefff;
+  margin-top: 10px;
+}
+
+/* ===== Main Content ===== */
+.privacy-container {
+  max-width: 900px;
+  margin: 50px auto;
+  padding: 20px;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  font-family: "Poppins", sans-serif;
+  color: #222;
 }
 
 .privacy-section {
-  margin-bottom: 2.5rem;
+  margin-bottom: 30px;
 }
 
 .privacy-section h2 {
-  color: var(--primary-color);
-  font-size: 1.6rem;
-  margin-bottom: 1rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid var(--border-color);
+  color: #004b8d;
+  font-size: 1.4rem;
+  margin-bottom: 10px;
 }
 
-.privacy-section h3 {
-  font-size: 1.2rem;
-  margin: 1.2rem 0 0.5rem;
-  color: var(--text-color);
+.privacy-section p,
+.privacy-section li {
+  line-height: 1.7;
+  color: #333;
+  font-size: 0.8rem;
 }
 
-/* Lists */
 .info-list {
-  padding-left: 1.2rem;
-  margin: 1rem 0;
+  padding-left: 20px;
 }
 
-.info-list li {
-  margin-bottom: 0.6rem;
-}
-
-/* Usage Grid */
+/* ===== Cards ===== */
 .usage-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 1.2rem;
-  margin: 1.5rem 0;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 15px;
+  margin-top: 15px;
 }
 
 .usage-card {
-  background-color: var(--secondary-color);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 1.2rem;
-  transition: transform 0.2s, box-shadow 0.2s;
+  background: #f3f9ff;
+  border-left: 4px solid #0078ff;
+  padding: 15px;
+  border-radius: 10px;
+  transition: all 0.3s ease;
 }
 
 .usage-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  background: #e3f1ff;
+  transform: translateY(-4px);
 }
 
-.usage-card h3 {
-  color: var(--primary-color);
-  margin-top: 0;
+/* ===== Contact Section ===== */
+.contact-info h3 {
+  color: #004b8d;
+  font-weight: 600;
 }
 
-/* Contact Info */
-.contact-info {
-  background-color: var(--highlight-color);
-  padding: 1.2rem;
-  border-radius: 8px;
-  margin: 1.2rem 0;
-}
-
-/* Links */
-a {
-  color: var(--primary-color);
+.contact-info a {
+  color: #0078ff;
   text-decoration: none;
 }
 
-a:hover {
-  color: var(--primary-dark);
+.contact-info a:hover {
   text-decoration: underline;
 }
 
-/* Responsive Design */
+/* ===== Responsive ===== */
 @media (max-width: 768px) {
-  .privacy-container {
-    padding: 1.5rem 1rem;
+  .privacy-banner {
+    height: 35vh;
+    margin-top:10px;
+    
   }
-  
-  .privacy-header h1 {
+
+  .banner-text h1 {
     font-size: 1.8rem;
   }
-  
-  .privacy-section h2 {
-    font-size: 1.4rem;
-  }
-  
-  .usage-grid {
-    grid-template-columns: 1fr;
-  }
-}
 
-/* Print Styles */
-@media print {
+  .banner-text p {
+    font-size: 1rem;
+  }
+
   .privacy-container {
-    max-width: 100%;
-    padding: 0;
-    font-size: 12pt;
-  }
-  
-  a {
-    text-decoration: underline;
-  }
-  
-  .usage-grid {
-    grid-template-columns: 1fr 1fr;
+    padding: 15px;
+    margin: 20px;
   }
 }

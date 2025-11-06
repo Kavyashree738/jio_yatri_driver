@@ -362,6 +362,7 @@ exports.getAllDriversWithDocuments = async (req, res) => {
       const licenseMeta = await fetchFileMeta(docs.license);
       const rcMeta = await fetchFileMeta(docs.rc);
       const insuranceMeta = await fetchFileMeta(docs.insurance);
+      const selfieMeta = await fetchFileMeta(docs.selfie);
 
       return {
         id: driver.userId,
@@ -376,7 +377,8 @@ exports.getAllDriversWithDocuments = async (req, res) => {
           pan: panMeta,
           license: licenseMeta,
           rc: rcMeta,
-          insurance: insuranceMeta
+          insurance: insuranceMeta,
+          selfie: selfieMeta,
         },
         documentVerification: driver.documentVerification || {},
         locationActive: driver.isLocationActive,

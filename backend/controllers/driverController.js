@@ -202,6 +202,7 @@ exports.registerDriver = async (req, res) => {
       licenseFileId,
       rcFileId,
       insuranceFileId,
+       selfieFileId, 
       referralCode
     } = req.body;
 
@@ -210,7 +211,7 @@ exports.registerDriver = async (req, res) => {
 
     // Validate required fields
     if (!userId || !name || !phone || !aadharFileId || !panFileId ||
-      !vehicleType || !vehicleNumber || !licenseFileId || !rcFileId || !insuranceFileId) {
+      !vehicleType || !vehicleNumber || !licenseFileId || !rcFileId ||! selfieFileId|| !insuranceFileId) {
       // console.log('[Registration] Validation failed: Missing required fields', {
       //   missingFields: {
       //     userId: !userId,
@@ -270,7 +271,8 @@ exports.registerDriver = async (req, res) => {
         pan: panFileId,
         license: licenseFileId,
         rc: rcFileId,
-        insurance: insuranceFileId
+        insurance: insuranceFileId,
+         selfie: selfieFileId,
       },
       vehicleType,
       vehicleNumber,
@@ -659,7 +661,7 @@ exports.verifyDriver = async (req, res) => {
     }
 
     // Validate document type
-    const validDocTypes = ['aadhar', 'pan', 'license', 'rc', 'insurance'];
+    const validDocTypes = ['aadhar', 'pan', 'license', 'rc', 'insurance','selfie'];
     if (!validDocTypes.includes(docType)) {
       return res.status(400).json({
         success: false,
