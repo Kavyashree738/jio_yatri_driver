@@ -157,6 +157,25 @@ const HeroSection = () => {
     }, []);
 
 
+    // 🧩 Persist driverData and step progress in localStorage
+    useEffect(() => {
+        localStorage.setItem("driverRegistrationData", JSON.stringify(driverData));
+        localStorage.setItem("driverRegistrationStep", registrationStep.toString());
+        localStorage.setItem("driverRegistrationSubStep", registrationSubStep.toString());
+    }, [driverData, registrationStep, registrationSubStep]);
+
+    useEffect(() => {
+        const savedData = localStorage.getItem("driverRegistrationData");
+        const savedStep = localStorage.getItem("driverRegistrationStep");
+        const savedSubStep = localStorage.getItem("driverRegistrationSubStep");
+
+        if (savedData) setDriverData(JSON.parse(savedData));
+        if (savedStep) setRegistrationStep(Number(savedStep));
+        if (savedSubStep) setRegistrationSubStep(Number(savedSubStep));
+    }, []);
+
+
+
 
     useEffect(() => {
         const savedPhone = localStorage.getItem('driverPhone');
@@ -962,6 +981,10 @@ const HeroSection = () => {
             if (!hasRoutedRef.current) hasRoutedRef.current = true;     // optional guard
             navigate('/orders', { replace: true });
             localStorage.removeItem('driverPhone');
+            localStorage.removeItem("driverRegistrationData");
+            localStorage.removeItem("driverRegistrationStep");
+            localStorage.removeItem("driverRegistrationSubStep");
+
             setRegistrationStep(4);
         } catch (error) {
             if (error.message.includes('duplicate key')) {
