@@ -1523,22 +1523,28 @@ const HeroSection = () => {
                                             <span className="terms-text">
                                                 I have read, understood and accept&nbsp;
                                                 <a
-                                                    href="/terms"
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
+                                                    href="#"
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        window.open('http://driver.jioyatri.com/terms', '_blank', 'noopener,noreferrer');
+                                                    }}
                                                     className="terms-link"
                                                 >
                                                     Terms & Conditions
                                                 </a>
                                                 &nbsp;and&nbsp;
                                                 <a
-                                                    href="/privacy-policy"
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
+                                                    href="#"
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        window.open('http://driver.jioyatri.com/privacy-policy', '_blank', 'noopener,noreferrer');
+                                                    }}
                                                     className="terms-link"
                                                 >
                                                     Privacy Policy
                                                 </a>
+
+
                                             </span>
                                         </label>
                                     </div>
@@ -1553,7 +1559,7 @@ const HeroSection = () => {
                                         </button>
                                         <button
                                             onClick={submitDriverRegistration}
-                                            disabled={isSubmitting || !driverData.phone || !driverData.licenseFileId||!driverData.acceptedTerms}
+                                            disabled={isSubmitting || !driverData.phone || !driverData.licenseFileId || !driverData.acceptedTerms}
                                             className={`submit-btn ${!driverData.acceptedTerms ? 'disabled' : ''}`}
                                         >
                                             {isSubmitting ? 'Registering...' : 'Register'}
@@ -1703,37 +1709,37 @@ const HeroSection = () => {
                         <div className='media'>
                             <div className="camera">
                                 <button
-                            className="upload-options"
-                            onClick={() => {
-                                document.getElementById("cameraInput").click();
-                                setShowUploadOptions(false);
-                            }}
-                        >
-                            📷 
-                        </button>
-                        <p>Camera</p>
+                                    className="upload-options"
+                                    onClick={() => {
+                                        document.getElementById("cameraInput").click();
+                                        setShowUploadOptions(false);
+                                    }}
+                                >
+                                    📷
+                                </button>
+                                <p>Camera</p>
                             </div>
 
-                            
-<div className='files'>
-    <button
-                            className="upload-options"
-                            onClick={() => {
-                                document.getElementById("fileInput").click();
-                                setShowUploadOptions(false);
-                            }}
-                        >
-                            📂 
-                        </button>
-                        <p>Media picker</p>
-</div>
-                        
+
+                            <div className='files'>
+                                <button
+                                    className="upload-options"
+                                    onClick={() => {
+                                        document.getElementById("fileInput").click();
+                                        setShowUploadOptions(false);
+                                    }}
+                                >
+                                    📂
+                                </button>
+                                <p>Media picker</p>
+                            </div>
+
 
 
 
                         </div>
 
-                        
+
 
                         <button
                             className="upload-cancel"
