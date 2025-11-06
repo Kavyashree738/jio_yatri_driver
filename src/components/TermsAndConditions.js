@@ -5,18 +5,20 @@ import Footer from "./Footer";
 import { useNavigate } from "react-router-dom";
 import terms from '../assets/images/terms.png'
 const TermsAndConditions = () => {
-    const navigate = useNavigate();
+  const navigate = useNavigate();
   return (
     <>
       <Header />
       <div className="terms-container">
 
-        <div className="help-topbar">
-        {/* <button className="help-back-btn" onClick={() => navigate('/profile')}>
-          ←
-        </button> */}
-        <h3>Terms & Conditions</h3>
-      </div>
+        <div className="privacy-back">
+          <button
+            onClick={() => window.history.back()}
+            className="back-btn"
+          >
+            ← Back
+          </button>
+        </div>
 
         <div className="terms-header">
           <div className="terms-banner">
@@ -25,12 +27,12 @@ const TermsAndConditions = () => {
               alt="JioYatri Terms & Conditions Banner"
               className="terms-image"
             />
-            
+
           </div>
         </div>
-       <div className="terms-header">
-        <h1>Terms & Conditions</h1>
-      </div>
+        <div className="terms-header">
+          <h1>Terms & Conditions</h1>
+        </div>
         <div className="terms-content">
           <section>
             <h2>Introduction</h2>

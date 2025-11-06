@@ -131,3 +131,18 @@
     padding: 8px 16px;
   }
 }
+.back-btn {
+  background: #007bff;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: 0.2s ease;
+  margin-top:40px;
+}
+
+.back-btn:hover {
+  background: #0056b3;
+}

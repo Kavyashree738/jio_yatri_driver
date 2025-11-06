@@ -8,16 +8,25 @@ const PrivacyPolicy = () => {
   return (
     <>
       <Header />
-     
+
+      <div className="privacy-back">
+        <button
+          onClick={() => window.history.back()}
+          className="back-btn"
+        >
+          ← Back
+        </button>
+      </div>
+
 
       <div className="privacy-container">
-         <div className="privacy-banner">
-        <img
-          src={privacy} // 🔹 place your 3D banner image here
-          alt="JioYatri Privacy Policy Banner"
-          className="privacy-image"
-        />
-      </div>
+        <div className="privacy-banner">
+          <img
+            src={privacy} // 🔹 place your 3D banner image here
+            alt="JioYatri Privacy Policy Banner"
+            className="privacy-image"
+          />
+        </div>
         <section className="privacy-section">
           <h2>Overview</h2>
           <p>
