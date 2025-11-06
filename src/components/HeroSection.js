@@ -62,30 +62,46 @@ const HeroSection = () => {
     const [showOtpComponent, setShowOtpComponent] = useState(false);
     const [otp, setOtp] = useState('');
     const { user, message, setMessage, softSignedOut, endSoftLogout, refreshUserMeta } = useAuth();
-    const [registrationStep, setRegistrationStep] = useState(0); // Start with 0 for role selection
-    const [registrationSubStep, setRegistrationSubStep] = useState(1);
+    // const [registrationStep, setRegistrationStep] = useState(0); // Start with 0 for role selection
+    // const [registrationSubStep, setRegistrationSubStep] = useState(1);
     const [isValidPhone, setIsValidPhone] = useState(false);
     const [userRole, setUserRole] = useState(null); // 'driver' or 'business'
     const [checkingRegistration, setCheckingRegistration] = useState(true);
-    const [driverData, setDriverData] = useState({
-        name: '',
-        aadharFile: null,
-        panFile: null,
-        phone: '',
-        vehicleType: '',
-        vehicleNumber: '',
-        vehicleRCFile: null,
-        vehicleInsuranceFile: null,
-        licenseFile: null,
-        licenseFileId: null,
-        rcFileId: null,
-        insuranceFileId: null,
-        aadharFileId: null,
-        panFileId: null,
-        selfieFile: null,
-        selfieFileId: null,
 
-    });
+    const [registrationStep, setRegistrationStep] = useState(() => {
+  const saved = localStorage.getItem("driverRegistrationStep");
+  return saved ? Number(saved) : 0;
+});
+
+const [registrationSubStep, setRegistrationSubStep] = useState(() => {
+  const saved = localStorage.getItem("driverRegistrationSubStep");
+  return saved ? Number(saved) : 1;
+});
+
+// ✅ Load saved progress instantly before first render
+const [driverData, setDriverData] = useState(() => {
+  const saved = localStorage.getItem("driverRegistrationData");
+  return saved ? JSON.parse(saved) : {
+    name: '',
+    aadharFile: null,
+    panFile: null,
+    phone: '',
+    vehicleType: '',
+    vehicleNumber: '',
+    vehicleRCFile: null,
+    vehicleInsuranceFile: null,
+    licenseFile: null,
+    licenseFileId: null,
+    rcFileId: null,
+    insuranceFileId: null,
+    aadharFileId: null,
+    panFileId: null,
+    selfieFile: null,
+    selfieFileId: null,
+  };
+});
+
+
     const [fileUploadProgress, setFileUploadProgress] = useState({
         aadhar: 0,
         pan: 0,
@@ -164,15 +180,15 @@ const HeroSection = () => {
         localStorage.setItem("driverRegistrationSubStep", registrationSubStep.toString());
     }, [driverData, registrationStep, registrationSubStep]);
 
-    useEffect(() => {
-        const savedData = localStorage.getItem("driverRegistrationData");
-        const savedStep = localStorage.getItem("driverRegistrationStep");
-        const savedSubStep = localStorage.getItem("driverRegistrationSubStep");
+    // useEffect(() => {
+    //     const savedData = localStorage.getItem("driverRegistrationData");
+    //     const savedStep = localStorage.getItem("driverRegistrationStep");
+    //     const savedSubStep = localStorage.getItem("driverRegistrationSubStep");
 
-        if (savedData) setDriverData(JSON.parse(savedData));
-        if (savedStep) setRegistrationStep(Number(savedStep));
-        if (savedSubStep) setRegistrationSubStep(Number(savedSubStep));
-    }, []);
+    //     if (savedData) setDriverData(JSON.parse(savedData));
+    //     if (savedStep) setRegistrationStep(Number(savedStep));
+    //     if (savedSubStep) setRegistrationSubStep(Number(savedSubStep));
+    // }, []);
 
 
 
