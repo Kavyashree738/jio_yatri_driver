@@ -918,32 +918,33 @@ exports.getDriverHistory = async (req, res) => {
 exports.getShipmentById = async (req, res) => {
   const id = req.params.id;
 
-  // Validate MongoDB ObjectId before querying
+  // ✅ Validate ID
   if (!mongoose.Types.ObjectId.isValid(id)) {
     return res.status(400).json({ message: 'Invalid shipment ID format' });
   }
 
   try {
+    // ✅ Fetch entire shipment document with optional related info
     const shipment = await Shipment.findById(id)
-      .select({
-        _id: 1,
-        status: 1,
-        'driverLocation.coordinates': 1,
-        'sender.address.coordinates': 1,
-        'receiver.address.coordinates': 1,
-      })
+      .populate('assignedDriver', 'name phone vehicleType') // only if you have this ref
+      .populate('userId', 'name phone') // only if you have this ref
       .lean();
 
     if (!shipment) {
       return res.status(404).json({ message: 'Shipment not found' });
     }
 
-    res.status(200).json(shipment);
+    // ✅ Send full object (including sender/receiver addresses)
+    res.status(200).json({
+      success: true,
+      shipment,
+    });
   } catch (error) {
     console.error('Error fetching shipment:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
+
 exports.getShopShipments = async (req, res) => {
   try {
     const { shopId } = req.params;
@@ -1064,6 +1065,7 @@ exports.getShipmentPaymentStatus = async (req, res) => {
     });
   }
 };
+
 
 
 
