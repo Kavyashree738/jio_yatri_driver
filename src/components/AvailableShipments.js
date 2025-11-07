@@ -105,93 +105,89 @@ const AvailableShipments = forwardRef((props, ref) => {
     }
   };
 
-  // 🧩 Push event listener
-  useEffect(() => {
-    const handlePush = (e) => {
-      const data = e.detail?.data || {};
-      setDebugPush(data);
-      setDebugInfo(prev => ({
-        ...prev,
-        step: 'pushReceived',
-        lastPushType: data.type || 'unknown',
-        currentView: 'pushReceived',
-      }));
+useEffect(() => {
+  const handlePush = async (e) => {
+    const data = e.detail?.data || {};
+    setDebugPush(data);
+    setDebugInfo(prev => ({
+      ...prev,
+      lastPushType: data.type || 'unknown',
+      currentView: 'pushReceived'
+    }));
 
-      // ✅ SHIPMENT_ACCEPTED
-      if (data?.type === 'SHIPMENT_ACCEPTED') {
-        const auth = getAuth();
-        const user = auth.currentUser;
+    if (data?.type === 'SHIPMENT_ACCEPTED') {
+      const auth = getAuth();
+      const user = auth.currentUser;
+
+      try {
         if (user && data.shipmentId) {
-          user.getIdToken().then(async (token) => {
-            try {
-              const res = await axios.get(
-                `https://jio-yatri-driver.onrender.com/api/shipments/${data.shipmentId}`,
-                { headers: { Authorization: `Bearer ${token}` } }
-              );
+          const token = await user.getIdToken();
+          const res = await axios.get(
+            `https://jio-yatri-driver.onrender.com/api/shipments/${data.shipmentId}`,
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
 
-              const shipmentData = res.data.shipment || res.data.data || res.data;
-              setDebugPush(prev => ({
-                ...prev,
-                fetchedData: shipmentData || 'no data from /shipments/:id',
-              }));
-
-              if (shipmentData && shipmentData._id) {
-                setActiveShipment(shipmentData);
-                localStorage.setItem('lastShipment', JSON.stringify(shipmentData));
-                setDebugInfo(prev => ({
-                  ...prev,
-                  step: 'pushShipmentLoaded',
-                  activeShipmentId: shipmentData._id,
-                  activeShipmentStatus: shipmentData.status,
-                  currentView: 'LocationTracker',
-                }));
-              } else {
-                // fallback fetch
-                const fb = await axios.get(
-                  `https://jio-yatri-driver.onrender.com/api/shipments/active`,
-                  { headers: { Authorization: `Bearer ${token}` } }
-                );
-                const fbData = fb.data.shipment || fb.data.data || fb.data;
-                setDebugPush(prev => ({
-                  ...prev,
-                  fallbackFetched: fbData || 'no data from /shipments/active',
-                }));
-                if (fbData && fbData._id) {
-                  setActiveShipment(fbData);
-                  localStorage.setItem('lastShipment', JSON.stringify(fbData));
-                  setDebugInfo(prev => ({
-                    ...prev,
-                    step: 'pushFallbackLoaded',
-                    activeShipmentId: fbData._id,
-                    activeShipmentStatus: fbData.status,
-                    currentView: 'LocationTracker',
-                  }));
-                } else {
-                  setDebugInfo(prev => ({
-                    ...prev,
-                    step: 'pushNoData',
-                    currentView: 'AvailableShipments',
-                  }));
-                }
-              }
-            } catch (err) {
-              setDebugPush(prev => ({
-                ...prev,
-                error: err.message || 'network error',
-              }));
-            }
-          });
-        } else {
-          fetchData('missingUser');
+          const shipmentData = res.data.shipment || res.data.data || res.data;
+          if (shipmentData) {
+            setActiveShipment(shipmentData);
+            localStorage.setItem('lastShipment', JSON.stringify(shipmentData));
+            setDebugInfo(prev => ({
+              ...prev,
+              activeShipmentId: shipmentData._id,
+              activeShipmentStatus: shipmentData.status,
+              currentView: 'LocationTracker'
+            }));
+            return;
+          }
         }
-      } else if (data?.type === 'NEW_SHIPMENT') {
-        fetchData('newPush');
-      }
-    };
 
-    window.addEventListener('push', handlePush);
-    return () => window.removeEventListener('push', handlePush);
-  }, []);
+        // 🧩 If fetch fails, fallback
+        throw new Error("Shipment fetch failed");
+      } catch (err) {
+        console.warn("⚠️ Push fetch failed — using fallback cache", err);
+
+        // ✅ fallback: open last shipment from cache
+        const saved = localStorage.getItem("lastShipment");
+        if (saved) {
+          const cached = JSON.parse(saved);
+          cached.status = "assigned"; // force active
+          setActiveShipment(cached);
+          setDebugInfo(prev => ({
+            ...prev,
+            activeShipmentId: cached._id,
+            activeShipmentStatus: cached.status,
+            currentView: 'LocationTracker (fallback)',
+          }));
+        } else {
+          // if no cache, create a temporary minimal object
+          setActiveShipment({
+            _id: data.shipmentId,
+            status: "assigned",
+            sender: { address: { addressLine1: "From (unknown)" } },
+            receiver: { address: { addressLine1: "To (unknown)" } },
+            cost: 0,
+            distance: 0,
+            vehicleType: "TwoWheeler"
+          });
+          setDebugInfo(prev => ({
+            ...prev,
+            activeShipmentId: data.shipmentId,
+            activeShipmentStatus: 'assigned',
+            currentView: 'LocationTracker (temp)',
+          }));
+        }
+      }
+    }
+
+    else if (data?.type === 'NEW_SHIPMENT') {
+      fetchData();
+    }
+  };
+
+  window.addEventListener('push', handlePush);
+  return () => window.removeEventListener('push', handlePush);
+}, []);
+
 
   // 🧩 Fetch available shipments
   const fetchAvailableShipments = async (token) => {
@@ -430,3 +426,4 @@ const AvailableShipments = forwardRef((props, ref) => {
 });
 
 export default AvailableShipments;
+
