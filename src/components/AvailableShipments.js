@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef, forwardRef } from 'react';
+import React, { useEffect, useState, useCallback, useRef,forwardRef } from 'react';
 import axios from 'axios';
 import { getAuth } from 'firebase/auth';
 import { ToastContainer, toast } from 'react-toastify';
@@ -12,297 +12,344 @@ const AvailableShipments = forwardRef((props, ref) => {
   const [loading, setLoading] = useState(true);
   const [activeShipment, setActiveShipment] = useState(null);
   const [isMobile, setIsMobile] = useState(false);
-  const [debugPush, setDebugPush] = useState(null);
-  const [showFullPush, setShowFullPush] = useState(false);
-  const [debugLogs, setDebugLogs] = useState([]); // 🧠 UI console logs
-
-  const [debugInfo, setDebugInfo] = useState({
-    step: 'initializing',
-    driverStatus: 'unknown',
-    activeShipmentId: null,
-    activeShipmentStatus: null,
-    shipmentCount: 0,
-    loading: true,
-    currentView: 'initial',
-    lastPushType: null,
-  });
-
   const sectionRef = useRef(null);
+
   const notifiedShipmentIdsRef = useRef(new Set());
 
-  // 📜 Helper: Add new line in UI console
-  const uiLog = (msg) => {
-    setDebugLogs((prev) => [`${new Date().toLocaleTimeString()} ➤ ${msg}`, ...prev].slice(0, 50));
-  };
-
-  // 🧩 Load last shipment
-  useEffect(() => {
-    const savedShipment = localStorage.getItem('lastShipment');
+   useEffect(() => {
+    const savedShipment = localStorage.getItem("lastShipment");
     if (savedShipment) {
-      const parsed = JSON.parse(savedShipment);
-      setActiveShipment(parsed);
-      uiLog(`🧩 Loaded cached shipment: ${parsed._id}`);
-      setDebugInfo(prev => ({
-        ...prev,
-        step: 'loadCachedShipment',
-        activeShipmentId: parsed._id,
-        activeShipmentStatus: parsed.status,
-      }));
+      setActiveShipment(JSON.parse(savedShipment));
     }
   }, []);
-
-  // 🧩 Fetch data
-  const fetchData = async (from = 'auto') => {
-    try {
-      setDebugInfo(prev => ({ ...prev, step: `fetchData_${from}` }));
-      uiLog(`🌐 FetchData triggered (${from})`);
-
-      const auth = getAuth();
-      const user = auth.currentUser;
-      if (!user) {
-        setLoading(false);
-        uiLog(`⚠️ No Firebase user found`);
-        return;
-      }
-
-      const token = await user.getIdToken();
-      const statusUrl = `https://jio-yatri-driver.onrender.com/api/driver/status`;
-      uiLog(`🔗 GET ${statusUrl}`);
-
-      const statusResponse = await axios.get(statusUrl, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      const newStatus = statusResponse.data.data.status;
-      uiLog(`✅ Driver status: ${newStatus}`);
-      setDriverStatus(newStatus);
-
-      if (activeShipment?._id) {
-        const shipmentUrl = `https://jio-yatri-driver.onrender.com/api/shipments/${activeShipment._id}`;
-        uiLog(`🔗 GET ${shipmentUrl}`);
-
-        const res = await axios.get(shipmentUrl, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        uiLog(`✅ Shipment fetched: ${res.status} ${res.statusText}`);
-
-        const shipmentData = res.data.shipment || res.data.data || res.data;
-        if (shipmentData && ['cancelled', 'delivered'].includes(shipmentData.status)) {
-          setActiveShipment(null);
-          localStorage.removeItem('lastShipment');
-          uiLog(`🗑 Cleared cancelled/delivered shipment`);
-        } else if (shipmentData) {
-          setActiveShipment(shipmentData);
-          localStorage.setItem('lastShipment', JSON.stringify(shipmentData));
-          uiLog(`📦 Active shipment updated: ${shipmentData._id}`);
-        }
-      }
-
-      if (newStatus === 'active') {
-        await fetchAvailableShipments(token);
-      } else {
-        setShipments([]);
-        uiLog(`🚫 Driver inactive, skipping shipment fetch`);
-      }
-
-      setDebugInfo(prev => ({
-        ...prev,
-        step: `fetchData_done_${from}`,
-        driverStatus: newStatus,
-        activeShipmentId: activeShipment?._id || null,
-        activeShipmentStatus: activeShipment?.status || null,
-        shipmentCount: shipments.length,
-        loading: false,
-        currentView: activeShipment ? 'LocationTracker' : 'AvailableShipments',
-      }));
-    } catch (error) {
-      toast.error('Failed to load data');
-      uiLog(`❌ fetchData error: ${error.message}`);
-      setDebugInfo(prev => ({ ...prev, step: `fetchData_error_${from}`, error: error.message }));
-    } finally {
-      setLoading(false);
-    }
-  };
 
   useEffect(() => {
-    const handlePush = async (e) => {
-      const data = e.detail?.data || {};
-      setDebugPush(data);
-      uiLog(`🔔 Push received: ${data.type || 'unknown'}`);
-      setDebugInfo(prev => ({
-        ...prev,
-        lastPushType: data.type || 'unknown',
-        currentView: 'pushReceived'
-      }));
-
-      if (data?.type === 'SHIPMENT_ACCEPTED') {
-        const auth = getAuth();
-        const user = auth.currentUser;
-
-        try {
-          if (user && data.shipmentId) {
-            const token = await user.getIdToken();
-            const url = `https://jio-yatri-driver.onrender.com/api/shipments/${data.shipmentId}`;
-            uiLog(`🔗 GET ${url}`);
-
-            const res = await axios.get(url, {
-              headers: { Authorization: `Bearer ${token}` },
-            });
-            uiLog(`✅ Push shipment fetched: ${res.status} ${res.statusText}`);
-
-            const shipmentData = res.data.shipment || res.data.data || res.data;
-            if (shipmentData) {
-              setActiveShipment(shipmentData);
-              localStorage.setItem('lastShipment', JSON.stringify(shipmentData));
-              uiLog(`📦 Shipment accepted → ${shipmentData._id}`);
-              setDebugInfo(prev => ({
-                ...prev,
-                activeShipmentId: shipmentData._id,
-                activeShipmentStatus: shipmentData.status,
-                currentView: 'LocationTracker'
-              }));
-              return;
-            }
-          }
-          throw new Error("Shipment fetch failed");
-        } catch (err) {
-          uiLog(`⚠️ Push fetch failed — fallback used`);
-          const saved = localStorage.getItem("lastShipment");
-          if (saved) {
-            const cached = JSON.parse(saved);
-            cached.status = "assigned";
-            setActiveShipment(cached);
-            uiLog(`♻️ Loaded cached shipment fallback`);
-          } else {
-            uiLog(`❗ No cached shipment found, temp object used`);
-            setActiveShipment({
-              _id: data.shipmentId,
-              status: "assigned",
-              sender: { address: { addressLine1: "From (unknown)" } },
-              receiver: { address: { addressLine1: "To (unknown)" } },
-              cost: 0,
-              distance: 0,
-              vehicleType: "TwoWheeler"
-            });
-          }
-        }
-      } else if (data?.type === 'NEW_SHIPMENT') {
-        fetchData();
-      }
+    const checkIfMobile = () => {
+      const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+      return /android|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent.toLowerCase());
     };
-
-    window.addEventListener('push', handlePush);
-    return () => window.removeEventListener('push', handlePush);
+    setIsMobile(checkIfMobile());
   }, []);
+
+ useEffect(() => {
+  const tryScrollToShipments = () => {
+    const params = new URLSearchParams(window.location.search);
+    const scrollTo = params.get("scrollTo");
+
+    if (scrollTo === "shipments" && sectionRef.current) {
+      console.log("📦 Scrolling to shipments...");
+      sectionRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+      return true;
+    }
+    return false;
+  };
+
+  // Retry scroll until content fully loads (up to 5s)
+  let attempts = 0;
+  const interval = setInterval(() => {
+    const done = tryScrollToShipments();
+    attempts++;
+    if (done || attempts > 10) clearInterval(interval);
+  }, 500);
+
+  // Trigger again when returning from background
+  window.addEventListener("focus", tryScrollToShipments);
+
+  return () => {
+    clearInterval(interval);
+    window.removeEventListener("focus", tryScrollToShipments);
+  };
+}, [loading, shipments.length]);
+
+
+
+
+  useEffect(() => {
+    fetchData();
+    const intervalId = setInterval(fetchData, 10000);
+    return () => clearInterval(intervalId);
+  }, []);
+
+  const fetchData = async () => {
+  try {
+    const auth = getAuth();
+    const user = auth.currentUser;
+
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+
+    const token = await user.getIdToken();
+
+    // 1. Get driver status
+    const statusResponse = await axios.get(`https://jio-yatri-driver.onrender.com/api/driver/status`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    const newStatus = statusResponse.data.data.status;
+    setDriverStatus(newStatus);
+
+// 2. 🔥 Check if activeShipment still valid
+if (activeShipment?._id) {
+  const res = await axios.get(
+    `https://jio-yatri-driver.onrender.com/api/shipments/${activeShipment._id}`,
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+
+  console.log("🔍 Full shipment response:", res.data);
+
+  // unwrap shipment correctly (backend may wrap it in data or shipment)
+  const shipmentData = res.data.shipment || res.data.data || res.data;
+
+  console.log("✅ Parsed shipmentData:", shipmentData);
+  console.log("📦 Shipment status:", shipmentData?.status);
+
+if (shipmentData && ['cancelled', 'delivered'].includes(shipmentData.status)) {
+  console.log("🚨 Clearing shipment, status:", shipmentData.status);
+  setActiveShipment(null);
+  localStorage.removeItem("lastShipment");
+  return; // ⛔ IMPORTANT: stop here so cancelled shipment is not set again
+}
+
+if (shipmentData) {
+  console.log("✅ Keeping active shipment:", shipmentData._id);
+  setActiveShipment(shipmentData);
+  localStorage.setItem("lastShipment", JSON.stringify(shipmentData));
+}
+
+}
+    // 3. Fetch available shipments if driver is active
+    if (newStatus === 'active') {
+      await fetchAvailableShipments(token);
+    } else {
+      setShipments([]);
+    }
+  } catch (error) {
+    console.error('Error fetching data:', error);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   const fetchAvailableShipments = async (token) => {
     try {
-      const url = `https://jio-yatri-driver.onrender.com/api/shipments/matching`;
-      uiLog(`🔗 GET ${url}`);
+      const response = await axios.get(`https://jio-yatri-driver.onrender.com/api/shipments/matching`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
-      const response = await axios.get(url, { headers: { Authorization: `Bearer ${token}` } });
-      uiLog(`✅ Shipments list fetched: ${response.data.shipments?.length || 0} items`);
+      const newShipments = response.data.shipments || [];
+      const notifiedSet = notifiedShipmentIdsRef.current;
 
-      setShipments(response.data.shipments || []);
+      newShipments.forEach(shipment => {
+        if (!notifiedSet.has(shipment._id)) {
+          // Browser notifications will still work if permission is granted
+          if ('Notification' in window && Notification.permission === 'granted') {
+            try {
+              new Notification('🚚 New Shipment Available!', {
+                body: `From: ${shipment.sender.address.addressLine1} ➡ To: ${shipment.receiver.address.addressLine1}`,
+                icon: '/logo.jpg'
+              });
+            } catch (e) {
+              console.warn("Notification error:", e);
+            }
+          }
+
+          try {
+            const audio = new Audio('/notification.wav');
+            audio.play().catch(err => {
+              console.warn("Audio playback prevented:", err);
+            });
+          } catch (err) {
+            console.warn("Audio error:", err);
+          }
+
+          notifiedSet.add(shipment._id);
+        }
+      });
+
+      setShipments(newShipments);
     } catch (error) {
-      uiLog(`❌ fetchAvailableShipments error: ${error.message}`);
-      toast.error('Failed to load shipments');
+      console.error('Error fetching shipments:', error);
+      toast.error('Failed to load shipment');
     }
   };
 
-  // 🧠 Render
-  return (
-    <div ref={ref} className="available-shipments">
-      {/* 🧭 DEBUG PANEL */}
-      <div
-        style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          width: '100%',
-          background: 'rgba(0,0,0,0.9)',
-          color: '#0f0',
-          fontFamily: 'monospace',
-          fontSize: '12px',
-          padding: '6px',
-          zIndex: 9999,
-          lineHeight: '1.4',
-          maxHeight: '80vh',
-          overflowY: 'auto',
-          whiteSpace: 'pre-wrap',
-        }}
-      >
-        <b>🧭 DEBUG PANEL</b>
-        <button
-          onClick={() => {
-            localStorage.removeItem('lastShipment');
-            setActiveShipment(null);
-            toast.info('🧹 Cleared lastShipment cache');
-            uiLog('🧹 Cleared localStorage manually');
-          }}
-          style={{
-            marginLeft: 10,
-            padding: '2px 6px',
-            fontSize: '11px',
-            color: '#fff',
-            background: 'red',
-            border: 'none',
-            borderRadius: 3,
-          }}
-        >
-          Clear Cache
-        </button>
+  const handleAccept = async (shipmentId) => {
+    try {
+      const auth = getAuth();
+      const user = auth.currentUser;
 
-        <div style={{ marginTop: 6 }}>
-          <b>Step:</b> {debugInfo.step} | <b>View:</b> {debugInfo.currentView}
-          <br />
-          <b>Driver:</b> {debugInfo.driverStatus} | <b>Shipment:</b>{' '}
-          {debugInfo.activeShipmentId || 'none'}
-          <br />
-          <b>Status:</b> {debugInfo.activeShipmentStatus || '-'} |{' '}
-          <b>Shipments:</b> {debugInfo.shipmentCount}
-        </div>
+      if (!user) {
+        toast.error('Please log in to accept shipments');
+        return;
+      }
 
-        {/* 🧠 UI Console */}
-        <div
-          style={{
-            marginTop: 8,
-            background: 'rgba(255,255,255,0.05)',
-            color: '#0ff',
-            fontSize: '11px',
-            padding: '6px',
-            maxHeight: '200px',
-            overflowY: 'auto',
-            borderTop: '1px solid #0f0',
-          }}
-        >
-          <b>🧠 UI Console Log</b>
-          <hr style={{ border: '0.5px solid #0f0' }} />
-          {debugLogs.length === 0
-            ? 'No logs yet...'
-            : debugLogs.map((line, i) => (
-                <div key={i} style={{ marginBottom: '2px' }}>
-                  {line}
-                </div>
-              ))}
-        </div>
-      </div>
+      const position = await new Promise((resolve, reject) => {
+        const options = { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 };
+        navigator.geolocation.getCurrentPosition(resolve, reject, options);
+      }).catch(error => {
+        console.error("Geolocation error:", error);
+        throw error;
+      });
 
-      <ToastContainer position={isMobile ? 'top-center' : 'top-right'} autoClose={5000} theme="colored" />
+      const location = [
+        position.coords.longitude,
+        position.coords.latitude
+      ];
 
-      {loading ? (
-        <div className="loading-message">Loading data...</div>
-      ) : activeShipment ? (
+      const token = await user.getIdToken();
+      const toastId = toast.loading('Accepting shipment...');
+
+      const response = await axios.put(
+        `https://jio-yatri-driver.onrender.com/api/shipments/${shipmentId}/accept`,
+        { location },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      toast.update(toastId, {
+        render: 'Order accepted successfully!',
+        type: 'success',
+        isLoading: false,
+        autoClose: 3000,
+      });
+
+      setActiveShipment(response.data.shipment);
+      fetchData();
+    } catch (error) {
+      console.error('Error accepting shipment:', error);
+    }
+  };
+
+const handleStatusUpdate = useCallback((newStatus) => {
+  setActiveShipment(prev => {
+    if (!prev) return null;
+
+    if (['cancelled', 'delivered'].includes(newStatus)) {
+      return null;  // ❌ remove from dashboard
+    }
+    return { ...prev, status: newStatus };
+  });
+
+  if (['cancelled', 'delivered'].includes(newStatus)) {
+    fetchData(); // refresh shipments list
+  }
+}, []);
+
+
+ return (
+  <div ref={ref} className="available-shipments">
+    <ToastContainer 
+      position={isMobile ? "top-center" : "top-right"}
+      autoClose={5000} 
+      theme="colored" 
+      pauseOnFocusLoss={false} 
+    />
+
+    {/* ✅ Hide heading when driver has an active shipment */}
+    {!activeShipment && <h2>Available Shipments</h2>}
+
+    {loading ? (
+      <div className="loading-message">Loading data...</div>
+    ) : activeShipment ? (
+      // ✅ Show only the active shipment tracker
+      <div className="active-shipment-container">
         <LocationTracker
           key={activeShipment._id}
           shipment={activeShipment}
+          onStatusUpdate={handleStatusUpdate}
           isMobile={isMobile}
         />
-      ) : (
-        <h2 style={{ marginTop: '300px' }}>Available Shipments</h2>
-      )}
-    </div>
-  );
+      </div>
+    ) : driverStatus !== 'active' ? (
+      <div className="inactive-message">
+        You must be active to view available shipments.
+      </div>
+    ) : shipments.length === 0 ? (
+      // ✅ Hide this "No matching..." message if driver has an active shipment
+      !activeShipment && (
+        <div className="no-shipments">
+          No matching shipments available at this time.
+        </div>
+      )
+    ) : (
+      // ✅ Show shipments only if available
+      <ul className={`shipment-list ${isMobile ? 'mobile-view' : ''}`}>
+        {shipments.map(shipment => (
+          <li key={shipment._id} className="shipment-card">
+            <div className="shipment-details">
+              <p><strong>Tracking No:</strong> {shipment.trackingNumber}</p>
+              <p><strong>From:</strong> {shipment.sender.address.addressLine1}</p>
+              <p><strong>To:</strong> {shipment.receiver.address.addressLine1}</p>
+              <p><strong>Vehicle Type:</strong> {shipment.vehicleType}</p>
+              <p><strong>Distance:</strong> {shipment.distance.toFixed(2)} km</p>
+              <p><strong>Cost:</strong> ₹{shipment.cost.toFixed(2)}</p>
+
+                          <p>
+                  <strong>Payment Type:</strong>{" "}
+                  {shipment.payment?.method === "razorpay" ? (
+                    <span className="prepaid-label">Prepaid</span>
+                  ) : (
+                    <span className="cod-label">Cash on Delivery</span>
+                  )}
+                </p>
+
+              {shipment?.parcel?.description && (
+                <p><strong>Description:</strong> {shipment.parcel.description}</p>
+              )}
+
+              {shipment?.parcel?.images?.length > 0 && (
+                <div className="parcel-images">
+                  <strong>Images:</strong>
+                  <div className="image-gallery">
+                    {shipment.parcel.images.map((id) => {
+                      const imgUrl = `https://jio-yatri-driver.onrender.com/api/shipment-images/image/${id}`;
+                      return (
+                        <img
+                          key={id}
+                          src={imgUrl}
+                          alt="Parcel"
+                          style={{
+                            width: "100px",
+                            height: "100px",
+                            objectFit: "cover",
+                            margin: "5px",
+                          }}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <button
+              onClick={() => handleAccept(shipment._id)}
+              className="accept-button"
+            >
+              Accept Order
+            </button>
+          </li>
+        ))}
+      </ul>
+    )}
+ </div>
+);
 });
 
 export default AvailableShipments;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
