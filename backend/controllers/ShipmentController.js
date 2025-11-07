@@ -918,30 +918,29 @@ exports.getDriverHistory = async (req, res) => {
 exports.getShipmentById = async (req, res) => {
   const id = req.params.id;
 
-  // ✅ Validate MongoDB ObjectId
   if (!mongoose.Types.ObjectId.isValid(id)) {
     return res.status(400).json({ message: 'Invalid shipment ID format' });
   }
 
   try {
-    // ✅ Fetch full shipment details with all nested fields
     const shipment = await Shipment.findById(id)
-      .lean(); // no select or field limit
+      .populate('assignedDriver', 'name phone vehicleType')
+      .lean();
 
     if (!shipment) {
       return res.status(404).json({ message: 'Shipment not found' });
     }
 
-    // ✅ Wrap it in an object (your frontend expects .shipment)
-    return res.status(200).json({ success: true, shipment });
+    res.status(200).json(shipment); // ✅ send object directly
   } catch (error) {
     console.error('❌ Error fetching shipment:', error);
-    return res.status(500).json({
+    res.status(500).json({
       message: 'Server error while fetching shipment',
       error: error.message,
     });
   }
 };
+
 
 
 exports.getShopShipments = async (req, res) => {
@@ -1064,6 +1063,7 @@ exports.getShipmentPaymentStatus = async (req, res) => {
     });
   }
 };
+
 
 
 
