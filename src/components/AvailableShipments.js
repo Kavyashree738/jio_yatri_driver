@@ -24,6 +24,20 @@ const AvailableShipments = forwardRef((props, ref) => {
   }, []);
 
   useEffect(() => {
+  const handlePush = (e) => {
+    const data = e.detail?.data;
+    if (data?.type === 'SHIPMENT_ACCEPTED') {
+      console.log('📦 Shipment accepted via notification — refreshing UI');
+      fetchData(); // ✅ reloads from backend
+    }
+  };
+
+  window.addEventListener('push', handlePush);
+  return () => window.removeEventListener('push', handlePush);
+}, []);
+
+
+  useEffect(() => {
     const checkIfMobile = () => {
       const userAgent = navigator.userAgent || navigator.vendor || window.opera;
       return /android|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent.toLowerCase());
@@ -339,6 +353,7 @@ const handleStatusUpdate = useCallback((newStatus) => {
 });
 
 export default AvailableShipments;
+
 
 
 
