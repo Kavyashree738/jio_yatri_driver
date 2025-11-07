@@ -12,7 +12,8 @@ const AvailableShipments = forwardRef((props, ref) => {
   const [loading, setLoading] = useState(true);
   const [activeShipment, setActiveShipment] = useState(null);
   const [isMobile, setIsMobile] = useState(false);
-  const [debugPush, setDebugPush] = useState(null); // 🧩 new
+  const [debugPush, setDebugPush] = useState(null);
+
   const [debugInfo, setDebugInfo] = useState({
     driverStatus: 'unknown',
     activeShipmentId: null,
@@ -26,80 +27,21 @@ const AvailableShipments = forwardRef((props, ref) => {
   const sectionRef = useRef(null);
   const notifiedShipmentIdsRef = useRef(new Set());
 
-  // 🧩 load last shipment from cache
+  // 🧩 Load last shipment from cache
   useEffect(() => {
     const savedShipment = localStorage.getItem('lastShipment');
     if (savedShipment) {
       const parsed = JSON.parse(savedShipment);
       setActiveShipment(parsed);
-      setDebugInfo(prev => ({ ...prev, activeShipmentId: parsed._id, activeShipmentStatus: parsed.status }));
+      setDebugInfo(prev => ({
+        ...prev,
+        activeShipmentId: parsed._id,
+        activeShipmentStatus: parsed.status,
+      }));
     }
   }, []);
 
-  // 🧩 listen for push events (from Flutter)
-  useEffect(() => {
-    const handlePush = (e) => {
-      const data = e.detail?.data || {};
-      setDebugPush(data);
-      setDebugInfo(prev => ({
-        ...prev,
-        lastPushType: data.type || 'unknown',
-        currentView: 'pushReceived',
-      }));
-
-      if (data?.type === 'SHIPMENT_ACCEPTED') {
-        fetchData();
-      }
-    };
-
-    window.addEventListener('push', handlePush);
-    return () => window.removeEventListener('push', handlePush);
-  }, []);
-
-  // 🧩 detect mobile
-  useEffect(() => {
-    const checkIfMobile = () => {
-      const userAgent = navigator.userAgent || navigator.vendor || window.opera;
-      return /android|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent.toLowerCase());
-    };
-    setIsMobile(checkIfMobile());
-  }, []);
-
-  // 🧩 auto-scroll section
-  useEffect(() => {
-    const tryScrollToShipments = () => {
-      const params = new URLSearchParams(window.location.search);
-      const scrollTo = params.get('scrollTo');
-
-      if (scrollTo === 'shipments' && sectionRef.current) {
-        sectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        return true;
-      }
-      return false;
-    };
-
-    let attempts = 0;
-    const interval = setInterval(() => {
-      const done = tryScrollToShipments();
-      attempts++;
-      if (done || attempts > 10) clearInterval(interval);
-    }, 500);
-
-    window.addEventListener('focus', tryScrollToShipments);
-    return () => {
-      clearInterval(interval);
-      window.removeEventListener('focus', tryScrollToShipments);
-    };
-  }, [loading, shipments.length]);
-
-  // 🧩 initial fetch
-  useEffect(() => {
-    fetchData();
-    const intervalId = setInterval(fetchData, 10000);
-    return () => clearInterval(intervalId);
-  }, []);
-
-  // 🧩 fetch data
+  // 🧩 Fetch data (moved to top)
   const fetchData = async () => {
     try {
       const auth = getAuth();
@@ -112,15 +54,15 @@ const AvailableShipments = forwardRef((props, ref) => {
 
       const token = await user.getIdToken();
 
-      // 1️⃣ get driver status
-      const statusResponse = await axios.get(`https://jio-yatri-driver.onrender.com/api/driver/status`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
+      // 1️⃣ Get driver status
+      const statusResponse = await axios.get(
+        `https://jio-yatri-driver.onrender.com/api/driver/status`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
       const newStatus = statusResponse.data.data.status;
       setDriverStatus(newStatus);
 
-      // 2️⃣ check if active shipment still valid
+      // 2️⃣ Validate active shipment
       if (activeShipment?._id) {
         const res = await axios.get(
           `https://jio-yatri-driver.onrender.com/api/shipments/${activeShipment._id}`,
@@ -141,7 +83,7 @@ const AvailableShipments = forwardRef((props, ref) => {
         }
       }
 
-      // 3️⃣ fetch available shipments
+      // 3️⃣ Fetch available shipments
       if (newStatus === 'active') {
         await fetchAvailableShipments(token);
       } else {
@@ -164,43 +106,92 @@ const AvailableShipments = forwardRef((props, ref) => {
     }
   };
 
-  // 🧩 fetch available shipments
+  // 🧩 Push event listener (from Flutter)
+  useEffect(() => {
+    const handlePush = (e) => {
+      const data = e.detail?.data || {};
+      setDebugPush(data);
+      setDebugInfo(prev => ({
+        ...prev,
+        lastPushType: data.type || 'unknown',
+        currentView: 'pushReceived',
+      }));
+
+      // ✅ Handle SHIPMENT_ACCEPTED from Flutter
+      if (data?.type === 'SHIPMENT_ACCEPTED') {
+        const auth = getAuth();
+        const user = auth.currentUser;
+        if (user && data.shipmentId) {
+          user.getIdToken().then(async (token) => {
+            try {
+              const res = await axios.get(
+                `https://jio-yatri-driver.onrender.com/api/shipments/${data.shipmentId}`,
+                { headers: { Authorization: `Bearer ${token}` } }
+              );
+              const shipmentData = res.data.shipment || res.data.data || res.data;
+
+              if (shipmentData) {
+                setActiveShipment(shipmentData);
+                localStorage.setItem('lastShipment', JSON.stringify(shipmentData));
+                setDebugInfo(prev => ({
+                  ...prev,
+                  activeShipmentId: shipmentData._id,
+                  activeShipmentStatus: shipmentData.status,
+                  currentView: 'LocationTracker',
+                }));
+                setDebugPush({ ...data, fetched: true });
+              } else {
+                console.warn('⚠️ No shipment data found for', data.shipmentId);
+              }
+            } catch (err) {
+              console.warn('❌ Failed to fetch shipment from push ID', err);
+            }
+          });
+        } else {
+          console.warn('⚠️ Missing user or shipmentId in push data');
+          fetchData();
+        }
+      }
+
+      // Handle NEW_SHIPMENT or other types
+      else if (data?.type === 'NEW_SHIPMENT') {
+        fetchData();
+      }
+    };
+
+    window.addEventListener('push', handlePush);
+    return () => window.removeEventListener('push', handlePush);
+  }, []);
+
+  // 🧩 Fetch available shipments
   const fetchAvailableShipments = async (token) => {
     try {
-      const response = await axios.get(`https://jio-yatri-driver.onrender.com/api/shipments/matching`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await axios.get(
+        `https://jio-yatri-driver.onrender.com/api/shipments/matching`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
 
       const newShipments = response.data.shipments || [];
       const notifiedSet = notifiedShipmentIdsRef.current;
 
       newShipments.forEach(shipment => {
         if (!notifiedSet.has(shipment._id)) {
-          if ('Notification' in window && Notification.permission === 'granted') {
-            try {
-              new Notification('🚚 New Shipment Available!', {
-                body: `From: ${shipment.sender.address.addressLine1} ➡ To: ${shipment.receiver.address.addressLine1}`,
-                icon: '/logo.jpg',
-              });
-            } catch (e) {}
-          }
-
           try {
             const audio = new Audio('/notification.wav');
             audio.play().catch(() => {});
           } catch {}
-
           notifiedSet.add(shipment._id);
         }
       });
 
       setShipments(newShipments);
+      setDebugInfo(prev => ({ ...prev, shipmentCount: newShipments.length }));
     } catch (error) {
       toast.error('Failed to load shipments');
     }
   };
 
-  // 🧩 handle accept
+  // 🧩 Handle accept
   const handleAccept = async (shipmentId) => {
     try {
       const auth = getAuth();
@@ -235,7 +226,7 @@ const AvailableShipments = forwardRef((props, ref) => {
       setActiveShipment(response.data.shipment);
       fetchData();
 
-      // simulate Flutter push event
+      // Simulate push event for UI consistency
       window.dispatchEvent(new CustomEvent('push', {
         detail: { data: { type: 'SHIPMENT_ACCEPTED', shipmentId } },
       }));
@@ -262,23 +253,49 @@ const AvailableShipments = forwardRef((props, ref) => {
     if (['cancelled', 'delivered'].includes(newStatus)) fetchData();
   }, []);
 
-  // 🧩 track current view automatically
+  // 🧩 Detect mobile
   useEffect(() => {
-    setDebugInfo(prev => ({
-      ...prev,
-      currentView: loading
-        ? 'Loading'
-        : activeShipment
-        ? 'LocationTracker'
-        : driverStatus !== 'active'
-        ? 'Inactive'
-        : shipments.length
-        ? 'AvailableShipments'
-        : 'EmptyList',
-    }));
-  }, [loading, activeShipment, shipments, driverStatus]);
+    const checkIfMobile = () => {
+      const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+      return /android|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent.toLowerCase());
+    };
+    setIsMobile(checkIfMobile());
+  }, []);
 
-  // 🧩 render
+  // 🧩 Auto-scroll
+  useEffect(() => {
+    const tryScrollToShipments = () => {
+      const params = new URLSearchParams(window.location.search);
+      const scrollTo = params.get('scrollTo');
+      if (scrollTo === 'shipments' && sectionRef.current) {
+        sectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        return true;
+      }
+      return false;
+    };
+
+    let attempts = 0;
+    const interval = setInterval(() => {
+      const done = tryScrollToShipments();
+      attempts++;
+      if (done || attempts > 10) clearInterval(interval);
+    }, 500);
+
+    window.addEventListener('focus', tryScrollToShipments);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', tryScrollToShipments);
+    };
+  }, [loading, shipments.length]);
+
+  // 🧩 Periodic polling
+  useEffect(() => {
+    fetchData();
+    const intervalId = setInterval(fetchData, 10000);
+    return () => clearInterval(intervalId);
+  }, []);
+
+  // 🧠 Render
   return (
     <div ref={ref} className="available-shipments">
       {/* 🧠 DEBUG PANEL */}
@@ -299,6 +316,24 @@ const AvailableShipments = forwardRef((props, ref) => {
         }}
       >
         <b>🧭 DEBUG PANEL</b>
+        <button
+          onClick={() => {
+            localStorage.removeItem('lastShipment');
+            setActiveShipment(null);
+            toast.info('🧹 Cleared lastShipment cache');
+          }}
+          style={{
+            marginLeft: 10,
+            padding: '2px 6px',
+            fontSize: '11px',
+            color: '#fff',
+            background: 'red',
+            border: 'none',
+            borderRadius: 3,
+          }}
+        >
+          Clear Cache
+        </button>
         <br />Driver Status: {debugInfo.driverStatus}
         <br />Loading: {debugInfo.loading ? 'true' : 'false'}
         <br />Active Shipment ID: {debugInfo.activeShipmentId || 'none'}
