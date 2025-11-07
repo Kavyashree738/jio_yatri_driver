@@ -62,34 +62,30 @@ const AvailableShipments = forwardRef((props, ref) => {
 }, [loading, shipments.length]);
 
 
-  useEffect(() => {
+useEffect(() => {
   const handlePush = (event) => {
     const data = event.detail?.data;
 
-    // 🔹 Normal browser log (still shows in browser console)
     console.log("📲 Received push event from Flutter:", data);
-
-    // 🔹 Send only THIS log to Flutter terminal
     if (window.DebugLog && window.DebugLog.postMessage) {
-      try {
-        window.DebugLog.postMessage(
-          `📲 Received push event from Flutter: ${JSON.stringify(data)}`
-        );
-      } catch (err) {
-        console.error("Failed to send debug log to Flutter:", err);
-      }
+      window.DebugLog.postMessage(`📲 Received push event: ${JSON.stringify(data)}`);
     }
 
-    if (data?.type === "SHIPMENT_ACCEPTED") {
-      localStorage.removeItem("lastShipment");
-      toast.info("Shipment accepted via notification! Loading tracker...");
-      window.location.reload(); // Forces React to rerender & call fetchData()
+    // 👇 This runs when app opens after driver pressed notification Accept
+    if (data?.type === "SHIPMENT_ACCEPTED" && data?.shipmentId) {
+      toast.info("Auto-accepting shipment via notification...");
+
+      // 🔹 Wait for a second to ensure Firebase + token ready
+      setTimeout(() => {
+        handleAccept(data.shipmentId);
+      }, 1200);
     }
   };
 
   window.addEventListener("push", handlePush);
   return () => window.removeEventListener("push", handlePush);
 }, []);
+
 
 
 
@@ -371,6 +367,7 @@ const handleStatusUpdate = useCallback((newStatus) => {
 });
 
 export default AvailableShipments;
+
 
 
 
