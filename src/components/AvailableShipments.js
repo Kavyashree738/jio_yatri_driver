@@ -70,7 +70,7 @@ const AvailableShipments = forwardRef((props, ref) => {
     return () => clearInterval(intervalId);
   }, []);
 
-  const fetchData = async () => {
+const fetchData = async () => {
   try {
     const auth = getAuth();
     const user = auth.currentUser;
@@ -82,55 +82,89 @@ const AvailableShipments = forwardRef((props, ref) => {
 
     const token = await user.getIdToken();
 
-    // 1. Get driver status
-    const statusResponse = await axios.get(`https://jio-yatri-driver.onrender.com/api/driver/status`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    // 1️⃣ Get driver status
+    const statusResponse = await axios.get(
+      `https://jio-yatri-driver.onrender.com/api/driver/status`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
 
     const newStatus = statusResponse.data.data.status;
     setDriverStatus(newStatus);
 
-// 2. 🔥 Check if activeShipment still valid
-if (activeShipment?._id) {
-  const res = await axios.get(
-    `https://jio-yatri-driver.onrender.com/api/shipments/${activeShipment._id}`,
-    { headers: { Authorization: `Bearer ${token}` } }
-  );
+    // 🟢 2️⃣ NEW PART: Check if driver already has an active shipment (for notification accept)
+    try {
+      const driverRes = await axios.get(
+        `https://jio-yatri-driver.onrender.com/api/driver/profile`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
 
-  console.log("🔍 Full shipment response:", res.data);
+      const activeShipmentId = driverRes.data?.data?.activeShipment;
 
-  // unwrap shipment correctly (backend may wrap it in data or shipment)
-  const shipmentData = res.data.shipment || res.data.data || res.data;
+      if (activeShipmentId) {
+        console.log("🚚 Found active shipment from backend:", activeShipmentId);
 
-  console.log("✅ Parsed shipmentData:", shipmentData);
-  console.log("📦 Shipment status:", shipmentData?.status);
+        const shipmentRes = await axios.get(
+          `https://jio-yatri-driver.onrender.com/api/shipments/${activeShipmentId}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
 
-if (shipmentData && ['cancelled', 'delivered'].includes(shipmentData.status)) {
-  console.log("🚨 Clearing shipment, status:", shipmentData.status);
-  setActiveShipment(null);
-  localStorage.removeItem("lastShipment");
-  return; // ⛔ IMPORTANT: stop here so cancelled shipment is not set again
-}
+        const shipmentData =
+          shipmentRes.data.shipment ||
+          shipmentRes.data.data ||
+          shipmentRes.data;
 
-if (shipmentData) {
-  console.log("✅ Keeping active shipment:", shipmentData._id);
-  setActiveShipment(shipmentData);
-  localStorage.setItem("lastShipment", JSON.stringify(shipmentData));
-}
+        setActiveShipment(shipmentData);
+        localStorage.setItem("lastShipment", JSON.stringify(shipmentData));
 
-}
-    // 3. Fetch available shipments if driver is active
-    if (newStatus === 'active') {
+        // ⛔ Stop here so we go straight to LocationTracker
+        return;
+      }
+    } catch (err) {
+      console.warn("⚠️ No active shipment found for driver:", err.message);
+    }
+
+    // 3️⃣ Check if activeShipment still valid (your existing logic)
+    if (activeShipment?._id) {
+      const res = await axios.get(
+        `https://jio-yatri-driver.onrender.com/api/shipments/${activeShipment._id}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      console.log("🔍 Full shipment response:", res.data);
+
+      // unwrap shipment correctly (backend may wrap it in data or shipment)
+      const shipmentData = res.data.shipment || res.data.data || res.data;
+
+      console.log("✅ Parsed shipmentData:", shipmentData);
+      console.log("📦 Shipment status:", shipmentData?.status);
+
+      if (shipmentData && ["cancelled", "delivered"].includes(shipmentData.status)) {
+        console.log("🚨 Clearing shipment, status:", shipmentData.status);
+        setActiveShipment(null);
+        localStorage.removeItem("lastShipment");
+        return; // ⛔ stop here so cancelled shipment is not set again
+      }
+
+      if (shipmentData) {
+        console.log("✅ Keeping active shipment:", shipmentData._id);
+        setActiveShipment(shipmentData);
+        localStorage.setItem("lastShipment", JSON.stringify(shipmentData));
+      }
+    }
+
+    // 4️⃣ Fetch available shipments if driver is active
+    if (newStatus === "active") {
       await fetchAvailableShipments(token);
     } else {
       setShipments([]);
     }
   } catch (error) {
-    console.error('Error fetching data:', error);
+    console.error("Error fetching data:", error);
   } finally {
     setLoading(false);
   }
 };
+
 
 
   const fetchAvailableShipments = async (token) => {
@@ -339,6 +373,7 @@ const handleStatusUpdate = useCallback((newStatus) => {
 });
 
 export default AvailableShipments;
+
 
 
 
