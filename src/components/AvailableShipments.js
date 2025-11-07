@@ -231,6 +231,13 @@ if (shipmentData) {
 
       setActiveShipment(response.data.shipment);
       fetchData();
+
+      // ✅ Trigger same event that Flutter sends after Accept
+window.dispatchEvent(new CustomEvent("push", {
+  detail: { data: { type: "SHIPMENT_ACCEPTED", shipmentId } },
+}));
+console.log("📢 Sent SHIPMENT_ACCEPTED event manually after Accept button click");
+
     } catch (error) {
       console.error('Error accepting shipment:', error);
     }
@@ -353,6 +360,7 @@ const handleStatusUpdate = useCallback((newStatus) => {
 });
 
 export default AvailableShipments;
+
 
 
 
