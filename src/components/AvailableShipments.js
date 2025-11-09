@@ -210,7 +210,7 @@ const fetchData = async () => {
       }
     }
 
-    // 4️⃣ Fetch shipments list
+    // 4️⃣ Fetch available shipments
     toast.info("📦 Fetching available shipments...");
     const response = await axios.get(
       `https://jio-yatri-driver.onrender.com/api/shipments/matching`,
@@ -221,28 +221,43 @@ const fetchData = async () => {
     setShipments(shipmentsList);
     toast.info(`🧾 ${shipmentsList.length} shipments found.`);
 
-    // 5️⃣ Auto-accept logic — detect assigned shipment
-    for (const shipment of shipmentsList) {
-      if (shipment.status === "assigned") {
-        // Prevent re-accepting the same one
-        if (!activeShipment || activeShipment._id !== shipment._id) {
-          toast.success(`🚚 Auto-accepting assigned shipment ${shipment._id}...`);
-          await handleAccept(shipment._id); // simulate manual accept
-          toast.success(`✅ Shipment ${shipment._id} accepted automatically`);
-          return;
+    // 5️⃣ Check backend for assigned shipment (not in matching list)
+    toast.info("🔎 Checking backend for active/assigned shipment...");
+    try {
+      const activeRes = await axios.get(
+        `https://jio-yatri-driver.onrender.com/api/shipments/active`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      const assignedShipment = activeRes.data.shipment || activeRes.data.data;
+
+      if (assignedShipment && assignedShipment.status === "assigned") {
+        // Prevent reloading same one repeatedly
+        if (!activeShipment || activeShipment._id !== assignedShipment._id) {
+          toast.success(`🚚 Assigned shipment ${assignedShipment._id} found — activating...`);
+          setActiveShipment(assignedShipment);
+          localStorage.setItem("lastShipment", JSON.stringify(assignedShipment));
         } else {
-          toast.info(`🟢 Shipment ${shipment._id} already active — skipping auto-accept`);
+          toast.info(`🟢 Shipment ${assignedShipment._id} already active — skipping duplicate`);
         }
+      } else {
+        toast.info("📭 No assigned shipment found from backend.");
+      }
+    } catch (err) {
+      if (err.response?.status === 404) {
+        toast.warn("❌ No active shipment endpoint (404) — none assigned currently.");
+      } else {
+        toast.error(`🔥 Error checking assigned shipment: ${err.message}`);
       }
     }
 
-    toast.info("🔄 Poll cycle complete — no assigned shipment detected.");
+    toast.info("🔄 Poll cycle complete ✅");
 
   } catch (error) {
     console.error("Error fetching data:", error);
 
     if (error.response?.status === 404) {
-      toast.warn("❌ No active shipments found (404)");
+      toast.warn("❌ No shipments found (404)");
     } else {
       toast.error(`🔥 Fetch error: ${error.message}`);
     }
@@ -459,6 +474,7 @@ const handleStatusUpdate = useCallback((newStatus) => {
 });
 
 export default AvailableShipments;
+
 
 
 
