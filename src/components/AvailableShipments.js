@@ -154,63 +154,96 @@ useEffect(() => {
     return () => clearInterval(intervalId);
   }, []);
 
-  const fetchData = async () => {
+const fetchData = async () => {
   try {
+    uiDebug("🔄 Checking backend for shipment updates...", "info");
+
     const auth = getAuth();
     const user = auth.currentUser;
 
     if (!user) {
+      uiDebug("⚠️ No Firebase user — skipping fetch", "warn");
       setLoading(false);
       return;
     }
 
     const token = await user.getIdToken();
 
-    // 1. Get driver status
-    const statusResponse = await axios.get(`https://jio-yatri-driver.onrender.com/api/driver/status`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    // 1️⃣ Get driver status
+    const statusResponse = await axios.get(
+      `https://jio-yatri-driver.onrender.com/api/driver/status`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
 
     const newStatus = statusResponse.data.data.status;
     setDriverStatus(newStatus);
+    uiDebug(`🟢 Driver status: ${newStatus}`);
 
-// 2. 🔥 Check if activeShipment still valid
-if (activeShipment?._id) {
-  const res = await axios.get(
-    `https://jio-yatri-driver.onrender.com/api/shipments/${activeShipment._id}`,
-    { headers: { Authorization: `Bearer ${token}` } }
-  );
-
-  console.log("🔍 Full shipment response:", res.data);
-
-  // unwrap shipment correctly (backend may wrap it in data or shipment)
-  const shipmentData = res.data.shipment || res.data.data || res.data;
-
-  console.log("✅ Parsed shipmentData:", shipmentData);
-  console.log("📦 Shipment status:", shipmentData?.status);
-
-if (shipmentData && ['cancelled', 'delivered'].includes(shipmentData.status)) {
-  console.log("🚨 Clearing shipment, status:", shipmentData.status);
-  setActiveShipment(null);
-  localStorage.removeItem("lastShipment");
-  return; // ⛔ IMPORTANT: stop here so cancelled shipment is not set again
-}
-
-if (shipmentData) {
-  console.log("✅ Keeping active shipment:", shipmentData._id);
-  setActiveShipment(shipmentData);
-  localStorage.setItem("lastShipment", JSON.stringify(shipmentData));
-}
-
-}
-    // 3. Fetch available shipments if driver is active
-    if (newStatus === 'active') {
-      await fetchAvailableShipments(token);
-    } else {
+    // 2️⃣ If driver inactive → stop
+    if (newStatus !== "active") {
+      uiDebug("⏸️ Driver inactive — skipping shipment fetch", "warn");
       setShipments([]);
+      setLoading(false);
+      return;
     }
+
+    // 3️⃣ Check if current active shipment is still valid
+    if (activeShipment?._id) {
+      uiDebug(`🔍 Verifying active shipment ${activeShipment._id}...`);
+      const res = await axios.get(
+        `https://jio-yatri-driver.onrender.com/api/shipments/${activeShipment._id}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      const shipmentData = res.data.shipment || res.data.data || res.data;
+
+      if (shipmentData && ["cancelled", "delivered"].includes(shipmentData.status)) {
+        uiDebug(`🚨 Shipment ${shipmentData._id} ${shipmentData.status} — clearing`, "warn");
+        setActiveShipment(null);
+        localStorage.removeItem("lastShipment");
+      } else if (shipmentData) {
+        uiDebug(`✅ Shipment ${shipmentData._id} still active (${shipmentData.status})`);
+        setActiveShipment(shipmentData);
+        localStorage.setItem("lastShipment", JSON.stringify(shipmentData));
+      }
+    }
+
+    // 4️⃣ Fetch available shipments list
+    uiDebug("📦 Fetching available shipments...");
+    const response = await axios.get(
+      `https://jio-yatri-driver.onrender.com/api/shipments/matching`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    const newShipments = response.data.shipments || [];
+    setShipments(newShipments);
+    uiDebug(`📋 ${newShipments.length} shipments found.`);
+
+    // 5️⃣ Detect assigned shipment (backend already accepted)
+    uiDebug("🔎 Checking for assigned shipments...");
+    const activeRes = await axios.get(
+      `https://jio-yatri-driver.onrender.com/api/shipments/active`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    const assignedShipment = activeRes.data.shipment || activeRes.data.data;
+
+    if (assignedShipment && assignedShipment.status === "assigned") {
+      // Prevent reloading same shipment repeatedly
+      if (activeShipment?._id !== assignedShipment._id) {
+        uiDebug(`🚚 Shipment ${assignedShipment._id} is assigned — auto-loading now!`, "success");
+        setActiveShipment(assignedShipment);
+        localStorage.setItem("lastShipment", JSON.stringify(assignedShipment));
+      } else {
+        uiDebug(`🟢 Shipment ${assignedShipment._id} already active, skipping duplicate`, "info");
+      }
+    } else {
+      uiDebug("❌ No assigned shipment found this cycle");
+    }
+
   } catch (error) {
-    console.error('Error fetching data:', error);
+    console.error("Error fetching data:", error);
+    uiDebug(`🔥 Fetch error: ${error.message}`, "error");
   } finally {
     setLoading(false);
   }
@@ -424,6 +457,7 @@ const handleStatusUpdate = useCallback((newStatus) => {
 });
 
 export default AvailableShipments;
+
 
 
 
