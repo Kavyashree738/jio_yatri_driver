@@ -71,14 +71,51 @@ useEffect(() => {
       window.DebugLog.postMessage(`📲 Received push event: ${JSON.stringify(data)}`);
     }
 
-    // 👇 This runs when app opens after driver pressed notification Accept
+    // 👇 Auto-accept only when correct type and shipmentId
     if (data?.type === "SHIPMENT_ACCEPTED" && data?.shipmentId) {
-      toast.info("Auto-accepting shipment via notification...");
+      const shipmentId = data.shipmentId;
+      toast.info(`📦 Auto-accepting shipment via notification...\nID: ${shipmentId}`);
 
-      // 🔹 Wait for a second to ensure Firebase + token ready
-      setTimeout(() => {
-        handleAccept(data.shipmentId);
-      }, 1200);
+      // 🔹 Wait until Firebase user is ready before proceeding
+      const tryAutoAccept = async (attempt = 1) => {
+        const auth = getAuth();
+        const user = auth.currentUser;
+
+        if (!user) {
+          console.log(`⏳ Waiting for Firebase auth... attempt ${attempt}`);
+          toast.info(`⏳ Waiting for Firebase auth... attempt ${attempt}`);
+          if (attempt < 8) {
+            setTimeout(() => tryAutoAccept(attempt + 1), 500);
+          } else {
+            toast.error("❌ Auto-accept failed: user not logged in after 8 attempts.");
+          }
+          return;
+        }
+
+        try {
+          console.log("✅ Firebase user ready, fetching token...");
+          const token = await user.getIdToken();
+          if (!token) {
+            toast.error("⚠️ Token missing during auto-accept.");
+            console.warn("⚠️ No Firebase ID token found.");
+            return;
+          }
+
+          toast.success("✅ Firebase ready, processing accept...");
+          console.log("🔑 Token acquired, calling handleAccept...");
+
+          await handleAccept(shipmentId);
+
+          toast.success(`🚚 Shipment ${shipmentId} accepted successfully!`);
+        } catch (err) {
+          console.error("🔥 Auto-accept error:", err);
+          toast.error(`❌ Auto-accept error: ${err.message || err}`);
+        }
+      };
+
+      tryAutoAccept();
+    } else {
+      console.log("📦 Ignored push event (not SHIPMENT_ACCEPTED).");
     }
   };
 
@@ -367,6 +404,7 @@ const handleStatusUpdate = useCallback((newStatus) => {
 });
 
 export default AvailableShipments;
+
 
 
 
