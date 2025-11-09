@@ -16,6 +16,16 @@ const AvailableShipments = forwardRef((props, ref) => {
 
   const notifiedShipmentIdsRef = useRef(new Set());
 
+  // 🧩 Simple visual UI debug function
+const uiDebug = (msg, type = "info") => {
+  const opts = { position: "top-center", autoClose: 4000, theme: "colored" };
+  if (type === "success") toast.success(`✅ ${msg}`, opts);
+  else if (type === "error") toast.error(`❌ ${msg}`, opts);
+  else if (type === "warn") toast.warn(`⚠️ ${msg}`, opts);
+  else toast.info(`💬 ${msg}`, opts);
+};
+
+
    useEffect(() => {
     const savedShipment = localStorage.getItem("lastShipment");
     if (savedShipment) {
@@ -65,63 +75,73 @@ const AvailableShipments = forwardRef((props, ref) => {
 useEffect(() => {
   const handlePush = (event) => {
     const data = event.detail?.data;
+    uiDebug("📩 PUSH RECEIVED from Flutter WebView!", "success");
 
-    console.log("📲 Received push event from Flutter:", data);
-    if (window.DebugLog && window.DebugLog.postMessage) {
-      window.DebugLog.postMessage(`📲 Received push event: ${JSON.stringify(data)}`);
+    if (!data) {
+      uiDebug("⚠️ No data found in push payload", "warn");
+      return;
     }
 
-    // 👇 Auto-accept only when correct type and shipmentId
+    uiDebug(`🧾 Payload: ${JSON.stringify(data)}`);
+
+    // ✅ Handle only shipment accepted push
     if (data?.type === "SHIPMENT_ACCEPTED" && data?.shipmentId) {
       const shipmentId = data.shipmentId;
-      toast.info(`📦 Auto-accepting shipment via notification...\nID: ${shipmentId}`);
+      uiDebug(`🚚 Driver accepted shipment (ID: ${shipmentId}) — starting auto load...`, "info");
 
-      // 🔹 Wait until Firebase user is ready before proceeding
-      const tryAutoAccept = async (attempt = 1) => {
+      // 🔁 Retry until Firebase user is available
+      const tryAutoLoad = async (attempt = 1) => {
         const auth = getAuth();
         const user = auth.currentUser;
 
         if (!user) {
-          console.log(`⏳ Waiting for Firebase auth... attempt ${attempt}`);
-          toast.info(`⏳ Waiting for Firebase auth... attempt ${attempt}`);
-          if (attempt < 8) {
-            setTimeout(() => tryAutoAccept(attempt + 1), 500);
+          uiDebug(`⏳ Firebase not ready (attempt ${attempt})`, "warn");
+          if (attempt < 6) {
+            setTimeout(() => tryAutoLoad(attempt + 1), 700);
           } else {
-            toast.error("❌ Auto-accept failed: user not logged in after 8 attempts.");
+            uiDebug("❌ Firebase user not ready after 6 attempts", "error");
           }
           return;
         }
 
         try {
-          console.log("✅ Firebase user ready, fetching token...");
+          uiDebug("🔑 Getting Firebase ID token...");
           const token = await user.getIdToken();
           if (!token) {
-            toast.error("⚠️ Token missing during auto-accept.");
-            console.warn("⚠️ No Firebase ID token found.");
+            uiDebug("⚠️ Failed to retrieve token", "error");
             return;
           }
 
-          toast.success("✅ Firebase ready, processing accept...");
-          console.log("🔑 Token acquired, calling handleAccept...");
+          uiDebug("🌐 Fetching shipment details from backend...");
+          const res = await axios.get(
+            `https://jio-yatri-driver.onrender.com/api/shipments/${shipmentId}`,
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
 
-          await handleAccept(shipmentId);
-
-          toast.success(`🚚 Shipment ${shipmentId} accepted successfully!`);
-        } catch (err) {
-          console.error("🔥 Auto-accept error:", err);
-          toast.error(`❌ Auto-accept error: ${err.message || err}`);
+          const shipment = res.data.shipment || res.data.data;
+          if (shipment) {
+            uiDebug(`✅ Shipment ${shipmentId} loaded successfully`, "success");
+            setActiveShipment(shipment);
+            localStorage.setItem("lastShipment", JSON.stringify(shipment));
+          } else {
+            uiDebug("❌ Shipment not found in API response", "error");
+          }
+        } catch (error) {
+          uiDebug(`🔥 Error auto-loading shipment: ${error.message}`, "error");
         }
       };
 
-      tryAutoAccept();
+      tryAutoLoad();
     } else {
-      console.log("📦 Ignored push event (not SHIPMENT_ACCEPTED).");
+      uiDebug("📦 Push received but not SHIPMENT_ACCEPTED type — ignoring", "warn");
     }
   };
 
   window.addEventListener("push", handlePush);
+  uiDebug("🟢 React is now listening for PUSH events...");
   return () => window.removeEventListener("push", handlePush);
 }, []);
+
 
 
 
@@ -404,6 +424,7 @@ const handleStatusUpdate = useCallback((newStatus) => {
 });
 
 export default AvailableShipments;
+
 
 
 
