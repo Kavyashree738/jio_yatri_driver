@@ -320,18 +320,20 @@ localStorage.setItem(
 
 
   // 🔹 For business owners, fetch first shop _id
-  const fetchShopIdForOwner = async (firebaseUser) => {
-    const idToken = await firebaseUser.getIdToken();
-    const res = await fetch(
-      `https://jio-yatri-driver.onrender.com/api/shops/owner/${firebaseUser.uid}`,
-      { headers: { Authorization: `Bearer ${idToken}` } }
-    );
-    const json = await res.json();
-    if (json?.success && Array.isArray(json.data) && json.data.length > 0) {
-      return json.data[0]?._id || null;
-    }
-    return null;
-  };
+ // ✅ NEW: Fetch all shop IDs for a business owner
+const fetchShopIdsForOwner = async (firebaseUser) => {
+  const idToken = await firebaseUser.getIdToken();
+  const res = await fetch(
+    `https://jio-yatri-driver.onrender.com/api/shops/owner/${firebaseUser.uid}`,
+    { headers: { Authorization: `Bearer ${idToken}` } }
+  );
+  const json = await res.json();
+  if (json?.success && Array.isArray(json.data)) {
+    return json.data.map((shop) => shop._id).filter(Boolean);
+  }
+  return [];
+};
+
 
   // 🔹 Sync Firebase auth with our app state
   useEffect(() => {
@@ -385,14 +387,15 @@ localStorage.setItem(
         const isRegisteredFromAPI = !!meta?.isRegistered;
 
         // If business, also fetch shopId
-        let shopId = null;
-        if (role === 'business') {
-          try {
-            shopId = await fetchShopIdForOwner(firebaseUser);
-          } catch (e) {
-            console.warn('Failed to fetch shopId for owner:', e);
-          }
-        }
+        let shopIds = [];
+if (role === 'business') {
+  try {
+    shopIds = await fetchShopIdsForOwner(firebaseUser); // ✅ use plural version
+  } catch (e) {
+    console.warn('Failed to fetch shopIds for owner:', e);
+  }
+}
+
 
 
 
@@ -406,7 +409,7 @@ localStorage.setItem(
             idToken,
             uid: firebaseUser.uid,
             role,              // backend truth
-            shopId,            // backend truth
+            shopIds,            // backend truth
             driverRegistered: meta?.driverRegistered || false,
             businessRegistered: meta?.businessRegistered || false,
             isRegistered: role === 'driver'
