@@ -258,27 +258,28 @@ if (uid) localStorage.removeItem(`registration_${uid}`);
   const endSoftLogout = () => setSoftSignedOut(false);
 
   // 🔹 Call this after a shop is created so Flutter gets updated shopId
-  const sendUpdatedShopIdToFlutter = async (firebaseUser) => {
-    try {
-      const idToken = await firebaseUser.getIdToken();
-      const shopId = await fetchShopIdForOwner(firebaseUser);
+const sendUpdatedShopIdToFlutter = async (firebaseUser) => {
+  try {
+    const idToken = await firebaseUser.getIdToken();
+    const shopIds = await fetchShopIdsForOwner(firebaseUser); // ✅ plural version
 
-      if (window.AuthBridge && typeof window.AuthBridge.postMessage === 'function') {
-        const payload = {
-          type: 'auth',
-          idToken,
-          uid: firebaseUser.uid,
-          role: 'business',
-          shopId,
-          isRegistered: true, // now they have shop, so considered registered
-        };
-        window.AuthBridge.postMessage(JSON.stringify(payload));
-        console.log("✅ Re-sent updated shopId to Flutter via AuthBridge", payload);
-      }
-    } catch (err) {
-      console.error("❌ Failed to send updated shopId to Flutter:", err);
+    if (window.AuthBridge && typeof window.AuthBridge.postMessage === 'function') {
+      const payload = {
+        type: 'auth',
+        idToken,
+        uid: firebaseUser.uid,
+        role: 'business',
+        shopIds,  // ✅ send all shops
+        isRegistered: true,
+      };
+      window.AuthBridge.postMessage(JSON.stringify(payload));
+      console.log("✅ Re-sent updated shopIds to Flutter via AuthBridge", payload);
     }
-  };
+  } catch (err) {
+    console.error("❌ Failed to send updated shopIds to Flutter:", err);
+  }
+};
+
 
 
   // 🔹 Always fetch latest role/isRegistered from backend
@@ -399,9 +400,10 @@ if (role === 'business') {
 
 
 
-        console.log(
-          `🌐 Web Auth Meta (before bridge) -> uid=${firebaseUser.uid}, role=${role}, isRegistered=${isRegisteredFromAPI}, shopId=${shopId}`
-        );
+       console.log(
+  `🌐 Web Auth Meta (before bridge) -> uid=${firebaseUser.uid}, role=${role}, isRegistered=${isRegisteredFromAPI}, shopIds=${JSON.stringify(shopIds)}`
+);
+
         // Send to Flutter WebView via AuthBridge
         if (window.AuthBridge && typeof window.AuthBridge.postMessage === 'function') {
           const payload = {
