@@ -6,6 +6,7 @@ import '../styles/ReferralShare.css';
 import gift from '../assets/images/gift-box.png';
 import axios from 'axios';
 import confetti from 'canvas-confetti';
+import { FaRupeeSign } from 'react-icons/fa';
 
 const ReferralShareShop = () => {
   const { shopId } = useParams();
