@@ -22,6 +22,7 @@ const orderRoutes = require('./routes/orders');
 const shipmentImages=require('./routes/shipmentImageRoutes')
 const adminRoutes = require('./routes/admin');
 const catalogRoutes = require('./routes/catalogroutes');
+const dashboardRoutes=require('./routes/dashboardRoutes')
 
 const passbookRoutes = require('./routes/passbookRoutes')
 // app.use(cors());
@@ -69,6 +70,7 @@ app.use('/api/shipment-images', shipmentImages);
 app.use('/api/admin', adminRoutes);
 app.use('/api/catalog',catalogRoutes)
 app.use('/api/passbook',passbookRoutes);
+app.use("/api/dashboard",dashboardRoutes)
 
 app.use((err, req, res, next) => {
   console.error(err.stack);
