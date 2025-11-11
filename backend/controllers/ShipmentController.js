@@ -1271,6 +1271,9 @@ exports.getActiveShipment = async (req, res) => {
     // 1. Get the current Firebase user
     const firebaseUid = req.user.uid;
 
+    console.log("🔥 [getActiveShipment] Firebase UID:", req.user.uid);
+
+
     // 2. Find the driver associated with this Firebase UID
     const driver = await Driver.findOne({ userId: firebaseUid }).populate('activeShipment');
 
@@ -1308,6 +1311,7 @@ exports.getActiveShipment = async (req, res) => {
     });
   }
 };
+
 
 
 
