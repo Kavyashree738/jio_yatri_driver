@@ -192,7 +192,7 @@ const fetchData = async () => {
       }
 
       if (shipmentData) {
-        // toast.info(`✅ Keeping active shipment ${shipmentData._id} (${shipmentData.status})`);
+        toast.info(`✅ Keeping active shipment ${shipmentData._id} (${shipmentData.status})`);
         setActiveShipment(shipmentData);
         localStorage.setItem("lastShipment", JSON.stringify(shipmentData));
       }
@@ -219,7 +219,11 @@ const fetchData = async () => {
 
       const assignedShipment = activeRes.data.shipment || activeRes.data.data;
 
-      if (assignedShipment && assignedShipment.status === "assigned") {
+      if (
+  assignedShipment &&
+  ["assigned", "awaiting_payment"].includes(assignedShipment.status)
+) {
+
         // Prevent reloading same one repeatedly
         if (!activeShipment || activeShipment._id !== assignedShipment._id) {
           // toast.success(`🚚 Assigned shipment ${assignedShipment._id} found — activating...`);
@@ -514,6 +518,7 @@ const fetchData = async () => {
 });
 
 export default AvailableShipments;
+
 
 
 
