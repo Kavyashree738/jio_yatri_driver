@@ -1,10 +1,12 @@
-import React, { useEffect, useMemo, useState,useRef } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import axios from 'axios';
 import Header from './Header';
 import '../styles/BusinessOrders.css';
 import { initializeOwnerFCM } from '../services/ownerFCM';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { FaPhoneAlt } from 'react-icons/fa';
+
 
 const apiBase = 'https://jio-yatri-driver.onrender.com';
 
@@ -12,8 +14,8 @@ export default function BusinessOrders({ shopId }) {
     const { user } = useAuth();
     const [orders, setOrders] = useState([]);
     const [err, setErr] = useState(null);
-  const [loading, setLoading] = useState(true);
-const [firstLoadDone, setFirstLoadDone] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [firstLoadDone, setFirstLoadDone] = useState(false);
 
     const [busy, setBusy] = useState(null);
     const [hidePaid, setHidePaid] = useState(true);
@@ -21,7 +23,7 @@ const [firstLoadDone, setFirstLoadDone] = useState(false);
     const { shopId: shopIdFromParams } = useParams();
 
     const notifiedOrderIdsRef = useRef(new Set());
-    
+
     const resolvedShopId = shopId || shopIdFromParams; // undefined on /business-orders
     const navigate = useNavigate();
 
@@ -31,58 +33,58 @@ const [firstLoadDone, setFirstLoadDone] = useState(false);
     //     userId: user?.uid
     // });
 
-const load = async (showLoader = false) => {
-  try {
-    if (showLoader) setLoading(true);
-    setErr(null);
+    const load = async (showLoader = false) => {
+        try {
+            if (showLoader) setLoading(true);
+            setErr(null);
 
-    let url;
-    if (resolvedShopId) {
-      url = `${apiBase}/api/orders/shop/${resolvedShopId}`;
-    } else {
-      if (!user?.uid) throw new Error('Missing owner id');
-      url = `${apiBase}/api/orders/owner/${user.uid}`;
-    }
+            let url;
+            if (resolvedShopId) {
+                url = `${apiBase}/api/orders/shop/${resolvedShopId}`;
+            } else {
+                if (!user?.uid) throw new Error('Missing owner id');
+                url = `${apiBase}/api/orders/owner/${user.uid}`;
+            }
 
-    const res = await axios.get(url);
-    const newOrders = res.data.data || [];
-const notifiedSet = notifiedOrderIdsRef.current;
+            const res = await axios.get(url);
+            const newOrders = res.data.data || [];
+            const notifiedSet = notifiedOrderIdsRef.current;
 
-newOrders.forEach(order => {
-  if (!notifiedSet.has(order._id)) {
-    // Browser notification
-    if ('Notification' in window && Notification.permission === 'granted') {
-      new Notification('🛍️ New Order Received!', {
-        body: `Order ${order.orderCode || ''} from ${order.customer?.name || 'New Customer'}`,
-        icon: '/logo.jpg',
-      });
-    }
+            newOrders.forEach(order => {
+                if (!notifiedSet.has(order._id)) {
+                    // Browser notification
+                    if ('Notification' in window && Notification.permission === 'granted') {
+                        new Notification('🛍️ New Order Received!', {
+                            body: `Order ${order.orderCode || ''} from ${order.customer?.name || 'New Customer'}`,
+                            icon: '/logo.jpg',
+                        });
+                    }
 
-    // Sound alert
-    const audio = new Audio('/notification.wav');
-    audio.play().catch(err => console.warn('Audio playback prevented:', err));
+                    // Sound alert
+                    const audio = new Audio('/notification.wav');
+                    audio.play().catch(err => console.warn('Audio playback prevented:', err));
 
-    notifiedSet.add(order._id);
-  }
-});
+                    notifiedSet.add(order._id);
+                }
+            });
 
-setOrders(newOrders);
+            setOrders(newOrders);
 
-  } catch (e) {
-    setErr(e.response?.data?.error || e.message);
-  } finally {
-    if (showLoader) setLoading(false);
-    setFirstLoadDone(true);
-  }
-};
+        } catch (e) {
+            setErr(e.response?.data?.error || e.message);
+        } finally {
+            if (showLoader) setLoading(false);
+            setFirstLoadDone(true);
+        }
+    };
 
 
     // Load when we have either a shopId or (for aggregate) the user id
-useEffect(() => {
-  if (resolvedShopId || user?.uid) {
-    load(true); // show loader only on first load
-  }
-}, [resolvedShopId, user?.uid]);
+    useEffect(() => {
+        if (resolvedShopId || user?.uid) {
+            load(true); // show loader only on first load
+        }
+    }, [resolvedShopId, user?.uid]);
 
     useEffect(() => {
         if ('Notification' in window && Notification.permission !== 'granted') {
@@ -91,14 +93,14 @@ useEffect(() => {
     }, []);
 
 
-useEffect(() => {
-  if (resolvedShopId || user?.uid) {
-    const interval = setInterval(() => {
-      load(false); // silent reload every 10 seconds
-    }, 10000);
-    return () => clearInterval(interval);
-  }
-}, [resolvedShopId, user?.uid]);
+    useEffect(() => {
+        if (resolvedShopId || user?.uid) {
+            const interval = setInterval(() => {
+                load(false); // silent reload every 10 seconds
+            }, 10000);
+            return () => clearInterval(interval);
+        }
+    }, [resolvedShopId, user?.uid]);
 
 
 
@@ -268,9 +270,9 @@ useEffect(() => {
             <Header />
             <div className="bo">
                 <div className="bo-header">
-                    {/* <div className="cart-topbar">
+                    <div className="cart-topbars">
                         <button className="back-btn" onClick={() => navigate('/business-dashboard')}>← Back</button>
-                    </div> */}
+                    </div>
                     <h2>{title}</h2>
                     <label className="bo-toggle">
                         <input
@@ -312,7 +314,19 @@ useEffect(() => {
                             </div>
 
                             <div className="bo-customer">
-                                <div>Customer: {o.customer?.name} ({o.customer?.phone})</div>
+                                <div className="bo-customer-phone">
+                                    Customer: {o.customer?.name} ({o.customer?.phone})
+                                    {o.customer?.phone && (
+                                        <a
+                                            href={`tel:${o.customer.phone.replace('+91', '').trim()}`}
+                                            className="bo-call-btn"
+                                        >
+                                            <FaPhoneAlt className="bo-call-icon" />
+                                        </a>
+                                    )}
+                                </div>
+
+
                                 <div>Address: {o.customer?.address?.line}</div>
                                 {o.notes ? <div>Notes: {o.notes}</div> : null}
                             </div>
@@ -320,24 +334,24 @@ useEffect(() => {
                             <div className="bo-items">
                                 {(o.items || []).map((it, i) => (
                                     <div key={i} className="bo-item">
-                                       <img
-  alt={it.name}
-  src={
-    it.imageUrl
-      ? (
-          it.imageUrl.startsWith('http://localhost:5000')
-            ? it.imageUrl.replace('http://localhost:5000', 'https://jio-yatri-driver.onrender.com')
-            : (/^[a-fA-F0-9]{24}$/.test(it.imageUrl)  // raw ObjectId
-                ? `${apiBase}/api/shops/images/${it.imageUrl}`
-                : it.imageUrl
-              )
-        )
-      : (it.image
-          ? `${apiBase}/api/shops/images/${it.image}`
-          : '/placeholder-food.jpg'
-        )
-  }
-/>
+                                        <img
+                                            alt={it.name}
+                                            src={
+                                                it.imageUrl
+                                                    ? (
+                                                        it.imageUrl.startsWith('http://localhost:5000')
+                                                            ? it.imageUrl.replace('http://localhost:5000', 'https://jio-yatri-driver.onrender.com')
+                                                            : (/^[a-fA-F0-9]{24}$/.test(it.imageUrl)  // raw ObjectId
+                                                                ? `${apiBase}/api/shops/images/${it.imageUrl}`
+                                                                : it.imageUrl
+                                                            )
+                                                    )
+                                                    : (it.image
+                                                        ? `${apiBase}/api/shops/images/${it.image}`
+                                                        : '/placeholder-food.jpg'
+                                                    )
+                                            }
+                                        />
 
                                         <div>{it.name} × {it.quantity}</div>
                                         <div>₹{(Number(it.price) * Number(it.quantity)).toFixed(2)}</div>

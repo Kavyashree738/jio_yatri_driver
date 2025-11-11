@@ -271,3 +271,34 @@
     margin-bottom: 5px;
   }
 }
+.bo-customer-phone {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.bo-call-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #25D366; /* WhatsApp green */
+  color: white;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.bo-call-btn:hover {
+  background-color: #1DA851; /* darker green on hover */
+  transform: scale(1.1);
+}
+
+.bo-call-icon {
+  font-size: 15px;
+}
+
+
