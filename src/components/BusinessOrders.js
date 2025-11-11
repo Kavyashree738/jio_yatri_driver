@@ -270,9 +270,6 @@ export default function BusinessOrders({ shopId }) {
             <Header />
             <div className="bo">
                 <div className="bo-header">
-                    <div className="cart-topbars">
-                        <button className="back-btn" onClick={() => navigate('/business-dashboard')}>← Back</button>
-                    </div>
                     <h2>{title}</h2>
                     <label className="bo-toggle">
                         <input
