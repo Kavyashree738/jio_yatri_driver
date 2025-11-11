@@ -337,7 +337,7 @@ const fetchData = async () => {
       const toastId = toast.loading('Accepting shipment...');
 
       const response = await axios.put(
-        `http://localhost:5000/api/shipments/${shipmentId}/accept`,
+        `https://jio-yatri-driver.onrender.com/api/shipments/${shipmentId}/accept`,
         { location },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -514,6 +514,7 @@ const fetchData = async () => {
 });
 
 export default AvailableShipments;
+
 
 
 
