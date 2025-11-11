@@ -120,10 +120,13 @@ export default function OwnerDocumentViews() {
       </div>
     ) : null;
 
-  if (loading) {
-    return <div className="odv-wrap"><div className="odv-card">Loading…</div></div>;
+   if (loading) {
+    return (
+      <div className="sd-loading-container">
+        <div className="sd-spinner"></div>
+      </div>
+    );
   }
-
   return (
     <>
     <Header/>

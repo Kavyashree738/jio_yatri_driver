@@ -253,10 +253,13 @@ useEffect(() => {
         return <div className="bo">Please sign in to view your orders.</div>;
     }
 
-    if (loading) {
-        // console.log('[BusinessOrders] Rendering: Loading state');
-        return <div className="bo">Loading…</div>;
-    }
+      if (loading) {
+    return (
+      <div className="sd-loading-container">
+        <div className="sd-spinner"></div>
+      </div>
+    );
+  }
 
     // console.log('[BusinessOrders] Rendering main component with', visibleOrders.length, 'visible orders');
 
