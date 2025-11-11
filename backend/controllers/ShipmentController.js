@@ -334,188 +334,383 @@ exports.getMatchingShipments = async (req, res) => {
 //   }
 // };
 
+// exports.acceptShipment = async (req, res) => {
+//   try {
+//     console.log('🔥 acceptShipment controller hit');
+//     console.log('Request body:', JSON.stringify(req.body, null, 2));
+//     console.log('Params:', req.params);
+//     console.log('User UID:', req.user.uid);
+
+//     const shipmentId = req.params.id;
+//     const firebaseUid = req.user.uid;
+//     const { location } = req.body;
+
+//     // Validate location if provided
+//     if (location) {
+//       console.log('Location received in request:', location);
+//       if (!Array.isArray(location)) {
+//         console.error('Location is not an array');
+//         return res.status(400).json({
+//           message: 'Invalid location format. Expected [longitude, latitude]'
+//         });
+//       }
+//       if (location.length !== 2) {
+//         console.error('Location array length is not 2');
+//         return res.status(400).json({
+//           message: 'Invalid location format. Expected [longitude, latitude]'
+//         });
+//       }
+//       if (typeof location[0] !== 'number' || typeof location[1] !== 'number') {
+//         console.error('Location coordinates are not numbers');
+//         return res.status(400).json({
+//           message: 'Invalid coordinates. Longitude and latitude must be numbers'
+//         });
+//       }
+//       if (location[0] < -180 || location[0] > 180 || location[1] < -90 || location[1] > 90) {
+//         console.error('Location coordinates out of valid range');
+//         return res.status(400).json({
+//           message: 'Invalid coordinates. Longitude must be between -180 and 180, latitude between -90 and 90'
+//         });
+//       }
+//     } else {
+//       console.log('No location provided in request');
+//     }
+
+//     const session = await mongoose.startSession();
+//     session.startTransaction();
+//     console.log('MongoDB transaction started');
+
+//     try {
+//       // 1. Find the driver
+//       console.log('Looking for driver with UID:', firebaseUid);
+//       const driver = await Driver.findOne({ userId: firebaseUid }).session(session);
+
+//       if (!driver) {
+//         console.error('Driver not found');
+//         await session.abortTransaction();
+//         return res.status(404).json({ message: 'Driver not found' });
+//       }
+
+//       console.log('Driver found:', {
+//         _id: driver._id,
+//         name: driver.name,
+//         currentLocation: driver.location,
+//         activeShipment: driver.activeShipment
+//       });
+
+//       // Determine driver location to use
+//       const driverLocation = location ||
+//         (driver.location?.coordinates || [0, 0]);
+//       console.log('Driver location to be saved:', driverLocation);
+
+//       // 2. Update the driver
+//       const driverUpdate = {
+//         isLocationActive: true,
+//         activeShipment: shipmentId,
+//         lastUpdated: new Date(),
+//         'location.coordinates': driverLocation,
+//         'location.lastUpdated': new Date()
+//       };
+
+//       console.log('Driver update payload:', driverUpdate);
+
+//       const updatedDriver = await Driver.findByIdAndUpdate(
+//         driver._id,
+//         { $set: driverUpdate },
+//         { new: true, session }
+//       );
+
+//       console.log('Driver updated successfully:', {
+//         _id: updatedDriver._id,
+//         activeShipment: updatedDriver.activeShipment,
+//         location: updatedDriver.location
+//       });
+
+//       // 3. Update the shipment
+//       const shipmentUpdate = {
+//         status: 'assigned',
+//         assignedDriver: {
+//           _id: driver._id,
+//           userId: driver.userId,
+//           name: driver.name,
+//           phone: driver.phone,
+//           vehicleNumber: driver.vehicleNumber,
+//           vehicleType: driver.vehicleType
+//         },
+//         driverLocation: {
+//           type: 'Point',
+//           coordinates: driverLocation,
+//           lastUpdated: new Date()
+//         }
+//       };
+
+//       console.log('Shipment update payload:', shipmentUpdate);
+
+//       const shipment = await Shipment.findByIdAndUpdate(
+//         shipmentId,
+//         { $set: shipmentUpdate },
+//         { new: true, session }
+//       );
+
+//       if (!shipment) {
+//         console.error('Shipment not found with ID:', shipmentId);
+//         await session.abortTransaction();
+//         return res.status(404).json({ message: 'Shipment not found' });
+//       }
+
+//       console.log('Shipment updated successfully:', {
+//         _id: shipment._id,
+//         status: shipment.status,
+//         assignedDriver: shipment.assignedDriver,
+//         driverLocation: shipment.driverLocation
+//       });
+
+
+//       const otp = Math.floor(1000 + Math.random() * 9000).toString();
+//       shipment.pickupOtp = otp;
+//       shipment.pickupVerifiedAt = null;
+
+//       if (shipment.isShopOrder) {
+//         // console.log(`🛍️ Shop order: Pickup OTP ${otp} generated for receiver in app`);
+//       } else {
+//         // console.log(`🚚 Normal shipment: Pickup OTP ${otp} generated for sender`);
+//       }
+//       await shipment.save({ session });
+
+      
+
+//       await session.commitTransaction();
+//       console.log('Transaction committed successfully');
+
+//       // Emit real-time update if using Socket.io
+//       if (req.io) {
+//         console.log('Emitting socket.io update for shipment:', shipmentId);
+//         req.io.to(`shipment_${shipmentId}`).emit('shipment_updated', shipment);
+//       }
+
+//       res.status(200).json({
+//         message: 'Shipment accepted successfully',
+//         shipment,
+//         driverLocation: shipment.driverLocation
+//       });
+
+//     } catch (error) {
+//       console.error('Transaction error:', error);
+//       await session.abortTransaction();
+//       console.log('Transaction aborted due to error');
+//       throw error;
+//     } finally {
+//       session.endSession();
+//       console.log('MongoDB session ended');
+//     }
+
+//   } catch (error) {
+//     console.error('Error in acceptShipment controller:', {
+//       message: error.message,
+//       stack: error.stack,
+//       ...(error.response && { responseData: error.response.data })
+//     });
+//     res.status(500).json({
+//       message: 'Internal server error',
+//       error: error.message
+//     });
+//   }
+// };
+
 exports.acceptShipment = async (req, res) => {
   try {
-    console.log('🔥 acceptShipment controller hit');
-    console.log('Request body:', JSON.stringify(req.body, null, 2));
-    console.log('Params:', req.params);
-    console.log('User UID:', req.user.uid);
+    console.log("🔥 [ACCEPT SHIPMENT] API hit");
+    console.log("🧾 Request Params:", req.params);
+    console.log("👤 Firebase UID:", req.user.uid);
+    console.log("📍 Request Body:", req.body);
 
     const shipmentId = req.params.id;
     const firebaseUid = req.user.uid;
     const { location } = req.body;
 
-    // Validate location if provided
+    // ✅ 1️⃣ Validate location input (same as before)
     if (location) {
-      console.log('Location received in request:', location);
+      console.log("Location received in request:", location);
       if (!Array.isArray(location)) {
-        console.error('Location is not an array');
-        return res.status(400).json({
-          message: 'Invalid location format. Expected [longitude, latitude]'
-        });
+        return res.status(400).json({ message: "Invalid location format. Expected [longitude, latitude]" });
       }
       if (location.length !== 2) {
-        console.error('Location array length is not 2');
-        return res.status(400).json({
-          message: 'Invalid location format. Expected [longitude, latitude]'
-        });
+        return res.status(400).json({ message: "Invalid location format. Expected [longitude, latitude]" });
       }
-      if (typeof location[0] !== 'number' || typeof location[1] !== 'number') {
-        console.error('Location coordinates are not numbers');
-        return res.status(400).json({
-          message: 'Invalid coordinates. Longitude and latitude must be numbers'
-        });
+      if (typeof location[0] !== "number" || typeof location[1] !== "number") {
+        return res.status(400).json({ message: "Invalid coordinates. Longitude and latitude must be numbers" });
       }
       if (location[0] < -180 || location[0] > 180 || location[1] < -90 || location[1] > 90) {
-        console.error('Location coordinates out of valid range');
-        return res.status(400).json({
-          message: 'Invalid coordinates. Longitude must be between -180 and 180, latitude between -90 and 90'
-        });
+        return res.status(400).json({ message: "Invalid coordinates. Longitude must be between -180 and 180, latitude between -90 and 90" });
       }
     } else {
-      console.log('No location provided in request');
+      console.log("No location provided in request");
     }
 
+    // ✅ 2️⃣ Start DB transaction
     const session = await mongoose.startSession();
     session.startTransaction();
-    console.log('MongoDB transaction started');
+    console.log("MongoDB transaction started");
 
     try {
-      // 1. Find the driver
-      console.log('Looking for driver with UID:', firebaseUid);
+      // ✅ 3️⃣ Find Driver
       const driver = await Driver.findOne({ userId: firebaseUid }).session(session);
-
       if (!driver) {
-        console.error('Driver not found');
         await session.abortTransaction();
-        return res.status(404).json({ message: 'Driver not found' });
+        return res.status(404).json({ message: "Driver not found" });
       }
 
-      console.log('Driver found:', {
-        _id: driver._id,
-        name: driver.name,
-        currentLocation: driver.location,
-        activeShipment: driver.activeShipment
-      });
+      console.log("✅ Driver found:", driver.name, "| Vehicle:", driver.vehicleNumber);
 
-      // Determine driver location to use
-      const driverLocation = location ||
-        (driver.location?.coordinates || [0, 0]);
-      console.log('Driver location to be saved:', driverLocation);
-
-      // 2. Update the driver
-      const driverUpdate = {
-        isLocationActive: true,
-        activeShipment: shipmentId,
-        lastUpdated: new Date(),
-        'location.coordinates': driverLocation,
-        'location.lastUpdated': new Date()
-      };
-
-      console.log('Driver update payload:', driverUpdate);
-
-      const updatedDriver = await Driver.findByIdAndUpdate(
-        driver._id,
-        { $set: driverUpdate },
-        { new: true, session }
-      );
-
-      console.log('Driver updated successfully:', {
-        _id: updatedDriver._id,
-        activeShipment: updatedDriver.activeShipment,
-        location: updatedDriver.location
-      });
-
-      // 3. Update the shipment
-      const shipmentUpdate = {
-        status: 'assigned',
-        assignedDriver: {
-          _id: driver._id,
-          userId: driver.userId,
-          name: driver.name,
-          phone: driver.phone,
-          vehicleNumber: driver.vehicleNumber,
-          vehicleType: driver.vehicleType
-        },
-        driverLocation: {
-          type: 'Point',
-          coordinates: driverLocation,
-          lastUpdated: new Date()
-        }
-      };
-
-      console.log('Shipment update payload:', shipmentUpdate);
-
-      const shipment = await Shipment.findByIdAndUpdate(
-        shipmentId,
-        { $set: shipmentUpdate },
-        { new: true, session }
-      );
-
+      // ✅ 4️⃣ Find Shipment
+      const shipment = await Shipment.findById(shipmentId).session(session);
       if (!shipment) {
-        console.error('Shipment not found with ID:', shipmentId);
         await session.abortTransaction();
-        return res.status(404).json({ message: 'Shipment not found' });
+        return res.status(404).json({ message: "Shipment not found" });
       }
 
-      console.log('Shipment updated successfully:', {
-        _id: shipment._id,
-        status: shipment.status,
-        assignedDriver: shipment.assignedDriver,
-        driverLocation: shipment.driverLocation
-      });
+      console.log("📦 Shipment found for user:", shipment.userId);
+
+      // ✅ 5️⃣ Determine driver location
+      const driverLocation = location || driver.location?.coordinates || [0, 0];
+      console.log("📍 Using driver location:", driverLocation);
+
+      // ✅ 6️⃣ Calculate distances using Haversine
+      const toRad = (x) => (x * Math.PI) / 180;
+      const calcKm = (a, b) => {
+        const [lng1, lat1] = a;
+        const [lng2, lat2] = b;
+        const R = 6371;
+        const dLat = toRad(lat2 - lat1);
+        const dLng = toRad(lng2 - lng1);
+        const calc =
+          Math.sin(dLat / 2) ** 2 +
+          Math.cos(toRad(lat1)) *
+          Math.cos(toRad(lat2)) *
+          Math.sin(dLng / 2) ** 2;
+        return R * (2 * Math.atan2(Math.sqrt(calc), Math.sqrt(1 - calc)));
+      };
+
+      const pickup = shipment.sender?.address?.coordinates?.coordinates || shipment.sender?.address?.coordinates;
+      const drop = shipment.receiver?.address?.coordinates?.coordinates || shipment.receiver?.address?.coordinates;
+
+      if (!pickup || !drop) {
+        await session.abortTransaction();
+        return res.status(400).json({ message: "Missing pickup or drop coordinates" });
+      }
+
+      const driverToPickupKm = calcKm(driverLocation, pickup);
+      const pickupToDropKm = calcKm(pickup, drop);
+      const totalKm = driverToPickupKm + pickupToDropKm;
+
+      console.log(`📏 Distances → Driver→Pickup: ${driverToPickupKm.toFixed(2)} km | Pickup→Drop: ${pickupToDropKm.toFixed(2)} km`);
+
+      // ✅ 7️⃣ Fare Calculation (₹3 per 100m driver→pickup)
+      // const baseCost = parseFloat(shipment.cost.toFixed(2));
+      // const extraPickupCost = parseFloat((Math.ceil(driverToPickupKm / 0.1) * 3).toFixed(2));
+      // const totalCost = parseFloat((baseCost + extraPickupCost).toFixed(2));
+
+      // shipment.baseFare = baseCost;
+      // shipment.distanceFare = extraPickupCost;
+      // shipment.cost = totalCost;
+      // shipment.driverToPickupKm = driverToPickupKm;
+      // shipment.pickupToDropKm = pickupToDropKm;
+      // shipment.totalDistanceKm = totalKm;
+
+      // ✅ 7️⃣ Fare Calculation — only for regular shipments
+      let totalCost = shipment.cost;
+      if (!shipment.isShopOrder) {
+        const baseCost = parseFloat(shipment.cost.toFixed(2));
+        const extraPickupCost = parseFloat((Math.ceil(driverToPickupKm / 0.1) * 3).toFixed(2));
+        totalCost = parseFloat((baseCost + extraPickupCost).toFixed(2));
+
+        shipment.baseFare = baseCost;
+        shipment.distanceFare = extraPickupCost;
+        shipment.cost = totalCost;
+        console.log(`💰 Regular shipment → fare adjusted: ₹${totalCost}`);
+      } else {
+        console.log("🏪 Shop order → skipping fare adjustment logic");
+      }
+
+      // ✅ Always record distances for tracking
+      shipment.driverToPickupKm = driverToPickupKm;
+      shipment.pickupToDropKm = pickupToDropKm;
+      shipment.totalDistanceKm = totalKm;
 
 
+      // ✅ 8️⃣ Assign Driver details
+      shipment.assignedDriver = {
+        _id: driver._id,
+        userId: driver.userId,
+        name: driver.name,
+        phone: driver.phone,
+        vehicleNumber: driver.vehicleNumber,
+        vehicleType: driver.vehicleType,
+      };
+
+      shipment.driverLocation = {
+        type: "Point",
+        coordinates: driverLocation,
+        lastUpdated: new Date(),
+      };
+
+      // ✅ 9️⃣ Generate OTP
       const otp = Math.floor(1000 + Math.random() * 9000).toString();
       shipment.pickupOtp = otp;
       shipment.pickupVerifiedAt = null;
+      console.log(`🔐 Pickup OTP generated: ${otp}`);
 
-      if (shipment.isShopOrder) {
-        // console.log(`🛍️ Shop order: Pickup OTP ${otp} generated for receiver in app`);
+      // ✅ 🔟 Payment logic
+      if (shipment.payment && shipment.payment.status === "paid") {
+        shipment.status = "payment_completed";
+        console.log("✅ Payment already completed — marking as payment_completed");
       } else {
-        // console.log(`🚚 Normal shipment: Pickup OTP ${otp} generated for sender`);
+        shipment.status = "awaiting_payment";
+        console.log("🕓 Awaiting payment from user");
       }
+
+      // ✅ 11️⃣ Update driver record
+      driver.activeShipment = shipment._id;
+      driver.isLocationActive = true;
+      driver.lastUpdated = new Date();
+      driver.location.coordinates = driverLocation;
+      await driver.save({ session });
+
+      // ✅ 12️⃣ Save shipment
       await shipment.save({ session });
-
-      
-
       await session.commitTransaction();
-      console.log('Transaction committed successfully');
+      console.log("✅ Transaction committed successfully");
 
-      // Emit real-time update if using Socket.io
+      // ✅ 13️⃣ Emit real-time update via Socket.io
       if (req.io) {
-        console.log('Emitting socket.io update for shipment:', shipmentId);
-        req.io.to(`shipment_${shipmentId}`).emit('shipment_updated', shipment);
+        console.log("📡 Emitting socket.io update for shipment:", shipmentId);
+        req.io.to(`shipment_${shipmentId}`).emit("shipment_updated", shipment);
       }
 
-      res.status(200).json({
-        message: 'Shipment accepted successfully',
+      return res.status(200).json({
+        success: true,
+        message: "Shipment accepted successfully",
         shipment,
-        driverLocation: shipment.driverLocation
       });
 
-    } catch (error) {
-      console.error('Transaction error:', error);
+    } catch (err) {
+      console.error("💥 Transaction error:", err);
       await session.abortTransaction();
-      console.log('Transaction aborted due to error');
-      throw error;
+      throw err;
     } finally {
       session.endSession();
-      console.log('MongoDB session ended');
+      console.log("🧹 MongoDB session ended");
     }
-
   } catch (error) {
-    console.error('Error in acceptShipment controller:', {
-      message: error.message,
-      stack: error.stack,
-      ...(error.response && { responseData: error.response.data })
-    });
-    res.status(500).json({
-      message: 'Internal server error',
-      error: error.message
+    console.error("❌ [ERROR] in acceptShipment:", error.message);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message,
     });
   }
 };
+
 
 exports.updateDriverLocation = async (req, res) => {
   try {
