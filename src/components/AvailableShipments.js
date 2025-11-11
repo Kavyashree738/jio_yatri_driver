@@ -108,7 +108,7 @@ useEffect(() => {
 
           // uiDebug("🌐 Fetching shipment details from backend...");
           const res = await axios.get(
-            `https://jio-yatri-driver.onrender.com/api/shipments/${shipmentId}`,
+            `https://jio-yatri-driver.onrender.com/api/shipments/active`,
             { headers: { Authorization: `Bearer ${token}` } }
           );
 
@@ -514,6 +514,7 @@ const fetchData = async () => {
 });
 
 export default AvailableShipments;
+
 
 
 
