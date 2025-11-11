@@ -16,6 +16,7 @@ const ReferralShareShop = () => {
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState(null);
   const [referral, setReferral] = useState(null);
+    const [referralStats, setReferralStats] = useState(null);
 
   useEffect(() => {
     const fetchReferral = async () => {
@@ -186,6 +187,20 @@ const shareNative = async () => {
           </>
         )}
       </div>
+      {referralStats && (
+        <div className="referral-reward-card">
+          <div className="reward-icon">
+            <FaRupeeSign />
+          </div>
+          <div className="reward-details">
+            <h4>Your Referral Earnings</h4>
+            <p className="reward-amount">₹{referralStats.totalEarnings}</p>
+            <p className="reward-sub">
+              {referralStats.totalReferrals} friend{referralStats.totalReferrals !== 1 ? 's' : ''} joined using your code
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

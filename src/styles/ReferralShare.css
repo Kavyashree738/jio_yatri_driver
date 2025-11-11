@@ -642,3 +642,100 @@
   50% { transform: scale(1.5); opacity: 1; }
   100% { transform: scale(0); opacity: 0; }
 }
+
+.referral-reward-card {
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  padding: 10px 14px;
+  margin: 14px auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 90%;
+  max-width: 380px;
+  color: #222;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.08);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  animation: fadeInUp 0.4s ease;
+}
+
+.referral-reward-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.12);
+}
+
+.reward-icon {
+  background: linear-gradient(135deg, #5d8ff0, #3759e5);
+  color: #fff;
+  font-size: 18px;
+  border-radius: 50%;
+  padding: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.reward-details {
+  flex: 1;
+}
+
+.reward-details h4 {
+  font-size: 13px;
+  font-weight: 500;
+  margin: 0;
+  color: #333;
+}
+
+.reward-amount {
+  font-size: 18px;
+  font-weight: 700;
+  margin: 3px 0;
+  color: #1e40af; /* calm blue */
+}
+
+.reward-sub {
+  font-size: 11.5px;
+  opacity: 0.75;
+  color: #444;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 📱 Mobile Responsive */
+@media (max-width: 480px) {
+  .referral-reward-card {
+    padding: 8px 12px;
+    gap: 8px;
+    width: 94%;
+  }
+
+  .reward-details h4 {
+    font-size: 12px;
+  }
+
+  .reward-amount {
+    font-size: 16px;
+  }
+
+  .reward-sub {
+    font-size: 10.5px;
+  }
+
+  .reward-icon {
+    font-size: 16px;
+    padding: 8px;
+  }
+}
