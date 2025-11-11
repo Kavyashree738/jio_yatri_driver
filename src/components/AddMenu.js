@@ -1,60 +1,66 @@
-// src/pages/ShopItemsManager.jsx
-import React, { useState, useEffect, useMemo } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import React, { useState, useEffect, useMemo } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import {
-  FaPlus, FaTrash, FaSpinner, FaCheck, FaImage, FaTimes, FaUpload
-} from 'react-icons/fa';
-import axios from 'axios';
-import Header from '../components/Header';
-import Footer from '../components/Footer';
-import '../styles/ShopItemsManager.css';
-import { useAuth } from '../context/AuthContext';
-import { IoMdArrowRoundBack } from "react-icons/io";
-// Per-category UI + validation config
+  FaPlus,
+  FaTrash,
+  FaSpinner,
+  FaCheck,
+  FaUpload,
+  FaChevronLeft,
+  FaEdit,
+  FaTimes,
+} from "react-icons/fa";
+import axios from "axios";
+import Header from "../components/Header";
+import Footer from "../components/Footer";
+import "../styles/ShopItemsManager.css";
+import { useAuth } from "../context/AuthContext";
+
+// ===============================
+// Category Config
+// ===============================
 const CATEGORY_CONFIG = {
   hotel: {
-    label: 'Restaurant',
+    label: "Restaurant",
     requireImage: true,
     itemFields: [
-      { key: 'veg', type: 'boolean', label: 'Vegetarian' },
+      { key: "veg", type: "boolean", label: "Vegetarian" },
       {
-        key: 'category', type: 'select', label: 'Menu Category',
-        options: ['main', 'breakfast', 'lunch', 'dinner', 'snacks', 'beverages']
+        key: "category",
+        type: "select",
+        label: "Menu Category",
+        options: ["main", "breakfast", "lunch", "dinner", "snacks", "beverages"],
       },
-      { key: 'spiceLevel', type: 'select', label: 'Spice Level', options: ['mild', 'medium', 'spicy'] },
-      // { key: 'description', type: 'textarea', label: 'Description', maxLength: 100 },
+      {
+        key: "spiceLevel",
+        type: "select",
+        label: "Spice Level",
+        options: ["mild", "medium", "spicy"],
+      },
     ],
     defaultItem: {
-      veg: true, category: 'main', spiceLevel: 'medium', description: ''
-    }
+      veg: true,
+      category: "main",
+      spiceLevel: "medium",
+    },
   },
-  grocery: {
-    label: 'Grocery',
-    requireImage: false,
-    // itemFields: [{ key: 'description', type: 'textarea', label: 'Description' }],
-    defaultItem: { description: '' }
-  },
+  grocery: { label: "Grocery", requireImage: false, defaultItem: {} },
   vegetable: {
-    label: 'Vegetable',
+    label: "Vegetable",
     requireImage: false,
-    itemFields: [{ key: 'organic', type: 'boolean', label: 'Organic' }],
-    defaultItem: { organic: false }
+    itemFields: [{ key: "organic", type: "boolean", label: "Organic" }],
+    defaultItem: { organic: false },
   },
   provision: {
-    label: 'Provision',
+    label: "Provision",
     requireImage: false,
     itemFields: [
-      { key: 'weight', type: 'text', label: 'Weight' },
-      { key: 'brand', type: 'text', label: 'Brand' },
+      { key: "weight", type: "text", label: "Weight" },
+      { key: "brand", type: "text", label: "Brand" },
     ],
-    defaultItem: { weight: '', brand: '' }
+    defaultItem: { weight: "", brand: "" },
   },
-  medical: {
-    label: 'Medical',
-    requireImage: false,
-    // itemFields: [{ key: 'prescriptionRequired', type: 'boolean', label: 'Prescription Required' }],
-    // defaultItem: { prescriptionRequired: false }
-  },
+  medical: { label: "Medical", requireImage: false },
 };
 
 const ShopItemsManager = () => {
@@ -64,223 +70,291 @@ const ShopItemsManager = () => {
 
   const [isLoading, setIsLoading] = useState(true);
   const [shopCategory, setShopCategory] = useState(null);
-  const [shopName, setShopName] = useState('');
-  const [formData, setFormData] = useState({ items: [] });
-
-  // Preserve shop gallery so it doesn't get wiped when updating only items
+  const [shopName, setShopName] = useState("");
   const [existingShopImages, setExistingShopImages] = useState([]);
-
+  const [formData, setFormData] = useState({ items: [] });
+  const [view, setView] = useState("list");
+  const [currentIndex, setCurrentIndex] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [deleteIndex, setDeleteIndex] = useState(null);
+  const [editDraft, setEditDraft] = useState(null);
 
   const catCfg = useMemo(
     () => CATEGORY_CONFIG[shopCategory] || CATEGORY_CONFIG.hotel,
     [shopCategory]
   );
 
-  useEffect(() => {
-    if (!user) {
-      navigate('/home');
-      return;
-    }
+  const API_BASE =
+    process.env.REACT_APP_API_BASE_URL ||
+    "https://jio-yatri-driver.onrender.com";
 
-    const fetchShopData = async () => {
+  // ===============================
+  // Fetch Shop on mount
+  // ===============================
+  useEffect(() => {
+    const init = async () => {
+      if (!user) {
+        navigate("/home");
+        return;
+      }
+      setIsLoading(true);
+      setError("");
+      setSuccess("");
+
       try {
         const token = await user.getIdToken(true);
-        const res = await axios.get(
-          `https://jio-yatri-driver.onrender.com/api/shops/${shopId}`,
-          { headers: { Authorization: `Bearer ${token}` } }
+        const url = `${API_BASE}/api/shops/${shopId}`;
+        const res = await axios.get(url, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        const shopData = res?.data?.data || {};
+        setShopCategory(shopData.category || null);
+        setShopName(shopData.shopName || "");
+        setExistingShopImages(
+          Array.isArray(shopData.shopImages) ? shopData.shopImages : []
         );
 
-        const shopData = res.data?.data || {};
-
-        setShopCategory(shopData.category || null);
-        setShopName(shopData.shopName || '');
-        setExistingShopImages(Array.isArray(shopData.shopImages) ? shopData.shopImages : []);
-
-        // Normalize items array and keep image state split between existing + new file
-        const items = Array.isArray(shopData.items) ? shopData.items.map((item) => ({
-          ...item,
-          // Existing mongo id preferred; derive from URL if missing
-          existingImageId: item.image || (item.imageUrl ? String(item.imageUrl).split('/').pop() : undefined),
-          existingImageUrl: item.imageUrl,
-          image: null, // new file slot, defaults to none
-        })) : [];
+        const items = Array.isArray(shopData.items)
+          ? shopData.items.map((item) => ({
+            ...item,
+            existingImageId:
+              item.image ||
+              (item.imageUrl
+                ? String(item.imageUrl).split("/").pop()
+                : undefined),
+            existingImageUrl: item.imageUrl,
+            image: null,
+          }))
+          : [];
 
         setFormData({ items });
       } catch (err) {
-        setError(err?.response?.data?.error || 'Failed to load shop data');
+        setError(err?.response?.data?.error || "Failed to load shop data");
       } finally {
         setIsLoading(false);
       }
     };
-
-    fetchShopData();
+    init();
   }, [user, shopId, navigate]);
 
+  // ===============================
+  // Item Handlers
+  // ===============================
   const handleItemChange = (index, field, value) => {
-    setFormData((prev) => {
-      const items = [...prev.items];
-      items[index] = { ...items[index], [field]: value };
-      return { ...prev, items };
-    });
+    if (view === "add") {
+      setFormData((prev) => ({
+        ...prev,
+        currentNewItem: {
+          ...(prev.currentNewItem || {}),
+          [field]: value,
+        },
+      }));
+    } else if (view === "edit") {
+      setEditDraft((prev) => ({
+        ...prev,
+        [field]: value,
+      }));
+    } else {
+      setFormData((prev) => {
+        const items = [...prev.items];
+        items[index] = { ...items[index], [field]: value };
+        return { ...prev, items };
+      });
+    }
   };
 
   const handleItemImageUpload = (index, file) => {
-    setFormData((prev) => {
-      const items = [...prev.items];
-      items[index] = {
-        ...items[index],
-        image: file, // new file
-        existingImageId: undefined,
-        existingImageUrl: undefined,
-      };
-      return { ...prev, items };
-    });
-  };
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      setError("Each image must be 5MB or less");
+      return;
+    }
 
-  const removeItemImage = (index) => {
-    setFormData((prev) => {
-      const items = [...prev.items];
-      items[index] = {
-        ...items[index],
-        image: null,
-        existingImageId: undefined,
-        existingImageUrl: undefined,
-      };
-      return { ...prev, items };
-    });
+    if (view === "add") {
+      setFormData((prev) => ({
+        ...prev,
+        currentNewItem: {
+          ...(prev.currentNewItem || {}),
+          image: file,
+          existingImageUrl: URL.createObjectURL(file),
+        },
+      }));
+    } else if (view === "edit") {
+      setEditDraft((prev) => ({
+        ...prev,
+        image: file,
+        existingImageUrl: URL.createObjectURL(file),
+      }));
+    }
   };
 
   const addItem = () => {
     const defaults = catCfg.defaultItem || {};
-    setFormData((prev) => ({
-      ...prev,
-      items: [
-        ...prev.items,
-        {
-          name: '',
-          price: '',
-          image: null,
-          existingImageId: undefined,
-          existingImageUrl: undefined,
-          ...defaults,
-        },
-      ],
-    }));
+    const newItem = {
+      name: "",
+      price: "",
+      image: null,
+      existingImageId: undefined,
+      existingImageUrl: undefined,
+      ...defaults,
+    };
+    setFormData((prev) => ({ ...prev, currentNewItem: newItem }));
+    setCurrentIndex(null);
+    setView("add");
   };
 
-  const removeItem = (index) => {
-    setFormData((prev) => ({
-      ...prev,
-      items: prev.items.filter((_, i) => i !== index),
-    }));
+  const editItem = (index) => {
+    setCurrentIndex(index);
+    const itemCopy = { ...formData.items[index] }; // make a copy
+    setEditDraft(itemCopy); // store temp editable copy
+    setView("edit");
   };
 
-  const validateForm = () => {
-    if (!formData.items.length) {
-      setError('Please add at least one item');
-      return false;
-    }
-
-    if (formData.items.some((i) => !i.name || i.price === '' || i.price === null)) {
-      setError('Please fill all required fields for each item');
-      return false;
-    }
-
-    const needsImg = !!catCfg.requireImage;
-    if (needsImg && formData.items.some((i) => !i.image && !i.existingImageId)) {
-      setError('Please upload an image for each menu item');
-      return false;
-    }
-
-    if (formData.items.some((i) => i.image instanceof File && i.image.size > 5 * 1024 * 1024)) {
-      setError('Each image must be 5MB or less');
-      return false;
-    }
-
-    return true;
+  // ===============================
+  // Delete Item
+  // ===============================
+  const openConfirm = (index) => {
+    setDeleteIndex(index);
+    setShowConfirm(true);
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
-    setSuccess('');
+  const cancelDelete = () => {
+    setShowConfirm(false);
+    setDeleteIndex(null);
+  };
 
-    if (!validateForm()) return;
+  const confirmDelete = async () => {
+    if (deleteIndex === null) return;
 
-    setIsSubmitting(true);
     try {
-      const fd = new FormData();
-      fd.append('userId', user.uid);
-      fd.append('shopId', shopId);
+      setShowConfirm(false);
+      setIsSubmitting(true);
+      setError("");
+      setSuccess("");
 
-      // Preserve gallery (prevents wiping when menu-only update)
-      fd.append('existingShopImages', JSON.stringify(existingShopImages || []));
-
-      // Only send fields relevant to this shop category
-      const allowed = new Set(['name', 'price', ...(catCfg.itemFields?.map(f => f.key) || [])]);
-
-      const itemsToSend = formData.items.map((item) => {
-        const out = {};
-        allowed.forEach((k) => {
-          if (item[k] !== undefined && item[k] !== null && item[k] !== '') {
-            out[k] = item[k];
-          }
-        });
-        // keep old image id if no new file
-        if (!item.image && item.existingImageId) out.image = item.existingImageId;
-        return out;
-      });
-
-
-
-
-      fd.append('items', JSON.stringify(itemsToSend));
-
-      // Add new files in the same order we built itemsToSend
-      formData.items.forEach((item) => {
-        if (item.image instanceof File) {
-          fd.append('itemImages', item.image);
-        }
-      });
-      console.log('itemsToSend', JSON.stringify(itemsToSend, null, 2));
+      const updatedItems = formData.items.filter((_, i) => i !== deleteIndex);
 
       const token = await user.getIdToken();
-      const apiUrl = `https://jio-yatri-driver.onrender.com/api/shops/${shopId}`;
+      const fd = new FormData();
+      fd.append("userId", user.uid);
+      fd.append("shopId", shopId);
+      fd.append("existingShopImages", JSON.stringify(existingShopImages || []));
+      fd.append("items", JSON.stringify(updatedItems));
 
-      // PUT is kept to match your backend; if it supports PATCH, switching is fine.
-      const res = await axios.put(apiUrl, fd, {
+      const url = `${API_BASE}/api/shops/${shopId}`;
+      await axios.put(url, fd, {
         headers: {
-          'Content-Type': 'multipart/form-data',
+          "Content-Type": "multipart/form-data",
           Authorization: `Bearer ${token}`,
         },
       });
 
-      if (!res.data?.success) {
-        throw new Error(res.data?.error || 'Update failed');
-      }
-
-      setSuccess('Menu updated successfully!');
-      setTimeout(() => navigate(`/shop/${shopId}`), 1200);
+      setFormData({ items: updatedItems });
+      setDeleteIndex(null);
+      setSuccess("Item removed successfully!");
+      setTimeout(() => setSuccess(""), 2000);
     } catch (err) {
-      const msg =
-        err?.response?.status === 413
-          ? 'File too large (max 5MB)'
-          : err?.response?.data?.error || err.message || 'Update failed';
-      setError(msg);
+      setError("Failed to remove item. Try again.");
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  // ===============================
+  // Save / Update
+  // ===============================
+  const handleSave = async (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    setError("");
+    setSuccess("");
+    setIsSubmitting(true);
+
+    try {
+      if (
+        view === "add" &&
+        (!formData.currentNewItem?.name || !formData.currentNewItem?.price)
+      ) {
+        setError("Please fill item name and price before saving.");
+        setIsSubmitting(false);
+        return;
+      }
+
+      const token = await user.getIdToken();
+      const fd = new FormData();
+      fd.append("userId", user.uid);
+      fd.append("shopId", shopId);
+      fd.append(
+        "existingShopImages",
+        JSON.stringify(existingShopImages || [])
+      );
+
+      let updatedItems = [...formData.items];
+      if (view === "add" && formData.currentNewItem) {
+        updatedItems.push({ ...formData.currentNewItem });
+      }
+
+      // ✅ commit draft only now
+      if (view === "edit" && editDraft && currentIndex !== null) {
+        updatedItems[currentIndex] = editDraft;
+      }
+
+      const allowed = new Set([
+        "name",
+        "price",
+        ...(catCfg.itemFields?.map((f) => f.key) || []),
+      ]);
+
+      const itemsToSend = updatedItems.map((item) => {
+        const out = {};
+        allowed.forEach((k) => {
+          if (item[k] !== undefined && item[k] !== null && item[k] !== "")
+            out[k] = item[k];
+        });
+        if (!item.image && item.existingImageId) out.image = item.existingImageId;
+        if (typeof out.price === "string" && out.price.trim() !== "")
+          out.price = parseInt(out.price);
+        return out;
+      });
+
+      fd.append("items", JSON.stringify(itemsToSend));
+      updatedItems.forEach((item) => {
+        if (item.image instanceof File) fd.append("itemImages", item.image);
+      });
+
+      const url = `${API_BASE}/api/shops/${shopId}`;
+      const res = await axios.put(url, fd, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res?.data?.success) throw new Error("Update failed");
+
+      setFormData({ items: updatedItems });
+      setSuccess("Menu updated successfully!");
+      setTimeout(() => setView("list"), 700);
+    } catch (err) {
+      console.error("PUT error:", err.response?.data || err.message);
+      setError(err?.response?.data?.error || "Update failed");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // ===============================
+  // Render
+  // ===============================
   if (isLoading) {
     return (
       <>
         <Header />
         <div className="item-manager-loading-container">
-          <div className="item-manager-loading-card" style={{ textAlign: 'center', padding: '2rem' }}>
+          <div className="item-manager-loading-card">
             <FaSpinner className="item-manager-loading-spinner" />
             <p>Loading items…</p>
           </div>
@@ -290,203 +364,208 @@ const ShopItemsManager = () => {
     );
   }
 
+  const currentItem =
+    view === "add" ? formData.currentNewItem : view === "edit" ? editDraft : null;
+
   return (
     <>
       <Header />
-      <button
-        type="button"
-        className="item-manager-back-btn"
-        onClick={() => navigate(-1)}
-      >
-        <IoMdArrowRoundBack /> Back
-      </button>
+      <div className="shop-items-manager">
+        {error && <div className="item-manager-error-message">{error}</div>}
+        {success && <div className="item-manager-success-message">{success}</div>}
 
-      <div className="item-manager-main-container">
-        <div className="item-manager-content-card">
-          <h1 className="item-manager-title">
-            Edit {CATEGORY_CONFIG[shopCategory]?.label || 'Shop'} Items
-            {shopName ? <span style={{ fontWeight: 400, marginLeft: 8 }}>— {shopName}</span> : null}
-          </h1>
+        <div className="top-bar">
+          <button
+            onClick={() => {
+              if (view === "list") {
+                navigate("/business-dashboard");
+              } else {
+                setView("list");
+              }
+            }}
+          >
+            <FaChevronLeft />
+          </button>
 
-          {error && <div className="item-manager-error-message">{error}</div>}
-          {success && <div className="item-manager-success-message">{success}</div>}
+          {view === "list" && <span>Edit Menu</span>}
+          {view === "add" && <span>Add Item</span>}
+          {view === "edit" && <span>Edit Item</span>}
+        </div>
 
-          <form onSubmit={handleSubmit}>
-            {formData.items.map((item, index) => (
-              <div key={index} className="item-manager-form-section">
-                <h3>Item {index + 1}</h3>
 
-                {/* Name */}
-                <div className="item-manager-form-group">
-                  <label>Item Name <span className="item-manager-required-field">*</span></label>
+        {view === "list" && (
+          <div className="menu-list">
+            <button className="add-item-btn" onClick={addItem}>
+              <FaPlus /> Add Item
+            </button>
+
+            <div className="item-cards">
+              {formData.items.map((it, i) => (
+                <div className="item-card" key={i}>
+                  <img
+                    src={it.existingImageUrl || "/placeholder.png"}
+                    alt={it.name || "item"}
+                    className="item-img"
+                    onError={(e) => (e.currentTarget.src = "/placeholder.png")}
+                  />
+                  <div className="item-details">
+                    <h3>{it.name || "Unnamed"}</h3>
+                    <p>₹{it.price || 0}</p>
+                  </div>
+                  <div className="item-actions">
+                    <button className="edit-btn" onClick={() => editItem(i)}>
+                      <FaEdit /> Edit
+                    </button>
+                    <button className="delete-btn" onClick={() => openConfirm(i)}>
+                      <FaTrash />
+                    </button>
+                  </div>
+                </div>
+              ))}
+              {formData.items.length === 0 && (
+                <div className="empty-hint">
+                  No items yet. Click “Add Item” to create your first item.
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {(view === "add" || view === "edit") && (
+          <div className="add-edit-form">
+            <form onSubmit={handleSave} className="form-section">
+              <div className="photo-box">
+                {currentItem?.existingImageUrl ? (
+                  <div className="photo-preview-wrap">
+                    <img
+                      src={currentItem.existingImageUrl}
+                      alt="preview"
+                      className="photo-preview"
+                    />
+                    <button
+                      type="button"
+                      className="remove-photo-btn"
+                      onClick={() =>
+                        handleItemChange(currentIndex, "existingImageUrl", undefined)
+                      }
+                    >
+                      <FaTimes />
+                    </button>
+                  </div>
+                ) : (
+                  <label className="photo-upload">
+                    <FaUpload />
+                    <p>Add Photo</p>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) =>
+                        handleItemImageUpload(currentIndex, e.target.files?.[0])
+                      }
+                    />
+                  </label>
+                )}
+              </div>
+
+              <div className="edit-item-container">
+                <div className="input-group">
+                  <label>Item Name</label>
                   <input
                     type="text"
-                    value={item.name || ''}
-                    onChange={(e) => handleItemChange(index, 'name', e.target.value)}
-                    required
+                    value={currentItem?.name || ""}
+                    onChange={(e) =>
+                      handleItemChange(currentIndex, "name", e.target.value)
+                    }
+                    placeholder="Enter item name"
                   />
                 </div>
 
-                {/* Price */}
-                <div className="item-manager-form-group">
-                  <label>Price (₹) <span className="item-manager-required-field">*</span></label>
+                <div className="input-group">
+                  <label>Price (₹)</label>
                   <input
-                    type="number"
+                    type="text"
                     min="0"
-                    step="0.01"
-                    value={item.price}
-                    onChange={(e) => handleItemChange(index, 'price', e.target.value)}
-                    required
+                    value={currentItem?.price || ""}
+                    onChange={(e) =>
+                      handleItemChange(currentIndex, "price", e.target.value)
+                    }
+                    placeholder="Enter price"
                   />
                 </div>
 
-                {/* Dynamic category-specific fields */}
                 {catCfg.itemFields?.map((f) => (
-                  <div className="item-manager-form-group" key={f.key}>
-                    <label>
-                      {f.label}{f.type !== 'textarea' && ' '} {f.type === 'select' || f.type === 'text' ? <span className="item-manager-required-field">*</span> : null}
-                    </label>
-
-                    {f.type === 'boolean' && (
+                  <div className="input-group" key={f.key}>
+                    <label>{f.label}</label>
+                    {f.type === "boolean" && (
                       <button
                         type="button"
-                        className={`item-manager-toggle-btn ${item[f.key] ? 'item-manager-toggle-active' : ''}`}
-                        onClick={() => handleItemChange(index, f.key, !item[f.key])}
+                        className={`toggle-btn ${currentItem?.[f.key] ? "active" : ""}`}
+                        onClick={() =>
+                          handleItemChange(currentIndex, f.key, !currentItem?.[f.key])
+                        }
                       >
-                        {item[f.key] ? 'Yes' : 'No'}
+                        {currentItem?.[f.key] ? "Yes" : "No"}
                       </button>
                     )}
-
-                    {f.type === 'select' && (
+                    {f.type === "select" && (
                       <select
-                        value={item[f.key] ?? f.options[0]}
-                        onChange={(e) => handleItemChange(index, f.key, e.target.value)}
-                        required
+                        value={currentItem?.[f.key] ?? f.options?.[0]}
+                        onChange={(e) =>
+                          handleItemChange(currentIndex, f.key, e.target.value)
+                        }
                       >
-                        {f.options.map((opt) => (
-                          <option key={opt} value={opt}>{opt[0].toUpperCase() + opt.slice(1)}</option>
+                        {f.options?.map((opt) => (
+                          <option key={opt} value={opt}>
+                            {opt[0].toUpperCase() + opt.slice(1)}
+                          </option>
                         ))}
                       </select>
                     )}
-
-                    {f.type === 'text' && (
+                    {f.type === "text" && (
                       <input
                         type="text"
-                        value={item[f.key] || ''}
-                        onChange={(e) => handleItemChange(index, f.key, e.target.value)}
-                        required
-                      />
-                    )}
-
-                    {f.type === 'textarea' && (
-                      <textarea
-                        rows="3"
-                        value={item[f.key] || ''}
-                        onChange={(e) => handleItemChange(index, f.key, e.target.value)}
-                        maxLength={f.maxLength}
-                        placeholder="Short description"
+                        value={currentItem?.[f.key] || ""}
+                        onChange={(e) =>
+                          handleItemChange(currentIndex, f.key, e.target.value)
+                        }
+                        placeholder={`Enter ${f.label.toLowerCase()}`}
                       />
                     )}
                   </div>
                 ))}
 
-                {/* Image section (required for hotel, optional for others) */}
-                <div className="item-manager-form-group">
-                  <label>
-                    Item Image {catCfg.requireImage ? <span className="item-manager-required-field">*</span> : <span className="item-manager-optional-field">(optional)</span>}
-                  </label>
-
-                  {/* Existing image preview */}
-                  {item.existingImageUrl && (
-                    <div className="item-manager-image-preview">
-                      <div className="item-manager-image-preview-content">
-                        <FaImage className="item-manager-image-icon" />
-                        <span className="item-manager-image-text">Existing Image</span>
-                        <button
-                          type="button"
-                          className="item-manager-remove-image-btn"
-                          onClick={() => removeItemImage(index)}
-                          aria-label="Remove existing image"
-                        >
-                          <FaTimes />
-                        </button>
-                      </div>
-                      <img src={item.existingImageUrl} alt="Preview" className="item-manager-image-thumb" />
-                    </div>
+                <button type="submit" className="save-btn" disabled={isSubmitting}>
+                  {isSubmitting ? (
+                    <>
+                      <FaSpinner className="spin" /> Saving...
+                    </>
+                  ) : (
+                    <>
+                      <FaCheck /> Save
+                    </>
                   )}
-
-                  {/* New file preview */}
-                  {item.image && (
-                    <div className="item-manager-image-preview">
-                      <div className="item-manager-image-preview-content">
-                        <FaImage className="item-manager-image-icon" />
-                        <span className="item-manager-image-text">{item.image.name}</span>
-                        <button
-                          type="button"
-                          className="item-manager-remove-image-btn"
-                          onClick={() => removeItemImage(index)}
-                          aria-label="Remove new image"
-                        >
-                          <FaTimes />
-                        </button>
-                      </div>
-                      <img src={URL.createObjectURL(item.image)} alt="Preview" className="item-manager-image-thumb" />
-                    </div>
-                  )}
-
-                  {/* File input */}
-                  <label className="item-manager-file-upload-label">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (!file) return;
-                        if (file.size > 5 * 1024 * 1024) {
-                          setError('Each image must be 5MB or less');
-                          return;
-                        }
-                        handleItemImageUpload(index, file);
-                      }}
-                      className="item-manager-file-input"
-                    />
-                    <span className="item-manager-file-upload-btn">
-                      <FaUpload /> {item.image || item.existingImageUrl ? 'Change Image' : 'Upload Image'}
-                    </span>
-                    <span className="item-manager-file-upload-note">(JPG, PNG, max 5MB)</span>
-                  </label>
-                </div>
-
-                {/* Remove item */}
-                <button
-                  type="button"
-                  className="item-manager-remove-item-btn"
-                  onClick={() => removeItem(index)}
-                >
-                  <FaTrash /> Remove Item
                 </button>
               </div>
-            ))}
+            </form>
+          </div>
+        )}
 
-            {/* Add item */}
-            <button type="button" className="item-manager-add-item-btn" onClick={addItem}>
-              <FaPlus /> Add Item
-            </button>
-
-            {/* Submit */}
-            <button type="submit" className="item-manager-submit-btn" disabled={isSubmitting}>
-              {isSubmitting ? (
-                <>
-                  <FaSpinner className="item-manager-submit-spinner" /> Updating...
-                </>
-              ) : (
-                <>
-                  <FaCheck /> Update Items
-                </>
-              )}
-            </button>
-          </form>
-        </div>
+        {showConfirm && (
+          <div className="confirm-overlay">
+            <div className="confirm-box">
+              <h3>Remove this item?</h3>
+              <p>This action cannot be undone.</p>
+              <div className="confirm-actions">
+                <button className="cancel-buttons" onClick={cancelDelete}>
+                  Cancel
+                </button>
+                <button className="remove-btn" onClick={confirmDelete}>
+                  Remove
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
       <Footer />
     </>
