@@ -73,7 +73,8 @@ import {
   FaChartLine,
   FaFileAlt,   // we'll use this for "Orders"
   FaStore,
-  FaUserCircle
+  FaUserCircle,
+  FaClipboardList
 } from 'react-icons/fa';
 import logo from '../assets/images/logo.jpg';
 import { useAuth } from '../context/AuthContext';
