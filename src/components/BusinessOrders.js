@@ -265,9 +265,9 @@ useEffect(() => {
             <Header />
             <div className="bo">
                 <div className="bo-header">
-                    <div className="cart-topbar">
+                    {/* <div className="cart-topbar">
                         <button className="back-btn" onClick={() => navigate('/business-dashboard')}>← Back</button>
-                    </div>
+                    </div> */}
                     <h2>{title}</h2>
                     <label className="bo-toggle">
                         <input
