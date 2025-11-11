@@ -13,13 +13,12 @@ import { auth } from '../firebase';
 import axios from 'axios';
 import moment from 'moment';
 import ImageCropper from './ImageCropper';
+import { FaUpload } from 'react-icons/fa'
 import useDriverHeartbeat from '../hooks/useDriverHeartbeat';
+import img from '../assets/images/avatar.jpg'
 import 'moment/locale/en-in'; // Import the locale you need
 import DailyEarningsFilter from './DailyEarningsFilter';
-import { FaUpload } from 'react-icons/fa'
-import avatarImg from '../assets/images/avatar.jpg'
-import { useLocation } from "react-router-dom";
-
+import HelplineButton from './HelplineButton';
 // import useDriverHeartbeat from '../hooks/useDriverHeartbeat';
 // Initialize moment with the desired locale
 moment.locale('en-in');
@@ -49,27 +48,22 @@ const DriverDashboard = () => {
     const [marqueeText] = useState('Earn ₹10 Cashback');
     const [fatal, setFatal] = useState(null);
 
-    const [cropMode, setCropMode] = useState(false);
-    const [selectedImage, setSelectedImage] = useState(null);
-
-    const [showPreview, setShowPreview] = useState(false);
-    const pressTimer = useRef(null);
 
     const [passbookUploaded, setPassbookUploaded] = useState(false);
     const passbookInputRef = useRef(null);
 
+
     // 👇 add this near your other useStates
-const [showCropper, setShowCropper] = useState(false);
-const [imageToCrop, setImageToCrop] = useState(null);
+    const [showCropper, setShowCropper] = useState(false);
+    const [imageToCrop, setImageToCrop] = useState(null);
+
+
+
+
+    const [cropMode, setCropMode] = useState(false);
+    const [selectedImage, setSelectedImage] = useState(null);
 
     const [showUploadOptions, setShowUploadOptions] = useState(false);
-
-
-
-    const location = useLocation();
-
-
-    const shipmentsRef = useRef(null);
 
 
     const loadRazorpay = () => {
@@ -92,7 +86,7 @@ const [imageToCrop, setImageToCrop] = useState(null);
 
             // Step 1: Ask backend to create Razorpay order
             const res = await axios.post(
-                `https://jio-yatri-driver.onrender.com/api/settlement/initiate-payment`,
+                ` https://jio-yatri-driver.onrender.com/api/settlement/initiate-payment`,
                 { settlementId, amount },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
@@ -113,7 +107,7 @@ const [imageToCrop, setImageToCrop] = useState(null);
                 handler: async function (response) {
                     // ✅ Step 3: Verify payment with backend (ONLY ONCE)
                     await axios.post(
-                        `https://jio-yatri-driver.onrender.com/api/settlement/verify-payment`,
+                        ` https://jio-yatri-driver.onrender.com/api/settlement/verify-payment`,
                         {
                             razorpay_payment_id: response.razorpay_payment_id,
                             razorpay_order_id: response.razorpay_order_id,
@@ -145,29 +139,13 @@ const [imageToCrop, setImageToCrop] = useState(null);
 
 
 
-    // 🔹 Detect long-press start (500 ms)
-    const handleLongPressStart = () => {
-        pressTimer.current = setTimeout(() => setShowPreview(true), 500);
-    };
-
-    // 🔹 Cancel if released early
-    const handleLongPressEnd = () => {
-        clearTimeout(pressTimer.current);
-    };
-
-    // 🔹 Close preview
-    const handleClosePreview = () => {
-        setShowPreview(false);
-    };
-
-
     const fetchDriverInfo = useCallback(async () => {
         try {
             const token = await user.getIdToken();
 
             // First check for pending settlements
             const settlementCheckRes = await fetch(
-                `https://jio-yatri-driver.onrender.com/api/settlement/check-settlement/${user.uid}`,
+                ` https://jio-yatri-driver.onrender.com/api/settlement/check-settlement/${user.uid}`,
                 {
                     method: 'GET',
                     headers: { Authorization: `Bearer ${token}` }
@@ -180,13 +158,13 @@ const [imageToCrop, setImageToCrop] = useState(null);
 
             // Then fetch all driver data
             const [driverRes, imageRes, settlementRes] = await Promise.all([
-                fetch(`https://jio-yatri-driver.onrender.com/api/driver/info/${user.uid}`, {
+                fetch(` https://jio-yatri-driver.onrender.com/api/driver/info/${user.uid}`, {
                     headers: { Authorization: `Bearer ${token}` }
                 }),
-                fetch(`https://jio-yatri-driver.onrender.com/api/upload/profile-image/${user.uid}`, {
+                fetch(` https://jio-yatri-driver.onrender.com/api/upload/profile-image/${user.uid}`, {
                     headers: { Authorization: `Bearer ${token}` }
                 }),
-                fetch(`https://jio-yatri-driver.onrender.com/api/settlement/driver/${user.uid}`, {
+                fetch(` https://jio-yatri-driver.onrender.com/api/settlement/driver/${user.uid}`, {
                     headers: { Authorization: `Bearer ${token}` }
                 })
             ]);
@@ -201,6 +179,11 @@ const [imageToCrop, setImageToCrop] = useState(null);
 
             const driverData = await driverRes.json();
             const settlementData = await settlementRes.json();
+
+            // 🧭 Debugging logs
+            console.log("✅ Driver info:", driverData.data);
+            console.log("📄 Document verification from backend:", driverData.data.documentVerification);
+
 
             setDriverInfo(driverData.data);
             setPassbookUploaded(!!driverData.data?.passbook);
@@ -218,18 +201,22 @@ const [imageToCrop, setImageToCrop] = useState(null);
             try {
                 if (imageRes.ok) {
                     const blob = await imageRes.blob();
-                    const imageUrl = URL.createObjectURL(blob);
-                    setProfileImage(imageUrl);
+                    if (blob.size > 0) {
+                        const imageUrl = URL.createObjectURL(blob);
+                        setProfileImage(imageUrl);
+                    } else {
+                        setProfileImage(img); // 🟢 fallback to imported default image
+                    }
                 } else if (user.photoURL) {
                     setProfileImage(user.photoURL);
                 } else {
-                    // console.warn('⚠️ No profile image found — using default avatar.');
-                    setProfileImage(avatarImg); // 👈 use imported image
+                    setProfileImage(img); // 🟢 fallback to imported default image
                 }
             } catch (imgErr) {
-                // console.warn('⚠️ Profile image fetch failed:', imgErr.message);
-                setProfileImage(avatarImg); // 👈 fallback again
+                console.warn('⚠️ Profile image fetch failed:', imgErr.message);
+                setProfileImage(img); // 🟢 always fallback to default image
             }
+
 
         } catch (err) {
             setError(err.message);
@@ -261,28 +248,6 @@ const [imageToCrop, setImageToCrop] = useState(null);
         };
     }, []);
 
-    useEffect(() => {
-  if (location.pathname === "/orders") {
-    console.log("📦 Scrolling to Available Shipments (via /orders)");
-    const tryScroll = () => {
-      if (shipmentsRef.current) {
-        shipmentsRef.current.scrollIntoView({
-          behavior: "smooth",
-          block: "start",
-        });
-        clearInterval(timer);
-      }
-    };
-
-    // Retry until AvailableShipments is rendered
-    const timer = setInterval(tryScroll, 500);
-    setTimeout(() => clearInterval(timer), 5000);
-
-    return () => clearInterval(timer);
-  }
-}, [location.pathname, shipments.length]);
-
-
 
     useEffect(() => {
         if (!user) return;
@@ -292,7 +257,7 @@ const [imageToCrop, setImageToCrop] = useState(null);
         const fetchShipments = async () => {
             try {
                 const token = await user.getIdToken();
-                const res = await axios.get(`https://jio-yatri-driver.onrender.com/api/shipments/driver/${user.uid}`, {
+                const res = await axios.get(` https://jio-yatri-driver.onrender.com/api/shipments/driver/${user.uid}`, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
                 setShipments(res.data || []);
@@ -324,41 +289,6 @@ const [imageToCrop, setImageToCrop] = useState(null);
         return () => clearInterval(interval);
     }, [])
 
-
-  useEffect(() => {
-  const params = new URLSearchParams(window.location.search);
-  const scrollTo = params.get("scrollTo");
-
-  if (scrollTo === "shipments") {
-    console.log("📦 Scrolling to Available Shipments section...");
-
-    // Keep trying until the section is rendered
-    const tryScroll = () => {
-      if (shipmentsRef.current) {
-        shipmentsRef.current.scrollIntoView({
-          behavior: "smooth",
-          block: "start",
-        });
-        console.log("✅ Scrolled to Available Shipments section");
-        clearInterval(timer); // stop retrying once done
-      } else {
-        console.warn("⚠️ shipmentsRef not ready yet, retrying...");
-      }
-    };
-
-    // Check every 500ms up to 5 seconds
-    const timer = setInterval(tryScroll, 500);
-
-    // Stop after 5 seconds to avoid infinite loop
-    setTimeout(() => clearInterval(timer), 5000);
-
-    return () => clearInterval(timer);
-  }
-}, [shipments.length]);
-
-
-
-
     // const allDocumentsVerified = useMemo(() => {
     //     if (!driverInfo?.documentVerification) return false;
     //     return Object.values(driverInfo.documentVerification).every(
@@ -383,7 +313,7 @@ const [imageToCrop, setImageToCrop] = useState(null);
         setIsUpdating(true);
         try {
             const token = await user.getIdToken(true);
-            const res = await fetch('https://jio-yatri-driver.onrender.com/api/driver/status', {
+            const res = await fetch(' https://jio-yatri-driver.onrender.com/api/driver/status', {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -407,29 +337,28 @@ const [imageToCrop, setImageToCrop] = useState(null);
         }
     };
     // 📸 Handles both PDF and Image selection (camera or file)
-const handlePassbookSelect = (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
+    const handlePassbookSelect = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
 
-  const isImage = file.type.startsWith('image/');
-  const isPDF = file.type === 'application/pdf';
+        const isImage = file.type.startsWith('image/');
+        const isPDF = file.type === 'application/pdf';
 
-  if (isPDF) {
-    // Direct upload if it's a PDF
-    handlePassbookUpload(file);
-  } else if (isImage) {
-    // Open cropper for image
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setImageToCrop(reader.result);
-      setShowCropper(true);
+        if (isPDF) {
+            // Direct upload if it's a PDF
+            handlePassbookUpload(file);
+        } else if (isImage) {
+            // Open cropper for image
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setImageToCrop(reader.result);
+                setShowCropper(true);
+            };
+            reader.readAsDataURL(file);
+        } else {
+            setMessage({ text: 'Only image or PDF files are allowed.', isError: true });
+        }
     };
-    reader.readAsDataURL(file);
-  } else {
-    setMessage({ text: 'Only image or PDF files are allowed.', isError: true });
-  }
-};
-
 
     const handleShareClick = async () => {
         try {
@@ -445,44 +374,66 @@ const handlePassbookSelect = (e) => {
         }
     };
 
-   // 🆕 Updated to receive File directly (no event)
-const handlePassbookUpload = async (file) => {
-  if (!file) return;
+    // const handlePassbookUpload = async (e) => {
+    //     const file = e.target.files[0];
+    //     if (!file) return;
 
-  try {
-    const token = await user.getIdToken();
-    const formData = new FormData();
-    formData.append('file', file);
+    //     try {
+    //         const token = await user.getIdToken();
+    //         const formData = new FormData();
+    //         formData.append('file', file);
 
-    const res = await fetch('https://jio-yatri-driver.onrender.com/api/passbook/upload-passbook', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
-      body: formData,
-    });
+    //         const res = await fetch('http://localhost:5000/api/passbook/upload-passbook', {
+    //             method: 'POST',
+    //             headers: { Authorization: `Bearer ${token}` },
+    //             body: formData
+    //         });
 
-    if (!res.ok) throw new Error('Passbook upload failed');
+    //         if (!res.ok) throw new Error('Passbook upload failed');
+    //         const data = await res.json();
 
-    setPassbookUploaded(true);
-    setMessage({ text: 'Passbook uploaded successfully', isError: false });
-    await fetchDriverInfo();
-  } catch (err) {
-    console.error('Error uploading passbook:', err);
-    setMessage({ text: err.message, isError: true });
-  }
-};
+    //         setPassbookUploaded(true);
+    //         setMessage({ text: 'Passbook uploaded successfully', isError: false });
+    //     } catch (err) {
+    //         console.error('Error uploading passbook:', err);
+    //         setMessage({ text: err.message, isError: true });
+    //     }
+    // };
+    // 🆕 Updated to receive File directly (no event)
+    const handlePassbookUpload = async (file) => {
+        if (!file) return;
 
+        try {
+            const token = await user.getIdToken();
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const res = await fetch('https://jio-yatri-driver.onrender.com/api/passbook/upload-passbook', {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${token}` },
+                body: formData,
+            });
+
+            if (!res.ok) throw new Error('Passbook upload failed');
+
+            setPassbookUploaded(true);
+            setMessage({ text: 'Passbook uploaded successfully', isError: false });
+        } catch (err) {
+            console.error('Error uploading passbook:', err);
+            setMessage({ text: err.message, isError: true });
+        }
+    };
     // ✅ Called after cropping done
-const handleCroppedPassbook = async (croppedImageUrl) => {
-  setShowCropper(false);
+    const handleCroppedPassbook = async (croppedImageUrl) => {
+        setShowCropper(false);
 
-  const response = await fetch(croppedImageUrl);
-  const blob = await response.blob();
-  const croppedFile = new File([blob], 'passbook.jpg', { type: 'image/jpeg' });
+        const response = await fetch(croppedImageUrl);
+        const blob = await response.blob();
+        const croppedFile = new File([blob], 'passbook.jpg', { type: 'image/jpeg' });
 
-  await handlePassbookUpload(croppedFile);
-  setImageToCrop(null);
-};
-
+        await handlePassbookUpload(croppedFile);
+        setImageToCrop(null);
+    };
 
 
     const handleImageUpload = (e) => {
@@ -536,6 +487,7 @@ const handleCroppedPassbook = async (croppedImageUrl) => {
             setIsUploading(false);
         }
     };
+
     const handleLogout = async () => {
         try {
             await signOut(auth);
@@ -587,7 +539,7 @@ const handleCroppedPassbook = async (croppedImageUrl) => {
 
             // Optionally re-fetch settlements to show it is still "pending"
             const token = await user.getIdToken();
-            const res = await axios.get(`https://jio-yatri-driver.onrender.com/api/settlement/driver/${user.uid}`, {
+            const res = await axios.get(` https://jio-yatri-driver.onrender.com/api/settlement/driver/${user.uid}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
 
@@ -613,6 +565,18 @@ const handleCroppedPassbook = async (croppedImageUrl) => {
             default: return <MdDirectionsCar />;
         }
     };
+
+    const handleUploadClick = () => {
+        const choice = window.confirm("Click OK to open Camera or Cancel to choose from Files");
+
+        if (choice) {
+            document.getElementById("cameraInput").click(); // Opens Camera
+        } else {
+            document.getElementById("fileInput").click(); // Opens Files/Gallery
+        }
+    };
+
+
 
     const renderRatingStars = () => {
         const rating = driverInfo?.ratings?.average || 0;
@@ -792,36 +756,43 @@ const handleCroppedPassbook = async (croppedImageUrl) => {
 
 
             <div className="dd-container">
-                <div className="dd-header">
-                    <h1>Driver Dashboard</h1>
-                    <div className='buttons'>
-                        <button className="dd-share-btn" onClick={handleShareClick}>
-                            <div className="dd-marquee-container">
-                                {marqueeActive ? (
-                                    <div className="dd-marquee-content">
-                                        <span className="dd-marquee-text">{marqueeText}</span>
-                                    </div>
-                                ) : (
-                                    <div className="dd-static-text">Share</div>
-                                )}
-                            </div>
-                        </button>
-                        <button className="dd-youtube-btn" onClick={handleYoutubeClick}>
-                            <FaYoutube className='dd-youtube-icon' />
-                        </button>
-                    </div>
-                    <div className="dd-status-toggle">
-                        <span>Status: {status}</span>
-                        <button
-                            onClick={toggleStatus}
-                            disabled={isUpdating}
-                            className={`dd-toggle-btn ${status === 'active' ? 'dd-active' : 'dd-inactive'}`}
-                        >
-                            {status === 'active' ? <FaToggleOn /> : <FaToggleOff />}
-                            {isUpdating ? 'Updating...' : status === 'active' ? 'Go Offline' : 'Go Online'}
-                        </button>
+
+
+                <div className="driverTopUI-header">
+                    <h2 className="driverTopUI-title">Driver Dashboard</h2>
+                    <img src={profileImage || img} alt="Driver" className="driverTopUI-avatar" />
+                    <HelplineButton />
+                </div>
+
+                <div className="driverTopUI-row">
+                    <button className="driverTopUI-share" onClick={handleShareClick}>
+                        <div className="driverTopUI-marquee">
+                            <span>Earn ₹10 Cashback — Share & Earn Now!</span>
+                        </div>
+                    </button>
+
+                    <button className="driverTopUI-youtube" onClick={handleYoutubeClick}>
+                        <FaYoutube className="driverTopUI-youtube-icon" />
+                    </button>
+
+                    <div className="driverTopUI-status">
+                        <label className="driverTopUI-switch">
+                            <input
+                                type="checkbox"
+                                checked={status === 'active'}
+                                onChange={toggleStatus}
+                            />
+                            <span className="driverTopUI-slider"></span>
+                        </label>
+                        <span className="driverTopUI-status-text">
+                            {status === 'active' ? 'Active' : 'Inactive'}
+                        </span>
                     </div>
                 </div>
+
+
+
+
 
                 {!passbookUploaded && (
                     <div className={`dd-passbook-alert ${passbookUploaded ? 'dd-passbook-hide' : ''}`}>
@@ -843,30 +814,44 @@ const handleCroppedPassbook = async (croppedImageUrl) => {
                             <FaUpload style={{ marginRight: '6px' }} />
                         </button>
 
-{/* Hidden input for picking from Files/Gallery */}
-<input
-  type="file"
- accept="image/*,.pdf"
-  id="fileInput"
-  style={{ display: 'none' }}
-  onChange={(e) => handlePassbookSelect(e)}
-/>
 
-{/* Hidden input for directly opening Camera */}
-<input
-  type="file"
-  accept="image/*"
-  capture="environment"
-  id="cameraInput"
-  style={{ display: 'none' }}
-  onChange={(e) => handlePassbookSelect(e)}
-/>
+
+                        {/* <input
+                                type="file"
+                                accept="image/*,application/pdf"
+                                ref={passbookInputRef}
+                                style={{ display: 'none' }}
+                                onChange={handlePassbookUpload}
+                            /> */}
+                        {/* For Gallery/File */}
+                        {/* Hidden input for picking from Files/Gallery */}
+                        <input
+                            type="file"
+                            accept="image/*,.pdf"
+                            id="fileInput"
+                            style={{ display: 'none' }}
+                            onChange={(e) => handlePassbookSelect(e)}
+                        />
+
+                        {/* Hidden input for directly opening Camera */}
+                        <input
+                            type="file"
+                            accept="image/*"
+                            capture="environment"
+                            id="cameraInput"
+                            style={{ display: 'none' }}
+                            onChange={(e) => handlePassbookSelect(e)}
+                        />
+
 
 
                     </div>
                 )}
 
-                <div className="dd-profile">
+
+
+
+                {/* <div className="dd-profile">
                     <div className="dd-profile-card">
                         <div className="dd-profile-header">
                             <div className="dd-avatar">
@@ -874,23 +859,12 @@ const handleCroppedPassbook = async (croppedImageUrl) => {
                                     <div className="dd-spinner"></div>
                                 ) : profileImage ? (
                                     <img
-                                        src={profileImage || avatarImg}   // 👈 fallback to default if profileImage is null
+                                        src={profileImage}
                                         className="dd-profile-image"
                                         alt="Profile"
-                                        onClick={() => fileInputRef.current.click()}
-                                        onMouseDown={handleLongPressStart}
-                                        onMouseUp={handleLongPressEnd}
-                                        onMouseLeave={handleLongPressEnd}
-                                        onTouchStart={handleLongPressStart}
-                                        onTouchEnd={handleLongPressEnd}
-                                        style={{ cursor: 'pointer' }}
-                                        onError={(e) => {
-                                            // console.warn('⚠️ Profile image failed to load, switching to default avatar.');
-                                            e.target.onerror = null;        // prevent infinite loop
-                                            e.target.src = avatarImg;       // 👈 load fallback image
-                                        }}
+                                        onClick={() => fileInputRef.current.click()} // Make avatar clickable
+                                        style={{ cursor: 'pointer' }} // Shows pointer on hover
                                     />
-
                                 ) : (
                                     <FaUser
                                         className="dd-default-avatar"
@@ -948,7 +922,7 @@ const handleCroppedPassbook = async (croppedImageUrl) => {
                             <p>{(driverInfo?.ratings?.average || 0).toFixed(1)}</p>
                         </div>
                     </div>
-                </div>
+                </div> */}
 
                 <div className="settlement-card">
                     <h3>Today's Earnings</h3>
@@ -1017,6 +991,7 @@ const handleCroppedPassbook = async (croppedImageUrl) => {
                         </div>
                     )}
                 </div>
+                <AvailableShipments />
 
                 {/* {driverInfo && (
                     <DailyEarningsFilter
@@ -1026,7 +1001,7 @@ const handleCroppedPassbook = async (croppedImageUrl) => {
                     />
                 )} */}
 
-                <div className="dd-actions">
+                {/* <div className="dd-actions">
                     <button className="dd-history-btn" onClick={() => navigate('/delivery-history')}>
                         Delivery History
                     </button>
@@ -1037,16 +1012,10 @@ const handleCroppedPassbook = async (croppedImageUrl) => {
                     >
                         Daily Earnings
                     </button>
-
-
-
-                    {/* <button className="dd-history-btn" onClick={() => navigate('/driver/earnings')}>
-                        View Earnings History
-                    </button> */}
-                </div>
+                </div> */}
             </div>
+            {/* <LocationTracker /> */}
 
-            <AvailableShipments ref={shipmentsRef}/>
             {cropMode && (
                 <ImageCropper
                     image={selectedImage}
@@ -1054,83 +1023,77 @@ const handleCroppedPassbook = async (croppedImageUrl) => {
                     onCancel={() => setCropMode(false)}
                 />
             )}
-
-            {showPreview && (
-                <div className="profile-preview-overlay" onClick={handleClosePreview}>
-                    <div className="profile-preview-circle">
-                        <img
-                            src={profileImage}
-                            alt="Profile Preview"
-                            className="profile-preview-img"
+            {showCropper && (
+                <div className="cropper-overlay">
+                    <div className="cropper-modal">
+                        <ImageCropper
+                            image={imageToCrop}
+                            onCropComplete={handleCroppedPassbook}
+                            onCancel={() => {
+                                setShowCropper(false);
+                                setImageToCrop(null);
+                            }}
                         />
                     </div>
                 </div>
             )}
-{showCropper && (
-  <div className="cropper-overlay">
-    <div className="cropper-modal">
-      <ImageCropper
-        image={imageToCrop}
-        onCropComplete={handleCroppedPassbook}
-        onCancel={() => {
-          setShowCropper(false);
-          setImageToCrop(null);
-        }}
-      />
-    </div>
-  </div>
-)}
 
-{showUploadOptions && (
-  <div className="upload-bottomsheet-overlay" onClick={() => setShowUploadOptions(false)}>
-    <div className="upload-bottomsheet" onClick={(e) => e.stopPropagation()}>
-      <h3>Select Upload Option</h3>
+            {showUploadOptions && (
+                <div className="upload-bottomsheet-overlay" onClick={() => setShowUploadOptions(false)}>
+                    <div className="upload-bottomsheet" onClick={(e) => e.stopPropagation()}>
+                        <h3>Select Upload Option</h3>
 
-      <button
-        className="upload-option"
-        onClick={() => {
-          document.getElementById("cameraInput").click();
-          setShowUploadOptions(false);
-        }}
-      >
-        📷 Camera
-      </button>
+                        <button
+                            className="upload-option"
+                            onClick={() => {
+                                document.getElementById("cameraInput").click();
+                                setShowUploadOptions(false);
+                            }}
+                        >
+                            📷 Camera
+                        </button>
 
-      <button
-        className="upload-option"
-        onClick={() => {
-          document.getElementById("fileInput").click();
-          setShowUploadOptions(false);
-        }}
-      >
-        📂 Gallery / Files
-      </button>
+                        <button
+                            className="upload-option"
+                            onClick={() => {
+                                document.getElementById("fileInput").click();
+                                setShowUploadOptions(false);
+                            }}
+                        >
+                            📂 Gallery / Files
+                        </button>
 
-      <button
-        className="upload-cancel"
-        onClick={() => setShowUploadOptions(false)}
-      >
-        Cancel
-      </button>
-    </div>
-  </div>
-)}
+                        <button
+                            className="upload-cancel"
+                            onClick={() => setShowUploadOptions(false)}
+                        >
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            )}
 
-    {status === 'inactive' && (
-  <div className="go-overlay">
-    <div className="go-container">
-      <div className="go-circle" onClick={toggleStatus}>
-        Go!
-      </div>
-      <div className="go-bottom">
-        <p className="go-message">
-          You are currently offline.<br />
-          Tap below to go online and start receiving shipments!
-        </p>
-      </div>
-    </div>
-  </div>
-)}
+
+            {status === 'inactive' && (
+                <div className="go-overlay">
+                    <div className="go-container">
+                        <div className="go-circle" onClick={toggleStatus}>
+                            Go!
+                        </div>
+                        <div className="go-bottom">
+                            <p className="go-message">
+                                You are currently offline.<br />
+                                Tap below to go online and start receiving shipments!
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+
+
+
+
 
 
 

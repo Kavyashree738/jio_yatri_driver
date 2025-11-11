@@ -9,6 +9,11 @@ import { useNavigate } from 'react-router-dom';
 import { ref, set } from "firebase/database";
 import { db } from "../firebase";
 import { FaPhone } from 'react-icons/fa';
+import parcelImg from '../assets/images/parcel.png';
+import Header from '../components/Header'
+import sandTimer from "../assets/animations/sand-timer.json.json";
+import Lottie from "lottie-react";
+
 
 const API_BASE_URL = 'https://jio-yatri-driver.onrender.com';
 
@@ -163,70 +168,70 @@ const EtaDisplay = React.memo(
   }
 );
 
-const ShipmentDetailsCard = ({ shipment }) => {
-  // console.log('📱 ShipmentDetailsCard rendered with shipment:', shipment);
-  if (!shipment) {
-    // console.log('📱 ShipmentDetailsCard: no shipment');
-    return null;
-  }
-  return (
-    <div className="shipment-details-card">
-      <div className="shipment-header">
-        <h3>Shipment #{shipment.trackingNumber}</h3>
-        <div className="badge-row">
-          <span className={`status-badge ${shipment.status}`}>{shipment.status}</span>
+// const ShipmentDetailsCard = ({ shipment }) => {
+//   // console.log('📱 ShipmentDetailsCard rendered with shipment:', shipment);
+//   if (!shipment) {
+//     // console.log('📱 ShipmentDetailsCard: no shipment');
+//     return null;
+//   }
+//   return (
+//     <div className="shipment-details-card">
+//       <div className="shipment-header">
+//         <h3>Shipment #{shipment.trackingNumber}</h3>
+//         <div className="badge-row">
+//           <span className={`status-badge ${shipment.status}`}>{shipment.status}</span>
 
-          {shipment.payment?.method === "razorpay" ? (
-            <span className="payment-badge prepaid">
-              Prepaid ₹{shipment.cost?.toFixed(2)}
-            </span>
-          ) : (
-            <span className="payment-badge cod">
-              Cash ₹{shipment.cost?.toFixed(2)}
-            </span>
-          )}
-        </div>
-        {/* <span className={`status-badge ${shipment.status}`}>{shipment.status}</span> */}
-      </div>
-      <div className="shipment-body">
-        <div className="address-sections">
-          <div className="address-card sender">
-            <h4>Sender</h4>
-            <p>
-              <strong>Name:</strong> {shipment.sender?.name}
-            </p>
-            <p>
-              <strong>Phone:</strong> {shipment.sender?.phone}
-        {shipment.sender?.phone && (
-    <FaPhone
-      className="call-icons"
-      onClick={() => handleCall(shipment.sender?.phone)}
-    />
-  )}
-            </p>
-            <p>{shipment.sender?.address?.addressLine1}</p>
-          </div>
-          <div className="address-card receiver">
-            <h4>Receiver</h4>
-            <p>
-              <strong>Name:</strong> {shipment.receiver?.name}
-            </p>
-            <p>
-              <strong>Phone:</strong> {shipment.receiver?.phone}
-               {shipment.receiver?.phone && (
-    <FaPhone
-      className="call-icons"
-      onClick={() => handleCall(shipment.receiver?.phone)}
-    />
-  )}
-            </p>
-            <p>{shipment.receiver?.address?.addressLine1}</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
+//           {shipment.payment?.method === "razorpay" ? (
+//             <span className="payment-badge prepaid">
+//               Prepaid ₹{shipment.cost?.toFixed(2)}
+//             </span>
+//           ) : (
+//             <span className="payment-badge cod">
+//               Cash ₹{shipment.cost?.toFixed(2)}
+//             </span>
+//           )}
+//         </div>
+//         {/* <span className={`status-badge ${shipment.status}`}>{shipment.status}</span> */}
+//       </div>
+//       <div className="shipment-body">
+//         <div className="address-sections">
+//           <div className="address-card sender">
+//             <h4>Sender</h4>
+//             <p>
+//               <strong>Name:</strong> {shipment.sender?.name}
+//             </p>
+//             <p>
+//               <strong>Phone:</strong> {shipment.sender?.phone}
+//               {shipment.sender?.phone && (
+//                 <FaPhone
+//                   className="call-icons"
+//                   onClick={() => handleCall(shipment.sender?.phone)}
+//                 />
+//               )}
+//             </p>
+//             <p>{shipment.sender?.address?.addressLine1}</p>
+//           </div>
+//           <div className="address-card receiver">
+//             <h4>Receiver</h4>
+//             <p>
+//               <strong>Name:</strong> {shipment.receiver?.name}
+//             </p>
+//             <p>
+//               <strong>Phone:</strong> {shipment.receiver?.phone}
+//               {shipment.receiver?.phone && (
+//                 <FaPhone
+//                   className="call-icons"
+//                   onClick={() => handleCall(shipment.receiver?.phone)}
+//                 />
+//               )}
+//             </p>
+//             <p>{shipment.receiver?.address?.addressLine1}</p>
+//           </div>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// };
 
 /* ---------------------------- Main Component ---------------------------- */
 const LocationTracker = ({ shipment, onStatusUpdate }) => {
@@ -235,22 +240,38 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
   // console.log('👤 Auth user:', user);
   const [showCancelPopup, setShowCancelPopup] = useState(false);
   const statusHandledRef = useRef(false);
-const [showPaymentPendingPopup, setShowPaymentPendingPopup] = useState(false);
+  const [showPaymentPendingPopup, setShowPaymentPendingPopup] = useState(false);
+
+  const [showReceiverOtpSection, setShowReceiverOtpSection] = useState(false);
+
 
   const [showDeliverPopup, setShowDeliverPopup] = useState(false);
   const [showOtpPopup, setShowOtpPopup] = useState(false);
   const [enteredOtp, setEnteredOtp] = useState('');
+  // const [pickupVerified, setPickupVerified] = useState(
+  //   localStorage.getItem('pickupVerified') === 'true'
+  // );
   const [pickupVerified, setPickupVerified] = useState(
+    shipment?.status === 'picked_up' ||
     localStorage.getItem('pickupVerified') === 'true'
   );
+
   // console.log('🔐 Pickup verified state:', pickupVerified);
   const [showReceiverOtpPopup, setShowReceiverOtpPopup] = useState(false);
   const [receiverOtp, setReceiverOtp] = useState('');
+
+  const [isSendingReceiverOtp, setIsSendingReceiverOtp] = useState(false);
+  const [receiverOtpSent, setReceiverOtpSent] = useState(false);
+
   const [receiverOtpVerified, setReceiverOtpVerified] = useState(
     localStorage.getItem('receiverOtpVerified') === 'true'
   );
   // console.log('🔐 Receiver OTP verified state:', receiverOtpVerified);
   const navigate = useNavigate();
+
+  const swipeRef = useRef(null);
+  const [isUnlocked, setIsUnlocked] = useState(false);
+  const swipeDeliverRef = useRef(null);
 
   const { position: geoPosition } = useGeolocation({
     enableHighAccuracy: true,
@@ -283,6 +304,14 @@ const [showPaymentPendingPopup, setShowPaymentPendingPopup] = useState(false);
   }, [shipment]);
 
   useEffect(() => {
+    if (isUnlocked) {
+      const timer = setTimeout(() => setIsUnlocked(false), 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [isUnlocked]);
+
+
+  useEffect(() => {
     // console.log('🔄 Shipment status effect - shipment:', shipment);
     if (shipment && ['cancelled'].includes(shipment.status)) {
       // console.log('🗑️ Removing shipment from localStorage - status:', shipment.status);
@@ -310,25 +339,35 @@ const [showPaymentPendingPopup, setShowPaymentPendingPopup] = useState(false);
         );
 
         const latestStatus = res.data.status;
-        // console.log(`♻️ Shipment status polled from backend → ${latestStatus}`);
+        console.log(`♻️ Shipment status polled → ${latestStatus}`);
 
-        // ✅ Run this only ONCE when status first becomes cancelled/delivered
+        // ✅ Update pickupVerified and receiverOtpVerified
+        if (latestStatus === "picked_up") {
+          console.log("✅ Backend says picked_up — updating pickupVerified");
+          setPickupVerified(true);
+          localStorage.setItem("pickupVerified", "true");
+        } else if (latestStatus === "delivered") {
+          setReceiverOtpVerified(true);
+          localStorage.setItem("receiverOtpVerified", "true");
+        }
+
+        // ✅ Handle cancellation or delivery cleanup
         if (
           !statusHandledRef.current &&
-          ['cancelled'].includes(latestStatus)
+          ["cancelled", "delivered"].includes(latestStatus)
         ) {
-          statusHandledRef.current = true; // mark handled once
+          statusHandledRef.current = true;
 
-          // console.log(`🗑️ Shipment ${latestStatus} — clearing localStorage + resetting state`);
-          localStorage.removeItem('lastShipment');
-          localStorage.removeItem('pickupVerified');
-          localStorage.removeItem('receiverOtpVerified');
+          localStorage.removeItem("lastShipment");
+          localStorage.removeItem("pickupVerified");
+          localStorage.removeItem("receiverOtpVerified");
           setLocalShipment(null);
+
           if (onStatusUpdate) onStatusUpdate(latestStatus);
           toast.info(`Shipment ${latestStatus}`);
         }
       } catch (err) {
-        // console.error('⚠️ Error fetching shipment status:', err.message);
+        console.error("⚠️ Error fetching shipment status:", err.message);
       }
     }, 5000);
 
@@ -336,44 +375,46 @@ const [showPaymentPendingPopup, setShowPaymentPendingPopup] = useState(false);
   }, [activeShipment?._id, user]);
 
 
+
+
   // 🔁 Poll payment status every 5 seconds
-useEffect(() => {
-  if (!activeShipment?._id) return;
+  useEffect(() => {
+    if (!activeShipment?._id) return;
 
-  const interval = setInterval(async () => {
-    try {
-      const token = await user.getIdToken();
-      const res = await axios.get(
-        `${API_BASE_URL}/api/shipments/${activeShipment._id}/payment-status`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+    const interval = setInterval(async () => {
+      try {
+        const token = await user.getIdToken();
+        const res = await axios.get(
+          `${API_BASE_URL}/api/shipments/${activeShipment._id}/payment-status`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
 
-      const latestPaymentStatus = res.data.payment?.status;
+        const latestPaymentStatus = res.data.payment?.status;
 
-      if (!latestPaymentStatus) return;
+        if (!latestPaymentStatus) return;
 
-      // 💾 Update payment status locally + persist to localStorage
-      setLocalShipment((prev) => {
-        if (!prev) return prev;
-        const updated = {
-          ...prev,
-          payment: {
-            ...prev.payment,
-            status: latestPaymentStatus,
-          },
-        };
-        localStorage.setItem('lastShipment', JSON.stringify(updated));
-        return updated;
-      });
+        // 💾 Update payment status locally + persist to localStorage
+        setLocalShipment((prev) => {
+          if (!prev) return prev;
+          const updated = {
+            ...prev,
+            payment: {
+              ...prev.payment,
+              status: latestPaymentStatus,
+            },
+          };
+          localStorage.setItem('lastShipment', JSON.stringify(updated));
+          return updated;
+        });
 
-      console.log(`💰 Payment status updated → ${latestPaymentStatus}`);
-    } catch (err) {
-      console.error("⚠️ Error fetching payment status:", err.message);
-    }
-  }, 5000); // every 5 seconds
+        console.log(`💰 Payment status updated → ${latestPaymentStatus}`);
+      } catch (err) {
+        console.error("⚠️ Error fetching payment status:", err.message);
+      }
+    }, 5000); // every 5 seconds
 
-  return () => clearInterval(interval);
-}, [activeShipment?._id, user]);
+    return () => clearInterval(interval);
+  }, [activeShipment?._id, user]);
 
 
 
@@ -407,78 +448,178 @@ useEffect(() => {
     }
     return null;
   }, [geoPosition]);
-/* ----------------------- Send location to backend ----------------------- */
-useEffect(() => {
-  if (!user) return;
+  /* ----------------------- Send location to backend ----------------------- */
+  useEffect(() => {
+    if (!user) return;
 
-  // 🔁 Send driver's current location every 5 seconds (MongoDB + Firebase)
-  const interval = setInterval(async () => {
-    try {
-      const stored = localStorage.getItem('lastKnownLocation');
-      if (!stored) return;
+    // 🔁 Send driver's current location every 5 seconds (MongoDB + Firebase)
+    const interval = setInterval(async () => {
+      try {
+        const stored = localStorage.getItem('lastKnownLocation');
+        if (!stored) return;
 
-      const [lng, lat] = JSON.parse(stored);
-      if (typeof lng !== 'number' || typeof lat !== 'number') return;
+        const [lng, lat] = JSON.parse(stored);
+        if (typeof lng !== 'number' || typeof lat !== 'number') return;
 
-      const token = await user.getIdToken();
+        const token = await user.getIdToken();
 
-      // 1️⃣ Update in MongoDB (your existing backend)
-      await axios.put(
-        'https://jio-yatri-driver.onrender.com/api/driver/location',
-        {
-          coordinates: [lng, lat],
-          isLocationActive: true
-        },
-        {
-          headers: { Authorization: `Bearer ${token}` }
+        // 1️⃣ Update in MongoDB (your existing backend)
+        await axios.put(
+          'https://jio-yatri-driver.onrender.com/api/driver/location',
+          {
+            coordinates: [lng, lat],
+            isLocationActive: true
+          },
+          {
+            headers: { Authorization: `Bearer ${token}` }
+          }
+        );
+
+        // 2️⃣ Update in Firebase (for instant real-time updates)
+        await set(ref(db, `driver_locations/${user.uid}`), {
+          lat,
+          lng,
+          updatedAt: Date.now(),
+        });
+
+        console.log('📡 Driver location updated (MongoDB + Firebase) →', [lng, lat]);
+      } catch (err) {
+        console.error('⚠️ Failed to update driver location:', err.message);
+      }
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [user]);
+
+
+
+  // const verifyPickupOtp = async () => {
+  //   // console.log('🔐 verifyPickupOtp called with OTP:', enteredOtp);
+  //   try {
+  //     const token = await user.getIdToken();
+  //     // console.log('🔐 Making API call to verify pickup OTP');
+
+  //     const res = await axios.post(
+  //       `${API_BASE_URL}/api/shipments/${activeShipment._id}/verify-pickup`,
+  //       { otp: enteredOtp },
+  //       { headers: { Authorization: `Bearer ${token}` } }
+  //     );
+
+  //     const updatedShipment = res.data.shipment;
+  //     // console.log('✅ OTP verified — updated shipment from backend:', updatedShipment);
+
+  //     // 🔄 Update state and localStorage so UI refreshes to show “picked_up”
+  //     setLocalShipment(updatedShipment);
+  //     localStorage.setItem('lastShipment', JSON.stringify(updatedShipment));
+
+  //     toast.success('Pickup verified successfully');
+  //     setShowOtpPopup(false);
+  //     setPickupVerified(true);
+  //     localStorage.setItem('pickupVerified', 'true');
+  //     // console.log('✅ Pickup verified and local shipment updated');
+  //   } catch (err) {
+  //     // console.error('❌ OTP verification failed:', err);
+  //     toast.error(err.response?.data?.message || 'Invalid OTP');
+  //   }
+  // };
+
+  const handleSwipeStart = (startEvent, isDelivery = false) => {
+    const handle = isDelivery ? swipeDeliverRef.current : swipeRef.current;
+    if (!handle) return;
+
+    const track = handle.parentElement;
+    const maxMove = track.offsetWidth - handle.offsetWidth;
+    const startX = startEvent.clientX;
+    let currentX = 0;
+
+    const onMove = (moveEvent) => {
+      currentX = moveEvent.clientX - startX;
+      if (currentX < 0) currentX = 0;
+      if (currentX > maxMove) currentX = maxMove;
+      handle.style.left = `${currentX}px`;
+    };
+
+    const onEnd = () => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onEnd);
+      document.removeEventListener('touchmove', onMove);
+      document.removeEventListener('touchend', onEnd);
+
+      if (currentX >= maxMove - 10) {
+        if (isDelivery) {
+          handleDeliverShipment(); // ✅ Swipe to complete delivery
+        } else {
+          setIsUnlocked(true);
+          sendReceiverOtp();
+          setShowReceiverOtpSection(true);
         }
-      );
-
-      // 2️⃣ Update in Firebase (for instant real-time updates)
-      await set(ref(db, `driver_locations/${user.uid}`), {
-        lat,
-        lng,
-        updatedAt: Date.now(),
-      });
-
-      console.log('📡 Driver location updated (MongoDB + Firebase) →', [lng, lat]);
-    } catch (err) {
-      console.error('⚠️ Failed to update driver location:', err.message);
-    }
-  }, 5000);
-
-  return () => clearInterval(interval);
-}, [user]);
+        handle.style.left = `${maxMove}px`;
+      } else {
+        handle.style.left = '0px';
+      }
 
 
+    };
 
-  const verifyPickupOtp = async () => {
-    // console.log('🔐 verifyPickupOtp called with OTP:', enteredOtp);
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onEnd);
+    document.addEventListener('touchmove', (e) => onMove(e.touches[0]));
+    document.addEventListener('touchend', onEnd);
+  };
+
+  const verifyPickupOtp = async (otpValue = enteredOtp) => {
     try {
+      console.log("🚀 [verifyPickupOtp] called");
+      console.log("🔢 Entered OTP:", otpValue);
+
       const token = await user.getIdToken();
-      // console.log('🔐 Making API call to verify pickup OTP');
+      console.log("🪪 Firebase Token (first 20 chars):", token?.substring(0, 20), "...");
+
+      const payload = { otp: otpValue };
+      console.log("📤 Sending payload:", payload);
 
       const res = await axios.post(
         `${API_BASE_URL}/api/shipments/${activeShipment._id}/verify-pickup`,
-        { otp: enteredOtp },
+        payload,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
+      console.log("✅ Backend Response:", res.data);
+
       const updatedShipment = res.data.shipment;
-      // console.log('✅ OTP verified — updated shipment from backend:', updatedShipment);
-
-      // 🔄 Update state and localStorage so UI refreshes to show “picked_up”
       setLocalShipment(updatedShipment);
-      localStorage.setItem('lastShipment', JSON.stringify(updatedShipment));
+      localStorage.setItem("lastShipment", JSON.stringify(updatedShipment));
 
-      toast.success('Pickup verified successfully');
+      toast.success("Pickup verified successfully");
       setShowOtpPopup(false);
       setPickupVerified(true);
-      localStorage.setItem('pickupVerified', 'true');
-      // console.log('✅ Pickup verified and local shipment updated');
+      localStorage.setItem("pickupVerified", "true");
+
     } catch (err) {
-      // console.error('❌ OTP verification failed:', err);
-      toast.error(err.response?.data?.message || 'Invalid OTP');
+      console.error("❌ [verifyPickupOtp] Error:", err);
+      console.error("📄 Error Response:", err.response?.data);
+      toast.error(err.response?.data?.message || "Invalid OTP");
+    }
+  };
+
+
+
+  const sendReceiverOtp = async () => {
+    try {
+      setIsSendingReceiverOtp(true);
+      const token = await user.getIdToken();
+      await axios.post(
+        `${API_BASE_URL}/api/auth/${activeShipment._id}/send-receiver-otp`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast.success("Receiver OTP sent successfully!");
+      setReceiverOtpSent(true);
+      setShowReceiverOtpPopup(true); // open your existing popup
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to send receiver OTP");
+    } finally {
+      setIsSendingReceiverOtp(false);
     }
   };
 
@@ -563,15 +704,15 @@ useEffect(() => {
     const center = isValidLatLng(cObj) ? cObj : { lat: 12.9716, lng: 77.5946 };
     // console.log('🗺️ Map center set to:', center);
 
-mapRef.current = new window.google.maps.Map(mapContainerRef.current, {
-  zoom: 15,
-  center,
-  mapTypeId: 'roadmap',
-  gestureHandling: 'greedy', // allow all gestures (drag, zoom, rotate)
-  tilt: 45,                  // enable tilt
-  heading: 0,                // optional initial heading
-  rotateControl: true        // optional rotation control
-});
+    mapRef.current = new window.google.maps.Map(mapContainerRef.current, {
+      zoom: 15,
+      center,
+      mapTypeId: 'roadmap',
+      gestureHandling: 'greedy', // allow all gestures (drag, zoom, rotate)
+      tilt: 45,                  // enable tilt
+      heading: 0,                // optional initial heading
+      rotateControl: true        // optional rotation control
+    });
 
 
 
@@ -593,31 +734,31 @@ mapRef.current = new window.google.maps.Map(mapContainerRef.current, {
 
 
   // 🔄 Rotate map based on device orientation (optional)
-useEffect(() => {
-  if (!mapRef.current || !window.DeviceOrientationEvent) return;
+  useEffect(() => {
+    if (!mapRef.current || !window.DeviceOrientationEvent) return;
 
-  // Ask for permission on iOS devices
-  if (typeof DeviceOrientationEvent.requestPermission === 'function') {
-    DeviceOrientationEvent.requestPermission().then((response) => {
-      if (response === 'granted') {
-        window.addEventListener('deviceorientationabsolute', handleOrientation, true);
-      }
-    });
-  } else {
-    window.addEventListener('deviceorientationabsolute', handleOrientation, true);
-  }
-
-  function handleOrientation(event) {
-    const compassHeading = event.alpha;
-    if (Number.isFinite(compassHeading)) {
-      mapRef.current.setHeading(compassHeading);
+    // Ask for permission on iOS devices
+    if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+      DeviceOrientationEvent.requestPermission().then((response) => {
+        if (response === 'granted') {
+          window.addEventListener('deviceorientationabsolute', handleOrientation, true);
+        }
+      });
+    } else {
+      window.addEventListener('deviceorientationabsolute', handleOrientation, true);
     }
-  }
 
-  return () => {
-    window.removeEventListener('deviceorientationabsolute', handleOrientation, true);
-  };
-}, []);
+    function handleOrientation(event) {
+      const compassHeading = event.alpha;
+      if (Number.isFinite(compassHeading)) {
+        mapRef.current.setHeading(compassHeading);
+      }
+    }
+
+    return () => {
+      window.removeEventListener('deviceorientationabsolute', handleOrientation, true);
+    };
+  }, []);
 
 
   /* -------------------------------- Map update ------------------------------- */
@@ -628,29 +769,29 @@ useEffect(() => {
   const [routeError, setRouteError] = useState(null);
 
   function animateMarker(marker, newLatLng, duration = 1000) {
-  if (!marker || !window.google) return;
+    if (!marker || !window.google) return;
 
-  const startLatLng = marker.getPosition();
-  if (!startLatLng) return;
+    const startLatLng = marker.getPosition();
+    if (!startLatLng) return;
 
-  const startTime = performance.now();
+    const startTime = performance.now();
 
-  function animate(currentTime) {
-    const elapsed = currentTime - startTime;
-    const progress = Math.min(elapsed / duration, 1);
+    function animate(currentTime) {
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / duration, 1);
 
-    const lat = startLatLng.lat() + (newLatLng.lat - startLatLng.lat()) * progress;
-    const lng = startLatLng.lng() + (newLatLng.lng - startLatLng.lng()) * progress;
+      const lat = startLatLng.lat() + (newLatLng.lat - startLatLng.lat()) * progress;
+      const lng = startLatLng.lng() + (newLatLng.lng - startLatLng.lng()) * progress;
 
-    marker.setPosition(new window.google.maps.LatLng(lat, lng));
+      marker.setPosition(new window.google.maps.LatLng(lat, lng));
 
-    if (progress < 1) {
-      requestAnimationFrame(animate);
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      }
     }
-  }
 
-  requestAnimationFrame(animate);
-}
+    requestAnimationFrame(animate);
+  }
 
   const updateMap = useCallback(() => {
     // console.log('🗺️ updateMap called');
@@ -767,35 +908,35 @@ useEffect(() => {
   }, [location, heading, activeShipment, senderLatLng, receiverLatLng]);
 
   /* --------------------------- Load Maps JS once --------------------------- */
-// ✅ Improved Google Maps Loader — waits for location before init
-useEffect(() => {
-  if (!activeShipment) {
-    mapRef.current = null;
-    return;
-  }
+  // ✅ Improved Google Maps Loader — waits for location before init
+  useEffect(() => {
+    if (!activeShipment) {
+      mapRef.current = null;
+      return;
+    }
 
-  // ✅ Wait for valid driver location before initializing map
-  const driverLatLng = normalizeToLatLng(location);
-  if (!isValidLatLng(driverLatLng)) {
-    return;
-  }
-  
+    // ✅ Wait for valid driver location before initializing map
+    const driverLatLng = normalizeToLatLng(location);
+    if (!isValidLatLng(driverLatLng)) {
+      return;
+    }
 
-  if (window.google && window.google.maps) {
-    initMap();
-  } else if (!googleMapsScriptRef.current) {
-    console.log("📜 Loading Google Maps script...");
-    const script = document.createElement('script');
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.REACT_APP_GOOGLE_API_KEY}&libraries=places`;
-    script.async = true;
-    script.defer = true;
-    script.onload = () => {
+
+    if (window.google && window.google.maps) {
       initMap();
-    };
-    document.body.appendChild(script);
-    googleMapsScriptRef.current = script;
-  }
-}, [activeShipment, location, initMap]);
+    } else if (!googleMapsScriptRef.current) {
+      console.log("📜 Loading Google Maps script...");
+      const script = document.createElement('script');
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.REACT_APP_GOOGLE_API_KEY}&libraries=places`;
+      script.async = true;
+      script.defer = true;
+      script.onload = () => {
+        initMap();
+      };
+      document.body.appendChild(script);
+      googleMapsScriptRef.current = script;
+    }
+  }, [activeShipment, location, initMap]);
 
 
   useEffect(() => {
@@ -880,6 +1021,48 @@ useEffect(() => {
       //   console.log('❌ Recenter failed - invalid location or map');
     }
   };
+  // 🔐 Verify Receiver OTP with strong debugging
+  const verifyReceiverOtp = async (otpValue = receiverOtp) => {
+    try {
+      // ⬇️ Deep debug logs
+      console.log("🚀 [verifyReceiverOtp] called");
+      console.log("📦 activeShipmentId:", activeShipment?._id);
+      console.log("🔢 otpValue:", otpValue, "| length:", otpValue?.length);
+      if (!otpValue || otpValue.length !== 4) {
+        console.warn("⚠️ OTP not 4 digits yet, aborting verify");
+        return;
+      }
+
+      const token = await user.getIdToken();
+      console.log("🪪 Firebase Token (first 20):", token?.slice(0, 20), "...");
+
+      const url = `${API_BASE_URL}/api/auth/${activeShipment._id}/verify-receiver-otp`;
+      const payload = { otp: otpValue };
+      console.log("🌐 POST", url, "payload:", payload);
+
+      const res = await axios.post(url, payload, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      console.log("✅ Backend Response:", res?.data);
+      toast.success("Receiver OTP verified successfully!");
+      setReceiverOtpVerified(true);
+      localStorage.setItem("receiverOtpVerified", "true");
+    } catch (error) {
+      // 🔎 Full error introspection
+      console.error("❌ [verifyReceiverOtp] Error:", error);
+      console.log("📡 status:", error?.response?.status);
+      console.log("📄 data:", error?.response?.data);
+      console.log("📬 headers:", error?.response?.headers);
+
+      toast.error(
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        "Invalid OTP"
+      );
+    }
+  };
+
 
   const handleCancelShipment = async () => {
     // console.log('❌ Cancel shipment called for:', activeShipment?._id);
@@ -941,32 +1124,94 @@ useEffect(() => {
     );
   }
 
+  // ✅ Show Payment Waiting Screen
+  if (!activeShipment?.isShopOrder && activeShipment?.payment?.status !== "paid") {
+    return (
+      // <div className="payment-processing-overlays">
+      //   <div className="payment-processing-screen" role="status" aria-live="polite">
+      //     <svg className="clock" viewBox="0 0 120 120" aria-hidden="true">
+      //       {/* Outer rotating ring */}
+      //       <circle
+      //         cx="60"
+      //         cy="60"
+      //         r="54"
+      //         fill="none"
+      //         stroke="#007bff"
+      //         strokeWidth="6"
+      //         strokeDasharray="15 10"
+      //         className="ring"
+      //       />
+      //       {/* Clock face */}
+      //       <circle
+      //         cx="60"
+      //         cy="60"
+      //         r="40"
+      //         fill="none"
+      //         stroke="#007bff"
+      //         strokeOpacity="0.3"
+      //         strokeWidth="2"
+      //       />
+      //       {/* Hour ticks */}
+      //       <g stroke="#007bff" strokeOpacity="0.6" strokeWidth="2">
+      //         <line x1="60" y1="20" x2="60" y2="26" />
+      //         <line x1="60" y1="94" x2="60" y2="100" />
+      //         <line x1="20" y1="60" x2="26" y2="60" />
+      //         <line x1="94" y1="60" x2="100" y2="60" />
+      //       </g>
+      //       {/* Rotating hand */}
+      //       <g className="hand-rotate">
+      //         <line
+      //           x1="60"
+      //           y1="60"
+      //           x2="60"
+      //           y2="28"
+      //           stroke="#007bff"
+      //           strokeWidth="3"
+      //           strokeLinecap="round"
+      //         />
+      //         <circle cx="60" cy="60" r="3" fill="#007bff" />
+      //       </g>
+      //     </svg>
+
+      //     <h2>User is processing payment</h2>
+      //     <p>Please wait...</p>
+      //   </div>
+      // </div>
+      <div className="payment-processing">
+        <Lottie animationData={sandTimer} loop={true} style={{ width: 180, height: 180 }} />
+        <h2 className="status-text">User is processing payment</h2>
+        <p className="sub-text">Please wait...</p>
+      </div>
+    );
+  }
+
+
   // console.log('🎨 Rendering main component UI');
   return (
     <div className="location-tracker-container">
-      <ShipmentDetailsCard shipment={activeShipment} />
+      {/* <ShipmentDetailsCard shipment={activeShipment} /> */}
 
       <div className="map-sections">
         <div
           ref={mapContainerRef}
           className="map-container"
-          style={{ height: '500px', width: '100%' }}
+          style={{ height: '400px', width: '100%' }}
         />
         <button onClick={handleRecenter} className="recenter-button">
           📍
         </button>
       </div>
 
-      <EtaDisplay
+      {/* <EtaDisplay
         etaToSender={etaToSender}
         etaToReceiver={etaToReceiver}
         distanceToSender={distanceToSender}
         distanceToReceiver={distanceToReceiver}
-      />
+      /> */}
       {routeError && <p className="error-message">{routeError}</p>}
 
       <div className="shipment-actions">
-         {(
+        {(
           activeShipment?.status !== 'picked_up' // hide when picked_up
         ) && (
             <button
@@ -974,7 +1219,7 @@ useEffect(() => {
                 // console.log('❌ Cancel shipment button clicked');
                 setShowCancelPopup(true);
               }}
-              className="cancel-buttons"
+              className="cancelll-buttons"
             >
               Cancel Shipment
             </button>
@@ -984,27 +1229,27 @@ useEffect(() => {
           (activeShipment?.isShopOrder && pickupVerified) ||   // only after OTP verified for shop orders
           (activeShipment?.status === 'picked_up' && receiverOtpVerified)  // normal shipments
         ) && (
-           <button
-  onClick={() => {
-    const paymentStatus = activeShipment?.payment?.status;
+            <button
+              onClick={() => {
+                const paymentStatus = activeShipment?.payment?.status;
 
-    if (!paymentStatus) {
-      
-      return;
-    }
+                if (!paymentStatus) {
 
-    if (paymentStatus === "pending") {
-      setShowPaymentPendingPopup(true);
-    } else if (paymentStatus === "paid") {
-      setShowDeliverPopup(true);
-    } else {
-      toast.info(`Payment status: ${paymentStatus}`);
-    }
-  }}
-  className="deliver-button"
->
-  Mark as Delivered
-</button>
+                  return;
+                }
+
+                if (paymentStatus === "pending") {
+                  setShowPaymentPendingPopup(true);
+                } else if (paymentStatus === "paid") {
+                  setShowDeliverPopup(true);
+                } else {
+                  toast.info(`Payment status: ${paymentStatus}`);
+                }
+              }}
+              className="deliver-button"
+            >
+              Mark as Delivered
+            </button>
 
 
           )}
@@ -1018,7 +1263,7 @@ useEffect(() => {
           </button>
         )}
 
-        {!activeShipment?.isShopOrder &&
+        {/* {!activeShipment?.isShopOrder &&
           activeShipment?.status === 'picked_up' &&
           !receiverOtpVerified && (
             <button
@@ -1044,7 +1289,9 @@ useEffect(() => {
             >
               Verify Receiver (OTP)
             </button>
-          )}
+          )} */}
+
+
       </div>
 
       {showOtpPopup && (
@@ -1125,7 +1372,7 @@ useEffect(() => {
         </div>
       )}
 
-      {showReceiverOtpPopup && (
+      {/* {showReceiverOtpPopup && (
         <div className="popup-overlay">
           <div className="popup-box">
             <h3>Receiver Verification</h3>
@@ -1191,26 +1438,26 @@ useEffect(() => {
             </div>
           </div>
         </div>
+      )} */}
+      {showPaymentPendingPopup && (
+        <div className="popup-overlay">
+          <div className="popup-box">
+            <h3>Payment Pending</h3>
+            <p>
+              The customer has not completed the payment yet.
+              You can mark this shipment as delivered only after the payment is successful.
+            </p>
+            <div className="popup-buttons">
+              <button
+                onClick={() => setShowPaymentPendingPopup(false)}
+                className="no-button"
+              >
+                Okay
+              </button>
+            </div>
+          </div>
+        </div>
       )}
-{showPaymentPendingPopup && (
-  <div className="popup-overlay">
-    <div className="popup-box">
-      <h3>Payment Pending</h3>
-      <p>
-        The customer has not completed the payment yet.
-        You can mark this shipment as delivered only after the payment is successful.
-      </p>
-      <div className="popup-buttons">
-        <button
-          onClick={() => setShowPaymentPendingPopup(false)}
-          className="no-button"
-        >
-          Okay
-        </button>
-      </div>
-    </div>
-  </div>
-)}
 
       {/* Mark as Delivered Popup */}
       {showDeliverPopup && (
@@ -1242,6 +1489,372 @@ useEffect(() => {
           </div>
         </div>
       )}
+      <div className="bottom-panel">
+        {!showReceiverOtpSection && !activeShipment?.isShopOrder && (
+          <h3 className="otp-title">
+            {(!pickupVerified && "Enter Pickup OTP") ||
+              (receiverOtpSent && !receiverOtpVerified && "Enter Receiver OTP")}
+            {!pickupVerified ? (
+              <>
+                <span>{distanceToSender || '12.5 km'}</span>
+                <span>{etaToSender || '25 min'}</span>
+              </>
+            ) : (
+              <>
+                <span>{distanceToReceiver || '8.4 km'}</span>
+                <span>{etaToReceiver || '20 min'}</span>
+                <span className="amount">₹{activeShipment?.cost || '60'}</span>
+              </>
+            )}
+          </h3>
+        )}
+
+
+        {/* 1️⃣ Before Pickup Verification */}
+        {/* {!pickupVerified && (
+          <>
+            <div className="otp-input-container">
+              {[0, 1, 2, 3].map((index) => (
+                <input
+                  key={index}
+                  type="text"
+                  maxLength="1"
+                  value={enteredOtp[index] || ''}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/[^0-9]/g, '');
+                    const otpArray = enteredOtp.split('');
+                    otpArray[index] = val;
+                    const newOtp = otpArray.join('');
+                    setEnteredOtp(newOtp);
+
+                    if (val && index < 3) document.getElementById(`otp-${index + 1}`).focus();
+
+                    if (newOtp.length === 4 && newOtp.split('').every(Boolean)) {
+                      verifyPickupOtp(newOtp); // ✅ fixed
+                    }
+                  }}
+
+                  onKeyDown={(e) => {
+                    if (e.key === 'Backspace') {
+                      e.preventDefault();
+                      const otpArray = enteredOtp.split('');
+                      if (otpArray[index]) otpArray[index] = '';
+                      else if (index > 0) document.getElementById(`otp-${index - 1}`).focus();
+                      setEnteredOtp(otpArray.join(''));
+                    }
+                  }}
+                  id={`otp-${index}`}
+                  className="otp-box"
+                />
+              ))}
+              <span>₹{activeShipment?.cost || '60'}</span>
+            </div>
+          </>
+        )} */}
+
+        {/* 1️⃣ Before Pickup Verification */}
+        {/* Shop Order Flow */}
+        {activeShipment?.isShopOrder && (
+          <>
+            {/* ✅ Show Receiver OTP input even when awaiting_payment */}
+            {!pickupVerified ? (
+              <>
+                <h3 className="otp-title tracking-view-status">Enter Receiver OTP</h3>
+                <div className="otp-input-container">
+                  {[0, 1, 2, 3].map((index) => (
+                    <input
+                      key={index}
+                      type="text"
+                      maxLength="1"
+                      value={enteredOtp[index] || ''}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/[^0-9]/g, '');
+                        const otpArray = enteredOtp.split('');
+                        otpArray[index] = val;
+                        const newOtp = otpArray.join('');
+                        setEnteredOtp(newOtp);
+
+                        if (val && index < 3)
+                          document.getElementById(`otp-${index + 1}`).focus();
+
+                        // ✅ Verify when full OTP entered
+                        if (newOtp.length === 4 && newOtp.split('').every(Boolean)) {
+                          verifyPickupOtp(newOtp);
+                        }
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Backspace') {
+                          e.preventDefault();
+                          const otpArray = enteredOtp.split('');
+                          if (otpArray[index]) otpArray[index] = '';
+                          else if (index > 0)
+                            document.getElementById(`otp-${index - 1}`).focus();
+                          setEnteredOtp(otpArray.join(''));
+                        }
+                      }}
+                      id={`otp-${index}`}
+                      className="otp-box"
+                    />
+                  ))}
+                  <span>₹{activeShipment?.cost || '60'}</span>
+                </div>
+              </>
+            ) : (
+              // ✅ After OTP verified — show swipe to mark as delivered
+              <div className="swipe-container">
+                <div
+                  className="swipe-track green"
+                  onMouseDown={(e) => handleSwipeStart(e, true)}
+                  onTouchStart={(e) => handleSwipeStart(e.touches[0], true)}
+                >
+                  <span className="swipe-text">Swipe to Mark as Delivered</span>
+                  <div className="swipe-handle green-handle" ref={swipeDeliverRef}>➜</div>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* ✅ Regular Shipment OTP Input (when not picked up yet) */}
+        {!activeShipment?.isShopOrder && !pickupVerified && (
+          <>
+            {/* <h3 className="otp-title tracking-view-status">Enter Pickup OTP</h3> */}
+            <div className="otp-input-container">
+              {[0, 1, 2, 3].map((index) => (
+                <input
+                  key={index}
+                  type="text"
+                  maxLength="1"
+                  value={enteredOtp[index] || ''}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/[^0-9]/g, '');
+                    const otpArray = enteredOtp.split('');
+                    otpArray[index] = val;
+                    const newOtp = otpArray.join('');
+                    setEnteredOtp(newOtp);
+
+                    if (val && index < 3)
+                      document.getElementById(`otp-${index + 1}`).focus();
+
+                    // ✅ Verify OTP when 4 digits entered
+                    if (newOtp.length === 4 && newOtp.split('').every(Boolean)) {
+                      verifyPickupOtp(newOtp);
+                    }
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Backspace') {
+                      e.preventDefault();
+                      const otpArray = enteredOtp.split('');
+                      if (otpArray[index]) otpArray[index] = '';
+                      else if (index > 0)
+                        document.getElementById(`otp-${index - 1}`).focus();
+                      setEnteredOtp(otpArray.join(''));
+                    }
+                  }}
+                  id={`otp-${index}`}
+                  className="otp-box"
+                />
+              ))}
+              {/* 💰 Show amount for driver reference */}
+              <span>₹{activeShipment?.cost || '60'}</span>
+            </div>
+          </>
+        )}
+
+
+
+
+
+
+        {/* 2️⃣ After Pickup Verified → Swipe to Send Receiver OTP */}
+
+        {/* 3️⃣ After Receiver OTP Sent → Show Receiver OTP Boxes + Deliver */}
+        {showReceiverOtpSection && !receiverOtpVerified && !activeShipment?.isShopOrder && (
+          <>
+            <h3 className="otp-title">Enter Receiver OTP</h3>
+            <div className="otp-input-container otp-with-amount">
+              {[0, 1, 2, 3].map((index) => (
+                <input
+                  key={index}
+                  type="text"
+                  maxLength="1"
+                  value={receiverOtp[index] || ''}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/[^0-9]/g, '');
+                    const otpArray = receiverOtp.split('');
+                    otpArray[index] = val;
+                    const newOtp = otpArray.join('');
+                    setReceiverOtp(newOtp);
+
+                    console.log(`➡️ Index: ${index}, Entered: ${val}`);
+                    console.log("🔢 Current OTP:", newOtp);
+
+
+                    if (val && index < 3) {
+                      document.getElementById(`receiver-otp-${index + 1}`).focus();
+                    }
+
+                    // ✅ Use the fresh value so we don't read stale state
+                    if (newOtp.length === 4 && newOtp.split('').every(Boolean)) {
+                      verifyReceiverOtp(newOtp);
+                    }
+                  }}
+
+                  onKeyDown={(e) => {
+                    if (e.key === 'Backspace') {
+                      e.preventDefault();
+                      const otpArray = receiverOtp.split('');
+                      if (otpArray[index]) otpArray[index] = '';
+                      else if (index > 0)
+                        document.getElementById(`receiver-otp-${index - 1}`).focus();
+                      setReceiverOtp(otpArray.join(''));
+                    }
+                  }}
+                  id={`receiver-otp-${index}`}
+                  className="otp-box"
+                />
+              ))}
+              <span className="amount">₹{activeShipment?.cost || '60'}</span>
+            </div>
+          </>
+        )}
+
+        <div className="route-address">
+          <div className="route-point">
+            {/* <div className="point-dot pickup"></div> */}
+            <div className="point-info">
+              <span className="point-label">Pick up</span>
+              <div className="point-address">
+                {activeShipment?.sender?.address?.addressLine1 || "Pickup address not available"}
+              </div>
+            </div>
+          </div>
+
+          {/* <div className="route-line"></div> */}
+
+          <div className="route-point">
+            {/* <div className="point-dot drop"></div> */}
+            <div className="point-info">
+              <span className="point-label">Drop at</span>
+              <div className="point-address">
+                {activeShipment?.receiver?.address?.addressLine1 || "Delivery address not available"}
+              </div>
+            </div>
+          </div>
+        </div>
+
+
+
+        {/* 👥 Sender + Receiver Contacts */}
+        <div className="contact-section">
+          <div className="contact-card">
+            <div>
+              <div className="contact-name">
+                {activeShipment?.sender?.name || 'Sender Name'}
+              </div>
+              <div className="contact-phone">
+                {activeShipment?.sender?.phone || '+91 9876543210'}
+              </div>
+
+            </div>
+            <FaPhone
+              className="call-icons"
+              onClick={() => handleCall(activeShipment?.sender?.phone)}
+            />
+          </div>
+
+          <div className="contact-card">
+            <div>
+              <div className="contact-name">
+                {activeShipment?.receiver?.name || 'Receiver Name'}
+              </div>
+              <div className="contact-phone">
+                {activeShipment?.receiver?.phone || '+91 9123456780'}
+              </div>
+            </div>
+            <FaPhone
+              className="call-icons"
+              onClick={() => handleCall(activeShipment?.receiver?.phone)}
+            />
+          </div>
+          <div className="parcel-info">
+            <img
+              src={
+                activeShipment?.parcel?.images?.length
+                  ? `${API_BASE_URL}/api/shipment-images/image/${activeShipment.parcel.images[0]}`
+                  : parcelImg
+              }
+              alt="Parcel"
+              className="parcel-image"
+            />
+            <div className="parcel-description">
+              {activeShipment?.parcel?.description || 'No description available'}
+            </div>
+          </div>
+
+          {/* ✅ Swipe to Complete Delivery – Sticky Green Slider */}
+          {receiverOtpVerified && (
+            <div className="swipe-complete-container">
+              <div
+                className="swipe-track green"
+                onMouseDown={(e) => handleSwipeStart(e, true)}
+                onTouchStart={(e) => handleSwipeStart(e.touches[0], true)}
+              >
+
+                <span className="swipe-text">Swipe to Complete</span>
+                <div className="swipe-handle green-handle" ref={swipeDeliverRef} />➜
+              </div>
+            </div>
+          )}
+
+
+          {/* 🚚 Dynamic bottom actions */}
+          {!pickupVerified ? (
+            // Before pickup verified → show Cancel button
+            <button className="cancelll-button" onClick={() => setShowCancelPopup(true)}>
+              Cancel
+            </button>
+          ) : (
+            // After pickup verified → show Swipe Next button
+            !receiverOtpSent && !activeShipment?.isShopOrder && (
+              <>
+                {/* ✅ New Swipe to Send Receiver OTP Slider */}
+                <div className="swipe-container">
+                  <div
+                    className="swipe-track"
+                    onMouseDown={(e) => handleSwipeStart(e)}
+                    onTouchStart={(e) => handleSwipeStart(e.touches[0])}
+                  >
+                    <span className="swipe-text">
+                      {isSendingReceiverOtp ? 'Sending OTP...' : 'Swipe for Receiver OTP'}
+                    </span>
+                    <div
+                      className={`swipe-handle ${isUnlocked ? 'unlocked' : ''}`}
+                      ref={swipeRef}
+                    >
+                      ➜
+                    </div>
+{/* 
+                    <button className="cancelll-button" onClick={() => setShowCancelPopup(true)}>
+                      Cancel
+                    </button> */}
+
+
+                  </div>
+                </div>
+              </>
+            )
+          )}
+
+        </div>
+
+        {/* ✅ Deliver Button (only visible after receiver OTP verified) */}
+        {/* {receiverOtpVerified && (
+          <button className="deliver-button" onClick={handleDeliverShipment}>
+            Mark as Delivered
+          </button>
+        )} */}
+      </div>
     </div>
   );
 };

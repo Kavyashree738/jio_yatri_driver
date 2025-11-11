@@ -288,7 +288,7 @@
     flex-direction: column; /* Stack vertically on small screens */
   }
   .dd-container {
-    margin-top:25px;
+    margin-top:55px;
   }
   
   .dd-stat-card {
@@ -1213,6 +1213,7 @@
     flex-direction: column;
     align-items: flex-start;
     gap: 1rem;
+    margin-top:20px;
   }
 
   .dd-status-toggle {
@@ -1596,10 +1597,10 @@
 }
 
 .settlement-card h3 {
-  color: #2c3e50;
+  color:#007bff;
   font-size: 1.4rem;
   margin-bottom: 20px;
-  padding-bottom: 10px;
+  padding-bottom: 0px;
   border-bottom: 2px solid #f1f1f1;
   display: flex;
   align-items: center;
@@ -1751,7 +1752,7 @@
 
 @media (max-width: 480px) {
   .settlement-card h3 {
-    font-size: 1.2rem;
+    font-size: 1rem;
   }
   
   .settlement-row {
@@ -2398,8 +2399,8 @@
   align-items: center;
   justify-content: space-between;
   background-color: rgb(255, 255, 255);
-  border-left: 4px solid #ff0000;
-  border-right: 4px solid #ff0000;
+  border-left: 4px solid #007bff;
+  border-right: 4px solid #007bff;
   border-radius: 12px;
   padding: 0.3rem 1rem;
   margin-bottom: 9px;
@@ -2408,7 +2409,7 @@
   overflow: hidden;
   white-space: nowrap;
   transition: all 0.5s ease;
-  margin-top:-50px;
+  margin-top:10px;
 }
 
 .dd-passbook-hide {
@@ -2438,7 +2439,7 @@
 .dd-passbook-marquee-text {
   font-size: 0.95rem;
   font-weight: 700;
-  color: #ff0000;
+  color: #007bff;
   letter-spacing: 0.6px;
   padding-right: 4rem;
   animation: textGlow 2.5s ease-in-out infinite alternate;
@@ -2454,7 +2455,7 @@
   align-items: center;
   justify-content: center;
   background: #ffffff33;
-  color: #0400ff;
+  color: #007bff;
   border: none;
   border-radius: 50%;
   width: 38px;
@@ -2628,4 +2629,610 @@
   font-weight: 500;
 }
 
+.buttons .dd-share-btn{
+  width:100px;
+}
 
+/* ===== SHARE BUTTON ===== */
+.dd-share-btn {
+  background: linear-gradient(90deg, #0072ff, #00c6ff);
+  color: #fff;
+  border: none;
+  border-radius: 25px;
+  padding: 10px 22px;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  overflow: hidden;
+  box-shadow: 0 4px 10px rgba(0, 123, 255, 0.3);
+  transition: transform 0.3s ease;
+  min-width: 120px;
+  text-align: center;
+}
+.dd-share-btn:hover { transform: scale(1.05); }
+
+/* ===== TEXT VISIBILITY CONTROL ===== */
+.dd-static-text,
+.dd-marquee-wrapper {
+  position: absolute;
+  width: 100%;
+  text-align: center;
+  transition: opacity 0.4s ease;
+}
+.dd-static-text.show,
+.dd-marquee-wrapper.show { opacity: 1; pointer-events: auto; }
+.dd-static-text.hide,
+.dd-marquee-wrapper.hide { opacity: 0; pointer-events: none; }
+
+/* ===== MARQUEE ANIMATION ===== */
+.dd-marquee-container {
+  position: relative;
+  height: 22px;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.dd-marquee-content {
+  display: inline-block;
+  white-space: nowrap;
+  animation: scrollLeft 6s linear infinite;
+}
+
+.dd-marquee-text {
+  font-weight: 500;
+  color: #fff;
+  text-shadow: 0 0 3px rgba(255,255,255,0.6);
+  padding-right: 40px;
+}
+
+@keyframes scrollLeft {
+  0%   { transform: translateX(100%); }
+  100% { transform: translateX(-100%); }
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 600px) {
+  .dd-share-btn { font-size: 13px; padding: 8px 16px; min-width: 100px; }
+  .dd-marquee-text { font-size: 12px; }
+}
+@media (min-width: 1000px) {
+  .dd-share-btn { font-size: 17px; padding: 12px 26px; min-width: 150px; }
+  .dd-marquee-text { font-size: 15px; }
+}
+/* Buttons Container */
+.buttons {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  margin-inline:40px;
+}
+
+/* Share Button with Marquee */
+.dd-share-btn {
+  position: relative;
+  background: linear-gradient(135deg, #052de2 0%, #0211e4 100%);
+  color: white;
+  border: none;
+  border-radius: 25px;
+  padding: 10px 16px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+  overflow: hidden;
+  min-width: 80px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.dd-share-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+}
+
+.dd-share-btn:active {
+  transform: translateY(0);
+}
+
+/* Marquee Container */
+.dd-marquee-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+/* Static Text */
+.dd-static-text {
+  font-size: 14px;
+  font-weight: 600;
+  color: white;
+  transition: opacity 0.3s ease;
+  white-space: nowrap;
+}
+
+.dd-static-text.show {
+  opacity: 1;
+  visibility: visible;
+}
+
+.dd-static-text.hide {
+  opacity: 0;
+  visibility: hidden;
+}
+
+/* Marquee Wrapper */
+.dd-marquee-wrapper {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  transition: opacity 0.3s ease;
+}
+
+.dd-marquee-wrapper.show {
+  opacity: 1;
+  visibility: visible;
+}
+
+.dd-marquee-wrapper.hide {
+  opacity: 0;
+  visibility: hidden;
+}
+
+/* Marquee Content */
+.dd-marquee-content {
+  display: flex;
+  animation: marquee-scroll 8s linear infinite;
+  white-space: nowrap;
+  padding: 0 8px;
+}
+
+/* Marquee Text */
+.dd-marquee-text {
+  font-size: 12px;
+  font-weight: 500;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  padding: 0 4px;
+}
+
+/* YouTube Button - Small, Red with White Icon */
+.dd-youtube-btn {
+  background: linear-gradient(135deg, #FF0000 0%, #CC0000 100%);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(255, 0, 0, 0.3);
+  flex-shrink: 0;
+  padding: 0;
+}
+
+.dd-youtube-btn:hover {
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 6px 20px rgba(255, 0, 0, 0.4);
+  background: linear-gradient(135deg, #CC0000 0%, #FF0000 100%);
+}
+
+.dd-youtube-btn:active {
+  transform: translateY(0) scale(1);
+}
+
+.dd-youtube-icon {
+  font-size: 20px;
+  color: white;
+  filter: brightness(0) invert(1); /* Ensures pure white */
+}
+
+/* Helpline Button */
+.helpline-button {
+  background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+  color: white;
+  border: none;
+  border-radius: 25px;
+  padding: 10px 16px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 44px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.helpline-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+  background: linear-gradient(135deg, #45a049 0%, #4CAF50 100%);
+}
+
+.helpline-button:active {
+  transform: translateY(0);
+}
+
+/* Marquee Animation */
+@keyframes marquee-scroll {
+  0% {
+    transform: translateX(100%);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .buttons {
+    gap: 10px;
+    padding: 6px 0;
+    justify-content: flex-start;
+  }
+
+  .dd-share-btn {
+    min-width: 70px;
+    height: 40px;
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+  
+  .dd-static-text {
+    font-size: 13px;
+  }
+  
+  .dd-marquee-text {
+    font-size: 11px;
+  }
+  
+  .dd-youtube-btn {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .dd-youtube-icon {
+    font-size: 34px;
+  }
+  
+  .helpline-button {
+    height: 40px;
+    padding: 8px 14px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 480px) {
+  .buttons {
+    gap: 8px;
+    padding: 4px 0;
+    justify-content: space-between;
+  }
+  
+  .dd-share-btn {
+    min-width: 60px;
+    height: 36px;
+    padding: 6px 10px;
+    font-size: 12px;
+    border-radius: 20px;
+  }
+  
+  .dd-static-text {
+    font-size: 12px;
+  }
+  
+  .dd-marquee-text {
+    font-size: 10px;
+  }
+  
+  .dd-youtube-btn {
+    width: 36px;
+    height: 36px;
+  }
+  
+  .dd-youtube-icon {
+    font-size: 34px;
+  }
+  
+  .helpline-button {
+    height: 36px;
+    padding: 6px 12px;
+    font-size: 12px;
+    border-radius: 20px;
+  }
+}
+
+/* For very small screens - keep horizontal but adjust spacing */
+@media (max-width: 360px) {
+  .buttons {
+    gap: 6px;
+    padding: 4px 0;
+  }
+  
+  .dd-share-btn {
+    min-width: 55px;
+    height: 32px;
+    padding: 5px 8px;
+    font-size: 11px;
+  }
+  
+  .dd-static-text {
+    font-size: 11px;
+  }
+  
+  .dd-marquee-text {
+    font-size: 9px;
+  }
+  
+  .dd-youtube-btn {
+    width: 32px;
+    height: 32px;
+  }
+  
+  .dd-youtube-icon {
+    font-size: 34px;
+  }
+  
+  .helpline-button {
+    height: 32px;
+    padding: 5px 10px;
+    font-size: 11px;
+  }
+}
+
+/* Loading states */
+.dd-share-btn:disabled,
+.dd-youtube-btn:disabled,
+.helpline-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+/* Focus states for accessibility */
+.dd-share-btn:focus,
+.dd-youtube-btn:focus,
+.helpline-button:focus {
+  outline: 2px solid rgba(255, 255, 255, 0.5);
+  outline-offset: 2px;
+}
+
+/* Ensure buttons stay in one line */
+.buttons > * {
+  flex-shrink: 0;
+}
+.driver-header-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  /* background-color: #fff; */
+  padding: 10px 16px;
+  border-radius: 10px;
+  margin-top:10px;
+  /* box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05); */
+}
+
+.driver-title {
+  font-size: 22px;
+  font-weight: 600;
+  color: #2b2b2b;
+  font-family: "Inter", sans-serif;
+}
+
+.driver-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #f1f1f1;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.driver-avatar:hover {
+  transform: scale(1.05);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* ✅ For mobile screens */
+@media (max-width: 480px) {
+  .driver-header-bar {
+    padding: 8px 12px;
+  }
+
+  .driver-title {
+    font-size: 18px;
+  }
+
+  .driver-avatar {
+    width: 36px;
+    height: 36px;
+  }
+}
+/* ===== HEADER BAR ===== */
+.driverTopUI-header {
+  background: #0072ff;
+  color: #fff;
+  padding: 12px 18px;
+  display: flex;
+  gap:10px;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom-left-radius: 12px;
+  border-bottom-right-radius: 12px;
+}
+
+.driverTopUI-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+  color:white;
+}
+
+.driverTopUI-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  object-fit: cover;
+}
+
+/* ===== ROW ALIGNMENT ===== */
+.driverTopUI-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin: 14px 0;
+}
+
+/* ===== SHARE BUTTON WITH MARQUEE ===== */
+.driverTopUI-share {
+  position: relative;
+  background: #007bff;
+  border: none;
+  border-radius: 20px;
+  color: #ffffff;
+  font-weight: 600;
+  width: 140px;
+  height: 38px;
+  overflow: hidden;
+  box-shadow: 0 3px 6px rgba(0,0,0,0.25);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 0 10px;
+}
+
+/* Marquee inner text */
+.driverTopUI-marquee {
+  white-space: nowrap;
+  overflow: hidden;
+  width: 100%;
+}
+
+.driverTopUI-marquee span {
+  display: inline-block;
+  padding-left: 100%;
+  animation: driverTopUI-marquee-scroll 10s linear infinite;
+}
+
+@keyframes driverTopUI-marquee-scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-100%); }
+}
+
+/* ===== YOUTUBE BUTTON ===== */
+.driverTopUI-youtube {
+  background: #ff0000;
+  border: none;
+  border-radius:10px;
+  /* border-radius: 20px; */
+  width: 42px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 3px 6px rgba(255,0,0,0.3);
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+.driverTopUI-youtube:hover {
+  transform: scale(1.05);
+}
+.driverTopUI-youtube-icon {
+  color: #fff;
+  font-size: 20px;
+}
+
+/* ===== STATUS TOGGLE ===== */
+.driverTopUI-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #fff;
+  border-radius: 25px;
+  padding: 6px 12px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+.driverTopUI-status-text {
+  font-size: 13px;
+  font-weight: 500;
+  color: #333;
+}
+
+/* Switch toggle */
+.driverTopUI-switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 22px;
+}
+
+.driverTopUI-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.driverTopUI-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  transition: 0.4s;
+  border-radius: 22px;
+}
+
+.driverTopUI-slider:before {
+  position: absolute;
+  content: "";
+  height: 16px;
+  width: 16px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: 0.4s;
+  border-radius: 50%;
+}
+
+.driverTopUI-switch input:checked + .driverTopUI-slider {
+  background-color: #007aff;
+}
+
+.driverTopUI-switch input:checked + .driverTopUI-slider:before {
+  transform: translateX(22px);
+}
+.settlement-row.highlight span{
+  color:#007aff
+}

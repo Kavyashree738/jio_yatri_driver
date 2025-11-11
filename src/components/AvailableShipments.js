@@ -1,10 +1,14 @@
-import React, { useEffect, useState, useCallback, useRef,forwardRef } from 'react';
+import React, { useEffect, useState, useCallback, useRef, forwardRef } from 'react';
 import axios from 'axios';
 import { getAuth } from 'firebase/auth';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import '../styles/AvailableShipments.css';
 import LocationTracker from './LocationTracker';
+import parcelImg from '../assets/images/parcel.png';
+import { FaPhone } from 'react-icons/fa';
+
+
 
 const AvailableShipments = forwardRef((props, ref) => {
   const [shipments, setShipments] = useState([]);
@@ -16,17 +20,7 @@ const AvailableShipments = forwardRef((props, ref) => {
 
   const notifiedShipmentIdsRef = useRef(new Set());
 
-  // 🧩 Simple visual UI debug function
-// const uiDebug = (msg, type = "info") => {
-//   const opts = { position: "top-center", autoClose: 4000, theme: "colored" };
-//   if (type === "success") toast.success(`✅ ${msg}`, opts);
-//   else if (type === "error") toast.error(`❌ ${msg}`, opts);
-//   else if (type === "warn") toast.warn(`⚠️ ${msg}`, opts);
-//   else toast.info(`💬 ${msg}`, opts);
-// };
-
-
-   useEffect(() => {
+  useEffect(() => {
     const savedShipment = localStorage.getItem("lastShipment");
     if (savedShipment) {
       setActiveShipment(JSON.parse(savedShipment));
@@ -41,35 +35,35 @@ const AvailableShipments = forwardRef((props, ref) => {
     setIsMobile(checkIfMobile());
   }, []);
 
- useEffect(() => {
-  const tryScrollToShipments = () => {
-    const params = new URLSearchParams(window.location.search);
-    const scrollTo = params.get("scrollTo");
+  useEffect(() => {
+    const tryScrollToShipments = () => {
+      const params = new URLSearchParams(window.location.search);
+      const scrollTo = params.get("scrollTo");
 
-    if (scrollTo === "shipments" && sectionRef.current) {
-      // console.log("📦 Scrolling to shipments...");
-      sectionRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
-      return true;
-    }
-    return false;
-  };
+      if (scrollTo === "shipments" && sectionRef.current) {
+        console.log("📦 Scrolling to shipments...");
+        sectionRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+        return true;
+      }
+      return false;
+    };
 
-  // Retry scroll until content fully loads (up to 5s)
-  let attempts = 0;
-  const interval = setInterval(() => {
-    const done = tryScrollToShipments();
-    attempts++;
-    if (done || attempts > 10) clearInterval(interval);
-  }, 500);
+    // Retry scroll until content fully loads (up to 5s)
+    let attempts = 0;
+    const interval = setInterval(() => {
+      const done = tryScrollToShipments();
+      attempts++;
+      if (done || attempts > 10) clearInterval(interval);
+    }, 500);
 
-  // Trigger again when returning from background
-  window.addEventListener("focus", tryScrollToShipments);
+    // Trigger again when returning from background
+    window.addEventListener("focus", tryScrollToShipments);
 
-  return () => {
-    clearInterval(interval);
-    window.removeEventListener("focus", tryScrollToShipments);
-  };
-}, [loading, shipments.length]);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("focus", tryScrollToShipments);
+    };
+  }, [loading, shipments.length]);
 
 
 useEffect(() => {
@@ -141,12 +135,6 @@ useEffect(() => {
   // uiDebug("🟢 React is now listening for PUSH events...");
   return () => window.removeEventListener("push", handlePush);
 }, []);
-
-
-
-
-
-
 
   useEffect(() => {
     fetchData();
@@ -267,6 +255,17 @@ const fetchData = async () => {
 };
 
 
+  const handleCall = (phone) => {
+    if (!phone) {
+      toast.warn('Phone number not available');
+      return;
+    }
+
+    // remove any spaces, +91, or special characters
+    const cleaned = phone.replace(/\D/g, '');
+    window.open(`tel:${cleaned}`, '_self');
+  };
+
 
   const fetchAvailableShipments = async (token) => {
     try {
@@ -294,10 +293,10 @@ const fetchData = async () => {
           try {
             const audio = new Audio('/notification.wav');
             audio.play().catch(err => {
-              // console.warn("Audio playback prevented:", err);
+              console.warn("Audio playback prevented:", err);
             });
           } catch (err) {
-            // console.warn("Audio error:", err);
+            console.warn("Audio error:", err);
           }
 
           notifiedSet.add(shipment._id);
@@ -306,7 +305,7 @@ const fetchData = async () => {
 
       setShipments(newShipments);
     } catch (error) {
-      // console.error('Error fetching shipments:', error);
+      console.error('Error fetching shipments:', error);
       toast.error('Failed to load shipment');
     }
   };
@@ -325,7 +324,7 @@ const fetchData = async () => {
         const options = { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 };
         navigator.geolocation.getCurrentPosition(resolve, reject, options);
       }).catch(error => {
-        // console.error("Geolocation error:", error);
+        console.error("Geolocation error:", error);
         throw error;
       });
 
@@ -338,7 +337,7 @@ const fetchData = async () => {
       const toastId = toast.loading('Accepting shipment...');
 
       const response = await axios.put(
-        `https://jio-yatri-driver.onrender.com/api/shipments/${shipmentId}/accept`,
+        `http://localhost:5000/api/shipments/${shipmentId}/accept`,
         { location },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -357,132 +356,164 @@ const fetchData = async () => {
     }
   };
 
-const handleStatusUpdate = useCallback((newStatus) => {
-  setActiveShipment(prev => {
-    if (!prev) return null;
+
+  // ✅ Reject shipment but keep watching for new ones
+  const handleReject = useCallback((shipmentId) => {
+    // Remove this shipment
+    setShipments(prev => prev.filter(s => s._id !== shipmentId));
+
+    // Optional: play a soft sound to confirm rejection
+    try {
+      const audio = new Audio('/notification.wav');
+      audio.play().catch(() => { });
+    } catch { }
+
+    // Your fetchData() will keep running every 10 seconds,
+    // so when a new shipment is available, it will trigger popup + sound again
+  }, []);
+
+
+  const handleStatusUpdate = useCallback((newStatus) => {
+    setActiveShipment(prev => {
+      if (!prev) return null;
+
+      if (['cancelled', 'delivered'].includes(newStatus)) {
+        return null;  // ❌ remove from dashboard
+      }
+      return { ...prev, status: newStatus };
+    });
 
     if (['cancelled', 'delivered'].includes(newStatus)) {
-      return null;  // ❌ remove from dashboard
+      fetchData(); // refresh shipments list
     }
-    return { ...prev, status: newStatus };
-  });
-
-  if (['cancelled', 'delivered'].includes(newStatus)) {
-    fetchData(); // refresh shipments list
-  }
-}, []);
+  }, []);
 
 
- return (
-  <div ref={ref} className="available-shipments">
-    <ToastContainer 
-      position={isMobile ? "top-center" : "top-right"}
-      autoClose={5000} 
-      theme="colored" 
-      pauseOnFocusLoss={false} 
-    />
+  return (
+    <div ref={ref} className="available-shipments">
+      <ToastContainer
+        position={isMobile ? "top-center" : "top-right"}
+        autoClose={5000}
+        theme="colored"
+        pauseOnFocusLoss={false}
+      />
 
-    {/* ✅ Hide heading when driver has an active shipment */}
-    {!activeShipment && <h2>Available Shipments</h2>}
+      {/* ✅ Hide heading when driver has an active shipment */}
+      {!activeShipment && <h2>Available Shipments</h2>}
 
-    {loading ? (
-      <div className="loading-message">Loading data...</div>
-    ) : activeShipment ? (
-      // ✅ Show only the active shipment tracker
-      <div className="active-shipment-container">
-        <LocationTracker
-          key={activeShipment._id}
-          shipment={activeShipment}
-          onStatusUpdate={handleStatusUpdate}
-          isMobile={isMobile}
-        />
-      </div>
-    ) : driverStatus !== 'active' ? (
-      <div className="inactive-message">
-        You must be active to view available shipments.
-      </div>
-    ) : shipments.length === 0 ? (
-      // ✅ Hide this "No matching..." message if driver has an active shipment
-      !activeShipment && (
-        <div className="no-shipments">
-          No matching shipments available at this time.
+      {loading ? (
+        <div className="loading-message">Loading data...</div>
+      ) : activeShipment ? (
+        // ✅ Show only the active shipment tracker
+        <div className="active-shipment-container">
+          <LocationTracker
+            key={activeShipment._id}
+            shipment={activeShipment}
+            onStatusUpdate={handleStatusUpdate}
+            isMobile={isMobile}
+          />
         </div>
-      )
-    ) : (
-      // ✅ Show shipments only if available
-      <ul className={`shipment-list ${isMobile ? 'mobile-view' : ''}`}>
-        {shipments.map(shipment => (
-          <li key={shipment._id} className="shipment-card">
-            <div className="shipment-details">
-              <p><strong>Tracking No:</strong> {shipment.trackingNumber}</p>
-              <p><strong>From:</strong> {shipment.sender.address.addressLine1}</p>
-              <p><strong>To:</strong> {shipment.receiver.address.addressLine1}</p>
-              <p><strong>Vehicle Type:</strong> {shipment.vehicleType}</p>
-              <p><strong>Distance:</strong> {shipment.distance.toFixed(2)} km</p>
-              <p><strong>Cost:</strong> ₹{shipment.cost.toFixed(2)}</p>
+      ) : driverStatus !== 'active' ? (
+        <div className="inactive-message">
+          You must be active to view available shipments.
+        </div>
+      ) : shipments.length === 0 ? (
+        // ✅ Hide this "No matching..." message if driver has an active shipment
+        !activeShipment && (
+          <div className="no-shipments">
+            No matching shipments available at this time.
+          </div>
+        )
+      ) : (
+        // ✅ Show shipments only if available
+        shipments.length > 0 && !activeShipment && (
+          <>
+            <div className="shipment-overlay"></div>
 
-                          <p>
-                  <strong>Payment Type:</strong>{" "}
-                  {shipment.payment?.method === "razorpay" ? (
-                    <span className="prepaid-label">Prepaid</span>
-                  ) : (
-                    <span className="cod-label">Cash on Delivery</span>
-                  )}
-                </p>
+            <div className="shipment-popup-card">
+              <h4 className="popup-title">New Delivery Request</h4>
 
-              {shipment?.parcel?.description && (
-                <p><strong>Description:</strong> {shipment.parcel.description}</p>
-              )}
-
-              {shipment?.parcel?.images?.length > 0 && (
-                <div className="parcel-images">
-                  <strong>Images:</strong>
-                  <div className="image-gallery">
-                    {shipment.parcel.images.map((id) => {
-                      const imgUrl = `https://jio-yatri-driver.onrender.com/api/shipment-images/image/${id}`;
-                      return (
-                        <img
-                          key={id}
-                          src={imgUrl}
-                          alt="Parcel"
-                          style={{
-                            width: "100px",
-                            height: "100px",
-                            objectFit: "cover",
-                            margin: "5px",
-                          }}
-                        />
-                      );
-                    })}
-                  </div>
+              <div className="popup-user">
+                <div className="popup-user-icon">
+                  {shipments[0].sender?.name?.charAt(0) || 'S'}
                 </div>
-              )}
-            </div>
+                <div className="popup-user-details">
+                  <strong>{shipments[0].sender?.name}</strong>
+                  <p>{shipments[0].sender?.address?.addressLine1}</p>
+                  <p className="phone-line">
+                    {shipments[0].sender?.phone || 'N/A'}
+                    {shipments[0].sender?.phone && (
+                      <FaPhone
+                        className="call-icon"
+                        onClick={() => handleCall(shipments[0].sender?.phone)}
+                      />
+                    )}
+                  </p>
 
-            <button
-              onClick={() => handleAccept(shipment._id)}
-              className="accept-button"
-            >
-              Accept Order
-            </button>
-          </li>
-        ))}
-      </ul>
-    )}
- </div>
-);
+                </div>
+              </div>
+
+              <div className="popup-user">
+                <div className="popup-user-icon">
+                  {shipments[0].receiver?.name?.charAt(0) || 'R'}
+                </div>
+                <div className="popup-user-details">
+                  <strong>{shipments[0].receiver?.name}</strong>
+                  <p>{shipments[0].receiver?.address?.addressLine1}</p>
+                  <p className="phone-line">
+                    {shipments[0].receiver?.phone || 'N/A'}
+                    {shipments[0].receiver?.phone && (
+                      <FaPhone
+                        className="call-icon"
+                        onClick={() => handleCall(shipments[0].receiver?.phone)}
+                      />
+                    )}
+                  </p>
+
+                </div>
+              </div>
+
+              <div className="popup-item">
+                <img
+                  src={
+                    shipments[0].parcel?.images?.length
+                      ? `https://jio-yatri-driver.onrender.com/api/shipment-images/image/${shipments[0].parcel.images[0]}`
+                      : parcelImg
+                  }
+                  alt="Parcel"
+                />
+                <div className="popup-item-name">
+                  {shipments[0].parcel?.description || 'Parcel'}
+                </div>
+                <div className="popup-item-cost">
+                  ₹{shipments[0].cost?.toFixed(2) || '0.00'}
+                </div>
+              </div>
+
+              <div className="popup-actions">
+                <button
+                  className="accept-btn"
+                  onClick={() => handleAccept(shipments[0]._id)}
+                >
+                  Accept
+                </button>
+                <button
+                  className="reject-btn"
+                  onClick={() => handleReject(shipments[0]._id)}
+                >
+                  Reject
+                </button>
+              </div>
+            </div>
+          </>
+        )
+      )}
+
+    </div>
+  );
 });
 
 export default AvailableShipments;
-
-
-
-
-
-
-
-
-
 
 
 

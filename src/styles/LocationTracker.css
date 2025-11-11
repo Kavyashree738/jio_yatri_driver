@@ -1,7 +1,7 @@
 .location-tracker-container {
   position: relative;
   width: 100%;
-  max-width: 1200px;
+  max-width: 100%;
   margin: 2rem auto;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
   border-radius: 1.5rem;
@@ -27,12 +27,12 @@
 }
 
 .map-sections {
-    height: 70vh;
-    position: relative;
-    margin: 10px;
-    border-radius: 10px;
-    overflow: hidden;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  height: 70vh;
+  position: relative;
+  margin: 10px;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
 .map-section:hover {
@@ -309,8 +309,15 @@
 
 /* Animations */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Responsive Design */
@@ -319,21 +326,22 @@
     padding: 0.25rem;
     border-radius: 1rem;
   }
-  
+
   .eta-display {
     flex-direction: column;
     gap: 0.75rem;
   }
-  
+
   .address-sections {
     flex-direction: column;
     gap: 1rem;
   }
-  
+
   .shipment-actions {
     flex-direction: column;
   }
 }
+
 .full-map-page {
   position: fixed;
   top: 0;
@@ -361,11 +369,12 @@
   height: 40px;
   font-size: 24px;
   cursor: pointer;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
   display: flex;
   align-items: center;
   justify-content: center;
 }
+
 /* View Full Map Button */
 .fullscreen-button {
   position: relative;
@@ -452,21 +461,23 @@
     padding: 10px 20px;
     font-size: 14px;
   }
-  
+
   .close-fullscreen-button {
     width: 40px;
     height: 40px;
     font-size: 24px;
   }
-  
+
 }
+
 /* Google Maps Button */
 .google-maps-button {
   display: inline-flex;
   align-items: center;
   padding: 12px 24px;
   margin: 15px 10px;
-  background-color: #34a853; /* Google green */
+  background-color: #34a853;
+  /* Google green */
   color: white;
   border: none;
   border-radius: 4px;
@@ -509,23 +520,25 @@
   height: 40px;
   font-size: 20px;
   cursor: pointer;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
   z-index: 1;
 }
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
-  .google-maps-button, 
+
+  .google-maps-button,
   .fullscreen-button {
     padding: 10px 20px;
     font-size: 14px;
   }
-  
+
   .map-buttons {
     flex-direction: column;
     align-items: center;
   }
 }
+
 /* Popup Background */
 .popup-overlay {
   position: fixed;
@@ -598,8 +611,15 @@
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: scale(0.9); }
-  to { opacity: 1; transform: scale(1); }
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 .shipment-actions {
@@ -694,7 +714,8 @@
   gap: 15px;
 }
 
-.yes-button, .no-button {
+.yes-button,
+.no-button {
   padding: 10px 20px;
   border: none;
   border-radius: 8px;
@@ -720,6 +741,7 @@
 .no-button:hover {
   background-color: #c0392b;
 }
+
 /* ================= Verify Pickup Button ================= */
 
 .verify-btn {
@@ -760,8 +782,10 @@
   gap: 15px;
   margin-top: 25px;
 }
+
 .deliver-button {
-  background-color: #007bff; /* normal active color (blue) */
+  background-color: #007bff;
+  /* normal active color (blue) */
   color: white;
   border: none;
   border-radius: 8px;
@@ -786,7 +810,8 @@
   cursor: not-allowed;
   opacity: 0.8;
   transform: none;
-  pointer-events: none; /* 🔒 no clicking */
+  pointer-events: none;
+  /* 🔒 no clicking */
 }
 
 /* Optional: smoother transition when it gets enabled */
@@ -824,9 +849,17 @@
 
 /* 🌈 Animated gradient movement */
 @keyframes gradientFlow {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
 }
 
 /* ✨ Button color types */
@@ -859,7 +892,7 @@
   left: -80%;
   width: 60%;
   height: 100%;
-  background: linear-gradient(120deg, rgba(255, 255, 255, 0.3), rgba(255,255,255,0.6), rgba(255,255,255,0.3));
+  background: linear-gradient(120deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.3));
   transform: skewX(-25deg);
   transition: 0.5s;
 }
@@ -911,27 +944,36 @@
 }
 
 .payment-badge.prepaid {
-  background-color: #007bff; /* blue */
+  background-color: #007bff;
+  /* blue */
 }
 
 .payment-badge.cod {
-  background-color: #28a745; /* green */
+  background-color: #28a745;
+  /* green */
 }
+
 .call-icons {
   color: white;
   background: radial-gradient(circle, #2dff1a 0%, #2bff00 70%);
-  width: 20px;              /* fixed width */
-  height: 20px;             /* fixed height */
-  line-height: 20px;        /* vertically center the icon */
-  border-radius: 50%;       /* make it circular */
-  text-align: center;       /* horizontally center */
-  font-size: 20px;          /* control icon size */
+  width: 20px;
+  /* fixed width */
+  height: 20px;
+  /* fixed height */
+  line-height: 20px;
+  /* vertically center the icon */
+  border-radius: 50%;
+  /* make it circular */
+  text-align: center;
+  /* horizontally center */
+  font-size: 20px;
+  /* control icon size */
   margin-left: 8px;
   cursor: pointer;
   box-shadow: 0 0 15px rgb(0, 255, 0);
   animation: pulseUpDown 5s ease-in-out infinite;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
-  padding:3px;
+  padding: 3px;
 }
 
 .call-icons:hover {
@@ -939,4 +981,935 @@
   box-shadow: 0 0 25px rgba(0, 255, 34, 0.8);
 }
 
+.location-tracker-container {
+  position: fixed;
+  /* detach from parent layout */
+  top: 0;
+  left: 0;
+  width: 100vw;
+  /* full width */
+  height: 100vh;
+  /* full height */
+  background: #ffffff;
+  /* clean background */
+  z-index: 800;
+  /* above everything else */
+  overflow-y: auto;
+  /* scrollable if content > screen */
+}
 
+/* 🧾 Bottom Panel (over the map) */
+.bottom-panel {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background: #1877f2;
+  margin-bottom:50px;
+  color: #fff;
+  border-radius: 25px 25px 0 0;
+  padding: 20px;
+  z-index: 100;
+  height: 300px;
+  box-shadow: 0 -6px 25px rgba(0, 0, 0, 0.25);
+  animation: slideUp 0.4s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* 🔢 OTP Input */
+.otp-title {
+  font-size: 17px;
+  font-weight: 600;
+  text-align: left;
+  margin-bottom: 10px;
+}
+
+.otp-input-container {
+  display: flex;
+  justify-content: flex-start;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.otp-box {
+  width: 50px;
+  height: 50px;
+  border-radius: 12px;
+  border: none;
+  outline: none;
+  text-align: center;
+  font-size: 18px;
+  background: #fff;
+  color: #000;
+  font-weight: 600;
+  box-shadow: 0 3px 10px rgba(255, 255, 255, 0.4);
+}
+
+.otp-box:focus {
+  transform: scale(1.05);
+}
+
+/* 💰 Trip Info */
+.trip-info {
+  display: flex;
+  justify-content: space-around;
+  margin-bottom: 10px;
+  font-weight: 600;
+  font-size: 15px;
+  color: #fff;
+}
+
+/* 👥 Contacts */
+.contact-section {
+  background: #fff;
+  color: #000;
+  border-radius: 20px;
+  padding: 12px 15px;
+  margin-bottom: 15px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+}
+
+.contact-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.contact-card:last-child {
+  border-bottom: none;
+}
+
+.contact-name {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.contact-phone {
+  font-size: 13px;
+  color: #444;
+}
+
+/* 📞 Glowing Call Icon */
+.call-icons {
+  background: radial-gradient(circle, #33ff00 0%, #2bff00 70%);
+  color: #fff;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 15px rgba(0, 123, 255, 0.9);
+  animation: pulseBlue 2s infinite;
+  cursor: pointer;
+}
+
+@keyframes pulseBlue {
+
+  0%,
+  100% {
+    box-shadow: 0 0 8px rgba(0, 123, 255, 0.7);
+  }
+
+  50% {
+    box-shadow: 0 0 20px rgba(0, 123, 255, 1);
+  }
+}
+
+/* ❌ Cancel Button */
+.cancel-button {
+  width: 100%;
+  background: #ff3b30;
+  border: none;
+  color: #fff;
+  border-radius: 12px;
+  padding: 14px;
+  font-size: 16px;
+  font-weight: 600;
+  box-shadow: 0 5px 15px rgba(255, 59, 48, 0.4);
+}
+
+.cancel-button:hover {
+  background: #e22c23;
+  transform: scale(1.02);
+}
+
+/* 📱 Responsive */
+@media (max-width: 600px) {
+  .otp-box {
+    width: 42px;
+    height: 42px;
+    font-size: 16px;
+  }
+
+  .trip-info span {
+    font-size: 13px;
+  }
+}
+
+/* 🚚 Bottom OTP Panel */
+.bottom-panel {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background: #1877f2;
+  /* Blue background */
+  border-radius: 25px 25px 0 0;
+  padding: 22px 24px 25px;
+  /* slightly more inner spacing */
+  box-shadow: 0 -3px 10px rgba(0, 0, 0, 0.15);
+  text-align: center;
+  color: #fff;
+  z-index: 1000;
+  animation: slideUp 0.3s ease-out;
+  max-height: 35vh;
+  /* Panel takes up to 60% of screen height */
+  overflow-y: auto;
+  /* Enables internal scrolling */
+  overscroll-behavior: contain;
+}
+
+/* 🔠 Title */
+.otp-title {
+  font-size: 16px;
+  font-weight: 600;
+  text-align: left;
+  margin-bottom: 12px;
+}
+
+/* 🔢 OTP Boxes */
+.otp-input-container {
+  display: flex;
+  justify-content: flex-start;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.otp-box {
+  width: 46px;
+  height: 46px;
+  border-radius: 10px;
+  border: none;
+  text-align: center;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1877f2;
+  background: #fff;
+  outline: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.otp-box:focus {
+  transform: scale(1.05);
+}
+
+/* 💰 Trip Info */
+.trip-info {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 14px;
+}
+
+/* 👥 Contact Section */
+.contact-section {
+  background: #fff;
+  border-radius: 15px;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  color: #000;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.contact-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.contact-card:last-child {
+  border-bottom: none;
+}
+
+.contact-name {
+  font-weight: 600;
+  font-size: 14px;
+  color: #000;
+}
+
+.contact-phone {
+  font-size: 13px;
+  color: #555;
+}
+
+/* 📞 Call Icon */
+.call-icons {
+  background: #3cf218;
+  color: white;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 12px rgba(0, 255, 21, 0.8);
+  animation: pulseBlue 2s infinite;
+  padding:5px;
+  cursor: pointer;
+}
+
+@keyframes pulseBlue {
+
+  0%,
+  100% {
+    box-shadow: 0 0 8px rgba(0, 123, 255, 0.6);
+  }
+
+  50% {
+    box-shadow: 0 0 16px rgba(0, 123, 255, 1);
+  }
+}
+
+/* ❌ Cancel Button */
+.cancelll-button {
+  width: 100%;
+  border-radius: 10px;
+  border: none;
+  background: #ff3b30;
+  color: white;
+  font-size: 15px;
+  font-weight: 600;
+  padding: 12px;
+  margin-top: 6px;
+  box-shadow: 0 4px 10px rgba(255, 59, 48, 0.3);
+  transition: 0.25s ease;
+}
+
+.cancelll-button:hover {
+  background: #e22c23;
+  transform: scale(1.03);
+}
+
+/* 🎬 Animation */
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* 📱 Mobile Optimization */
+@media (max-width: 600px) {
+  .otp-box {
+    width: 40px;
+    height: 40px;
+    font-size: 16px;
+  }
+
+  .trip-info span {
+    font-size: 13px;
+  }
+}
+.otp-input-container span{
+  font-size:1rem;
+  font-weight: bold;
+}
+.otp-title span{
+  margin-left:10px;
+  color:white;
+}
+
+.parcel-info img{
+  height:50px;
+  width:50px;
+}
+
+.after-otp-row {
+  display: grid;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.fare-chip {
+  background: #0ea5e9;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 20px;
+  font-weight: 600;
+  width: max-content;
+  margin: auto;
+}
+
+.swipe-wrap {
+  position: relative;
+  width: 100%;
+  background: #f4f6fb;
+  border-radius: 14px;
+  padding: 12px;
+  box-shadow: inset 0 0 0 2px rgba(67, 97, 238, 0.08);
+}
+
+.swipe-range {
+  width: 100%;
+  appearance: none;
+  height: 44px;
+  background: linear-gradient(90deg, #e3e7ff 0%, #e3e7ff 100%);
+  border-radius: 12px;
+  outline: none;
+  cursor: pointer;
+}
+
+.swipe-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 100px;
+  height: 44px;
+  border-radius: 12px;
+  background: #1877f2;
+  color: #fff;
+  box-shadow: 0 6px 18px rgba(24, 119, 242, 0.35);
+  cursor: pointer;
+}
+
+.swipe-label {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #2b2b2b;
+  font-weight: 600;
+}
+
+/* 🟩 Swipe Button */
+.swipe-button {
+  position: relative;
+  width: 100%;
+  height: 55px;
+  background: #0171f1;
+  border-radius: 50px;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  cursor: pointer;
+  box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.4);
+  transition: background 0.3s ease;
+  margin-top:10px;
+}
+
+/* 🟢 Circular Knob */
+.swipe-circle {
+  background: #00d84a;
+  height: 45px;
+  width: 45px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 5px;
+  transition: transform 0.4s ease;
+  box-shadow: 0 0 12px rgba(0, 216, 74, 0.7);
+}
+
+/* → Arrow */
+.arrow {
+  font-size: 22px;
+  color: #000;
+  font-weight: bold;
+}
+
+/* Center Text */
+.swipe-text {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 13px;
+  width: 100%;
+  margin-left: 18px;
+  /* letter-spacing: 0.5px; */
+}
+
+/* Hover Animation */
+.swipe-button:hover .swipe-circle {
+  transform: translateX(calc(100% - 60px));
+  box-shadow: 0 0 20px rgba(0, 255, 80, 0.9);
+}
+.otp-title .amount{
+  font-size:1rem;
+}
+
+.swipe-button {
+  position: relative;
+  width: 100%;
+  max-width: 340px;
+  height: 55px;
+  background: #1ef00b;
+  border-radius: 50px;
+  overflow: hidden;
+  cursor: grab;
+  user-select: none;
+  margin: 15px auto;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.swipe-text {
+  font-weight: 600;
+  color: #ffffff;
+  /* letter-spacing: 0.3px; */
+  z-index: 1;
+  pointer-events: none;
+}
+
+.swipe-circle {
+  position: absolute;
+  left: 5px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 50px;
+  height: 50px;
+  background: linear-gradient(145deg, #1976d2, #42a5f5);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease, background 0.3s ease;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2);
+}
+
+.arrow {
+  color: white;
+  font-size: 22px;
+  font-weight: bold;
+  pointer-events: none;
+}
+.swipe-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 16px 0;
+}
+
+.swipe-track {
+  position: relative;
+  width: 90%;
+  max-width: 380px;
+  height: 70px;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 40px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #3a3d55;
+  font-family: 'Roboto', sans-serif;
+  font-weight: 500;
+  text-transform: uppercase;
+  user-select: none;
+}
+
+.swipe-text {
+  z-index: 1;
+  pointer-events: none;
+  color: #3a3d55;
+  font-size: 20px;
+}
+
+.swipe-handle {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 80px;
+  height: 80px;
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: grab;
+  transition: left 0.2s ease-out;
+}
+
+.swipe-handle.unlocked {
+  width: 100%;
+  border-radius: 40px;
+  background: #4caf50;
+  color: white;
+  cursor: default;
+  transition: all 0.3s ease;
+}
+
+.material-icons {
+  font-size: 36px;
+  color: #000;
+}
+/* ===========================
+   ✅ Swipe to Send OTP Button
+   =========================== */
+
+.swipe-container {
+  width: 100%;
+  margin-top: 14px;
+  display: flex;
+  justify-content: center;
+}
+
+.swipe-track {
+  position: relative;
+  width: 90%;
+  max-width: 360px;
+  height: 56px;
+  background: linear-gradient(135deg, #007bff, #0056b3);
+  border-radius: 40px;
+  overflow: hidden;
+  cursor: grab;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 15px rgba(0, 91, 187, 0.3);
+  user-select: none;
+  touch-action: none;
+  transition: background 0.3s ease;
+}
+
+.swipe-track:active {
+  cursor: grabbing;
+  background: linear-gradient(135deg, #0069d9, #004ba0);
+}
+
+.swipe-text {
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  pointer-events: none;
+  z-index: 2;
+  text-align: center;
+}
+
+.swipe-handle {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: #fff;
+  color: #0056b3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  transition: background 0.3s ease, color 0.3s ease, left 0.3s ease;
+}
+
+.swipe-handle i {
+  font-size: 24px;
+  color: inherit;
+  transition: transform 0.2s ease;
+}
+
+.swipe-handle.unlocked {
+  background: #28a745;
+  color: #fff;
+}
+
+.swipe-handle.unlocked i {
+  transform: rotate(360deg);
+}
+
+/* ✅ Glow animation when unlocked */
+@keyframes glow {
+  0% {
+    box-shadow: 0 0 5px #28a745, 0 0 10px #28a745;
+  }
+  100% {
+    box-shadow: 0 0 15px #28a745, 0 0 25px #28a745;
+  }
+}
+
+.swipe-handle.unlocked {
+  animation: glow 1s ease-in-out infinite alternate;
+}
+
+/* 🌐 Mobile adjustments */
+@media (max-width: 600px) {
+  .swipe-track {
+    width: 92%;
+    height: 52px;
+  }
+
+  .swipe-text {
+    font-size: 14px;
+  }
+
+  .swipe-handle {
+    width: 46px;
+    height: 46px;
+  }
+}
+.payment-waiting-screen {
+  position: fixed;         /* make it overlay everything */
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100vh;
+  background: #ffffff;     /* or use transparent/gradient if needed */
+  z-index: 9999;           /* ensure it stays above all UI layers */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  font-family: 'Poppins', sans-serif;
+  transition: opacity 0.3s ease;
+}
+
+.payment-loader {
+  width: 120px;
+  height: 120px;
+  margin-bottom: 20px;
+  animation: spin 1.5s linear infinite;
+}
+
+.payment-waiting-screen h2 {
+  font-size: 22px;
+  color: #0078ff;
+  margin-bottom: 8px;
+}
+
+.payment-waiting-screen p {
+  font-size: 15px;
+  color: #444;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+/* Full-screen solid white overlay */
+.payment-processing-overlays {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 9999;
+  width: 100%;
+  height: 100vh;
+  background-color: rgba(255, 255, 255, 2); /* ✅ solid white background */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Inner container */
+.payment-processing-screen {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  color: #333;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+}
+
+/* Clock SVG */
+.clock {
+  width: 120px;
+  height: 120px;
+}
+
+/* Animations */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes tick {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.ring {
+  transform-origin: 60px 60px;
+  animation: spin 2.8s linear infinite;
+}
+
+.hand-rotate {
+  transform-origin: 60px 60px;
+  animation: tick 2.4s linear infinite;
+}
+
+/* Text */
+.payment-processing-overlays h2 {
+  margin-top: 20px;
+  font-size: 20px;
+  font-weight: 600;
+  color:rgb(5, 212, 5);
+}
+
+p {
+  font-size: 15px;
+  opacity: 0.8;
+  margin-top: 5px;
+}
+
+
+
+.payment-processing {
+  height: 100vh;
+  width: 100%;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.status-text {
+  color: #00b300;
+  font-weight: 600;
+  font-size: 20px;
+  margin-top: 16px;
+}
+
+.sub-text {
+  color: #777;
+  font-size: 15px;
+}
+
+.payment-processing {
+  position: fixed;        /* overlay it on top of everything */
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100vh;
+  background: #ffffff;    /* full white background */
+  z-index: 9999;          /* ensure it covers parent completely */
+  
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+
+  animation: fadeIn 0.4s ease-in;
+}
+
+.status-text {
+  color: #007bff;
+  font-weight: 600;
+  font-size: 18px;
+  margin-top: 16px;
+  text-align: center;
+}
+
+.sub-text {
+  color: #777;
+  font-size: 14px;
+  margin-top: 8px;
+  text-align: center;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+
+/* Compact vertical timeline for pickup & drop address */
+.route-address {
+  position: relative;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  width: 100%;
+  max-width: 360px;
+  margin: 10px auto;
+  font-family: 'Inter', sans-serif;
+}
+
+.route-point {
+  display: flex;
+  align-items: flex-start;
+  position: relative;
+}
+
+.point-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: 10px;
+  margin-top: 4px;
+  position: relative;
+  z-index: 2;
+}
+
+.point-dot.pickup {
+  background-color: #1a73e8; /* blue */
+}
+
+.point-dot.drop {
+  background-color: #00b67a; /* green */
+}
+
+/* .route-line {
+  position: absolute;
+  left: 19px;
+  top: 32px;
+  bottom: 32px;
+  width: 2px;
+  background-color: #d9d9d9;
+  z-index: 1;
+} */
+
+.point-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.point-label {
+  font-size: 12px;
+  color: #9e9e9e;
+  margin-bottom: 2px;
+}
+
+.point-address {
+  font-size: 13px;
+  font-weight: 600;
+  color: #007bff;
+  line-height: 1.3;
+  word-break: break-word;
+}

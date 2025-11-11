@@ -139,6 +139,7 @@ const Header = () => {
       { to: '/home', label: 'Home' },
       ...(isRegistered ? [
         { to: '/orders', label: 'Dashboard' },
+         { to: '/profile', label: 'Profile' },
         { to: '/my-documents', label: 'My documents' },
       ] : []),
     ],
@@ -146,6 +147,7 @@ const Header = () => {
       { to: '/home', label: 'Home', icon: <FaHome className="mobile-nav-icon" /> },
       ...(isRegistered ? [
         { to: '/orders', label: 'Dashboard', icon: <FaChartLine className="mobile-nav-icon" /> },
+         { to: '/profile', label: 'Profile', icon: <CgProfile className="mobile-nav-icon" /> },
         { to: '/my-documents', label: 'My Documents', icon: <FaFileAlt className="mobile-nav-icon" /> },
       ] : []),
     ],

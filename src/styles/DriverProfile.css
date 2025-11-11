@@ -1,0 +1,484 @@
+/* ===== MAIN CONTAINER ===== */
+.p-wrap {
+  min-height: 100vh;
+  display: flex;
+  width:100%;
+  justify-content: center;
+  align-items: center;
+  background: #faf6ef;
+  padding: 20px;
+  margin-top: 40px;
+  margin-bottom:40px;
+}
+
+/* ===== PROFILE CARD ===== */
+.p-card {
+  background: #ffffff;
+  border-radius: 22px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+  max-width: 420px;
+  width: 100%;
+  padding: 30px 25px 35px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+/* ===== AVATAR ===== */
+.p-avatar-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.p-avatar {
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid  #0072ff;
+  background: #f0eadf;
+}
+
+/* ===== VEHICLE IMAGE (beside avatar) ===== */
+.p-vehicle {
+  width: 170px;
+  position: absolute;
+  right: -25px;
+  top: 130px;
+  transform: rotate(-1deg);
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.2));
+}
+
+/* ===== NAME ===== */
+.p-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: #111;
+  margin-top: 15px;
+}
+
+/* ===== STAR RATING ===== */
+.p-stars {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 5px;
+}
+
+.p-star {
+  font-size: 20px;
+  color: #e0e0e0;
+}
+
+.p-star--filled {
+  color: #f6c000;
+}
+
+.p-rating-number {
+  font-size: 18px;
+  color: #333;
+  margin-left: 4px;
+  font-weight: 500;
+}
+
+/* ===== CONTACT INFO ===== */
+.p-info {
+  margin-top: 8px;
+  color: #444;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.p-icon {
+  margin-right: 8px;
+  color: #555;
+}
+
+/* ===== STATS SECTION ===== */
+.p-stats {
+  display: flex;
+  justify-content: space-between;
+  background: #fff;
+  border-radius: 15px;
+  /* box-shadow: 0 3px 12px rgba(0, 0, 0, 0.06); */
+
+  padding: 14px 18px;
+  /* margin-top: 25px; */
+  text-align: center;
+  cursor: pointer;
+}
+.p-buttons-row{
+  display: flex;
+  gap:10px;
+  justify-content: space-around;
+}
+
+
+
+.p-stat-item {
+  flex: 1;
+}
+
+.p-stat-label {
+  color: #666;
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+
+.p-stat-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: #111;
+}
+
+/* ===== BUTTONS ===== */
+.p-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 25px;
+}
+
+.p-btn {
+  background: #0072ff;
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  padding: 13px 0;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.25s ease;
+}
+
+.p-btn:hover {
+  background: #4a8ee6;
+}
+
+.p-btn.logout {
+  background: #fd0000;
+}
+
+.p-btn.logout:hover {
+  background: #ff0000;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+  .p-card {
+    max-width: 360px;
+    padding: 25px 20px 30px;
+  }
+
+  .p-avatar {
+    width: 130px;
+    height: 130px;
+  }
+
+  .p-vehicle {
+    width: 140px;
+    right: -15px;
+    top: 120px;
+  }
+
+  .p-name {
+    font-size: 14px;
+  }
+
+  .p-stat-value {
+    font-size: 18px;
+  }
+}
+
+@media (max-width: 480px) {
+  .p-card {
+    max-width: 100%;
+    padding: 22px 15px;
+  }
+
+  .p-avatar {
+    width: 120px;
+    height: 120px;
+  }
+
+  .p-vehicle {
+    width: 120px;
+    right: 0px;
+    top: 115px;
+  }
+
+  .p-name {
+    font-size: 14px;
+  }
+
+  .p-stat-label {
+    font-size: 13px;
+  }
+
+  .p-stat-value {
+    font-size: 17px;
+  }
+
+  .p-btn {
+    font-size: 12px;
+    padding: 11px 10px;
+
+  }
+}
+/* ===== STATS SECTION FIX ===== */
+.p-stats {
+  display: flex;
+  flex-direction: column; /* stack vertically */
+  gap: 14px;
+  
+}
+
+/* Top full-width Earnings */
+.p-stat-earnings {
+  background: #fff;
+  border-radius: 15px;
+box-shadow: rgba(19, 114, 155, 0) 0px 2px 4px 0px, rgba(14, 30, 37, 0.32) 0px 2px 16px 0px;
+  padding: 18px 22px;
+  text-align: center;
+  width: 100%;
+}
+
+.p-stat-earnings .p-stat-label {
+  color: #6b6b6b;
+  font-size: 15px;
+}
+
+.p-stat-earnings .p-stat-value {
+  color: #111;
+  font-size: 28px;
+  font-weight: 700;
+  margin-top: 6px;
+}
+
+/* Bottom two side-by-side stats */
+.p-stats-bottom {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.p-stat-box {
+  flex: 1;
+  background: #fff;
+  border-radius: 15px;
+ box-shadow: rgba(14, 30, 37, 0.12) 0px 2px 4px 0px, rgba(14, 30, 37, 0.226) 0px 2px 16px 0px;
+  padding: 18px 22px;
+  text-align: center;
+}
+
+.p-stat-label {
+  color: #6b6b6b;
+  font-size: 15px;
+}
+
+.p-stat-value {
+  color: #111;
+  font-size: 24px;
+  font-weight: 700;
+  margin-top: 6px;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  .p-stats-bottom {
+    flex-direction: row;
+    gap: 10px;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .p-stat-earnings .p-stat-value {
+    font-size: 24px;
+  }
+}
+
+.p-details{
+  margin-left:10px;
+  align-items: baseline;
+  text-align: left;
+}
+
+/* ===== LOADING SPINNER ===== */
+.p-loading-container {
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #f7f4ee; /* soft background */
+}
+
+.p-spinner {
+  width: 60px;
+  height: 60px;
+  border: 6px solid #e5e7eb;
+  border-top: 6px solid #3b82f6; /* blue top border */
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+/* Spinner animation */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ===== Avatar Upload Styles ===== */
+.p-avatar-ring {
+  position: relative;
+  display: inline-block;
+}
+
+.p-upload-label {
+  position: absolute;
+  bottom: 5px;
+  right: 5px;
+  background: #ffffff;
+  color: #fff;
+  border-radius: 50%;
+  width: 38px;
+  height: 38px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 18px;
+  cursor: pointer;
+  z-index: 5; /* ✅ ensures it's on top of the avatar */
+  pointer-events: auto; /* ✅ ensures it’s clickable */
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2);
+  transition: background 0.3s ease;
+}
+
+.p-upload-label:hover {
+  background: #ffffff;
+}
+
+.p-upload-label input {
+  display: none; /* hide file input */
+}
+
+.p-upload-text {
+  pointer-events: none; /* text won’t block clicks */
+}
+/* ==== Logout Popup ==== */
+.logout-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  z-index: 9999;
+  animation: fadeIn 0.3s ease;
+}
+
+.logout-popup {
+  background: #fff;
+  width: 100%;
+  max-width: 420px;
+  border-radius: 20px 20px 0 0;
+  padding: 25px;
+  text-align: center;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
+  animation: slideUp 0.3s ease;
+}
+
+.logout-icon {
+  font-size: 25px;
+  color: #e63946;
+  background: #fdecea;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  margin: 0 auto 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.logout-popup h3 {
+  font-size: 20px;
+  margin-bottom: 8px;
+  color: #000;
+}
+
+.logout-popup p {
+  color: #555;
+  font-size: 14px;
+  margin-bottom: 25px;
+}
+
+.logout-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+}
+
+.logout-buttons .cancel-btn,
+.logout-buttons .logout-btn {
+  flex: 1;
+  padding: 10px 0;
+  font-size: 16px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.logout-buttons .cancel-btn {
+  background: #fff;
+  color: #007bff;
+  border: 2px solid #007bff;
+}
+
+.logout-buttons .cancel-btn:hover {
+  background: #f0f6ff;
+}
+
+.logout-buttons .logout-btn {
+  background: #ff0000;
+  color: #ece8e8;
+}
+
+.logout-buttons .logout-btn:hover {
+  background: #005ecf;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+/* ===== IMAGE CROPPER OVERLAY ===== */
+.cropper-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  animation: fadeIn 0.3s ease;
+}
+
+.cropper-modal {
+  background: #fff;
+  padding: 20px;
+  border-radius: 14px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
+  max-width: 95%;
+  width: 420px;
+  max-height: 90%;
+  overflow: auto;
+}

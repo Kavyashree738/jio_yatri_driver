@@ -72,6 +72,8 @@ import OfflineHandler from './components/OfflineHandler';
 import PrivacyPolicy from './components/PrivacyPolicy';
 import TermsAndConditions from './components/TermsAndConditions';
 
+import Profile from './components/DriverProfile'
+
 
 // Smart landing
 function LandingRedirect() {
@@ -122,6 +124,9 @@ const App = () => {
           {/* DRIVER-ONLY */}
           <Route path="/orders" element={
             <RequireAuth><RoleGuard allow="driver"><DriverDashboard /></RoleGuard></RequireAuth>
+          } />
+           <Route path="/profile" element={
+            <RequireAuth><RoleGuard allow="driver"><Profile /></RoleGuard></RequireAuth>
           } />
           <Route path="/owner-dashboard" element={
             <RequireAuth><RoleGuard allow="driver"><OwnerDashboard /></RoleGuard></RequireAuth>
