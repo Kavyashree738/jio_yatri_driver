@@ -101,13 +101,13 @@ const DriverProfile = () => {
 
             // Then fetch all driver data
             const [driverRes, imageRes, settlementRes] = await Promise.all([
-                fetch(` http://localhost:5000/api/driver/info/${user.uid}`, {
+                fetch(` https://jio-yatri-driver.onrender.com/api/driver/info/${user.uid}`, {
                     headers: { Authorization: `Bearer ${token}` }
                 }),
-                fetch(` http://localhost:5000/api/upload/profile-image/${user.uid}`, {
+                fetch(` https://jio-yatri-driver.onrender.com/api/upload/profile-image/${user.uid}`, {
                     headers: { Authorization: `Bearer ${token}` }
                 }),
-                fetch(` http://localhost:5000/api/settlement/driver/${user.uid}`, {
+                fetch(` https://jio-yatri-driver.onrender.com/api/settlement/driver/${user.uid}`, {
                     headers: { Authorization: `Bearer ${token}` }
                 })
             ]);
@@ -225,7 +225,7 @@ const DriverProfile = () => {
             const token = await user.getIdToken(true);
             console.log("🔐 [Upload] Using token (first 10):", token.slice(0, 10) + "...");
 
-            const res = await fetch("http://localhost:5000/api/upload/profile-image", {
+            const res = await fetch("https://jio-yatri-driver.onrender.com/api/upload/profile-image", {
                 method: "POST",
                 headers: { Authorization: `Bearer ${token}` },
                 body: formData,
@@ -240,7 +240,7 @@ const DriverProfile = () => {
             // 🔄 Force refresh the image from server (avoid cache)
             const bust = Date.now();
             const refreshed = await fetch(
-                `http://localhost:5000/api/upload/profile-image/${user.uid}?t=${bust}`,
+                `https://jio-yatri-driver.onrender.com/api/upload/profile-image/${user.uid}?t=${bust}`,
                 { headers: { Authorization: `Bearer ${token}` } }
             );
 
