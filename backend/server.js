@@ -72,6 +72,10 @@ app.use('/api/catalog',catalogRoutes)
 app.use('/api/passbook',passbookRoutes);
 app.use("/api/dashboard",dashboardRoutes)
 
+app.get('/ping', (req, res) => {
+  res.status(200).send('OK');
+});
+
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({ success: false, error: 'Internal Server Error' });
