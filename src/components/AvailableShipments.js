@@ -16,6 +16,16 @@ const AvailableShipments = forwardRef((props, ref) => {
 
   const notifiedShipmentIdsRef = useRef(new Set());
 
+  // 🧩 Simple visual UI debug function
+// const uiDebug = (msg, type = "info") => {
+//   const opts = { position: "top-center", autoClose: 4000, theme: "colored" };
+//   if (type === "success") toast.success(`✅ ${msg}`, opts);
+//   else if (type === "error") toast.error(`❌ ${msg}`, opts);
+//   else if (type === "warn") toast.warn(`⚠️ ${msg}`, opts);
+//   else toast.info(`💬 ${msg}`, opts);
+// };
+
+
    useEffect(() => {
     const savedShipment = localStorage.getItem("lastShipment");
     if (savedShipment) {
@@ -37,7 +47,7 @@ const AvailableShipments = forwardRef((props, ref) => {
     const scrollTo = params.get("scrollTo");
 
     if (scrollTo === "shipments" && sectionRef.current) {
-      console.log("📦 Scrolling to shipments...");
+      // console.log("📦 Scrolling to shipments...");
       sectionRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
       return true;
     }
@@ -62,6 +72,80 @@ const AvailableShipments = forwardRef((props, ref) => {
 }, [loading, shipments.length]);
 
 
+useEffect(() => {
+  const handlePush = (event) => {
+    const data = event.detail?.data;
+    // uiDebug("📩 PUSH RECEIVED from Flutter WebView!", "success");
+
+    if (!data) {
+      // uiDebug("⚠️ No data found in push payload", "warn");
+      return;
+    }
+
+    // uiDebug(`🧾 Payload: ${JSON.stringify(data)}`);
+
+    // ✅ Handle only shipment accepted push
+    if (data?.type === "SHIPMENT_ACCEPTED" && data?.shipmentId) {
+      const shipmentId = data.shipmentId;
+      // uiDebug(`🚚 Driver accepted shipment (ID: ${shipmentId}) — starting auto load...`, "info");
+
+      // 🔁 Retry until Firebase user is available
+      const tryAutoLoad = async (attempt = 1) => {
+        const auth = getAuth();
+        const user = auth.currentUser;
+
+        if (!user) {
+          // uiDebug(`⏳ Firebase not ready (attempt ${attempt})`, "warn");
+          if (attempt < 6) {
+            setTimeout(() => tryAutoLoad(attempt + 1), 700);
+          } else {
+            // uiDebug("❌ Firebase user not ready after 6 attempts", "error");
+          }
+          return;
+        }
+
+        try {
+          // uiDebug("🔑 Getting Firebase ID token...");
+          const token = await user.getIdToken();
+          if (!token) {
+            // uiDebug("⚠️ Failed to retrieve token", "error");
+            return;
+          }
+
+          // uiDebug("🌐 Fetching shipment details from backend...");
+          const res = await axios.get(
+            `https://jio-yatri-driver.onrender.com/api/shipments/${shipmentId}`,
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+
+          const shipment = res.data.shipment || res.data.data;
+          if (shipment) {
+            // uiDebug(`✅ Shipment ${shipmentId} loaded successfully`, "success");
+            setActiveShipment(shipment);
+            localStorage.setItem("lastShipment", JSON.stringify(shipment));
+          } else {
+            // uiDebug("❌ Shipment not found in API response", "error");
+          }
+        } catch (error) {
+          // uiDebug(`🔥 Error auto-loading shipment: ${error.message}`, "error");
+        }
+      };
+
+      tryAutoLoad();
+    } else {
+      // uiDebug("📦 Push received but not SHIPMENT_ACCEPTED type — ignoring", "warn");
+    }
+  };
+
+  window.addEventListener("push", handlePush);
+  // uiDebug("🟢 React is now listening for PUSH events...");
+  return () => window.removeEventListener("push", handlePush);
+}, []);
+
+
+
+
+
 
 
   useEffect(() => {
@@ -70,67 +154,118 @@ const AvailableShipments = forwardRef((props, ref) => {
     return () => clearInterval(intervalId);
   }, []);
 
-  const fetchData = async () => {
+const fetchData = async () => {
   try {
     const auth = getAuth();
     const user = auth.currentUser;
 
     if (!user) {
+      // toast.warn("⚠️ No Firebase user found — skipping fetch");
       setLoading(false);
       return;
     }
 
     const token = await user.getIdToken();
 
-    // 1. Get driver status
-    const statusResponse = await axios.get(`https://jio-yatri-driver.onrender.com/api/driver/status`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    // 1️⃣ Get driver status
+    // toast.info("🔍 Checking driver status...");
+    const statusResponse = await axios.get(
+      `https://jio-yatri-driver.onrender.com/api/driver/status`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
 
     const newStatus = statusResponse.data.data.status;
+    // toast.success(`🟢 Driver status: ${newStatus}`);
     setDriverStatus(newStatus);
 
-// 2. 🔥 Check if activeShipment still valid
-if (activeShipment?._id) {
-  const res = await axios.get(
-    `https://jio-yatri-driver.onrender.com/api/shipments/${activeShipment._id}`,
-    { headers: { Authorization: `Bearer ${token}` } }
-  );
-
-  console.log("🔍 Full shipment response:", res.data);
-
-  // unwrap shipment correctly (backend may wrap it in data or shipment)
-  const shipmentData = res.data.shipment || res.data.data || res.data;
-
-  console.log("✅ Parsed shipmentData:", shipmentData);
-  console.log("📦 Shipment status:", shipmentData?.status);
-
-if (shipmentData && ['cancelled', 'delivered'].includes(shipmentData.status)) {
-  console.log("🚨 Clearing shipment, status:", shipmentData.status);
-  setActiveShipment(null);
-  localStorage.removeItem("lastShipment");
-  return; // ⛔ IMPORTANT: stop here so cancelled shipment is not set again
-}
-
-if (shipmentData) {
-  console.log("✅ Keeping active shipment:", shipmentData._id);
-  setActiveShipment(shipmentData);
-  localStorage.setItem("lastShipment", JSON.stringify(shipmentData));
-}
-
-}
-    // 3. Fetch available shipments if driver is active
-    if (newStatus === 'active') {
-      await fetchAvailableShipments(token);
-    } else {
+    // 2️⃣ If driver inactive → stop early
+    if (newStatus !== "active") {
+      // toast.warn("⏸️ Driver inactive — skipping shipment fetch");
       setShipments([]);
+      setLoading(false);
+      return;
     }
+
+    // 3️⃣ Check current activeShipment validity
+    if (activeShipment?._id) {
+      // toast.info(`📦 Checking active shipment ${activeShipment._id} status...`);
+      const res = await axios.get(
+        `https://jio-yatri-driver.onrender.com/api/shipments/${activeShipment._id}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      const shipmentData = res.data.shipment || res.data.data || res.data;
+
+      if (shipmentData && ["cancelled", "delivered"].includes(shipmentData.status)) {
+        // toast.warn(`🚨 Shipment ${shipmentData._id} ${shipmentData.status} — clearing...`);
+        setActiveShipment(null);
+        localStorage.removeItem("lastShipment");
+        return; // stop further actions
+      }
+
+      if (shipmentData) {
+        // toast.info(`✅ Keeping active shipment ${shipmentData._id} (${shipmentData.status})`);
+        setActiveShipment(shipmentData);
+        localStorage.setItem("lastShipment", JSON.stringify(shipmentData));
+      }
+    }
+
+    // 4️⃣ Fetch available shipments
+    // toast.info("📦 Fetching available shipments...");
+    const response = await axios.get(
+      `https://jio-yatri-driver.onrender.com/api/shipments/matching`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    const shipmentsList = response.data.shipments || [];
+    setShipments(shipmentsList);
+    // toast.info(`🧾 ${shipmentsList.length} shipments found.`);
+
+    // 5️⃣ Check backend for assigned shipment (not in matching list)
+    // toast.info("🔎 Checking backend for active/assigned shipment...");
+    try {
+      const activeRes = await axios.get(
+        `https://jio-yatri-driver.onrender.com/api/shipments/active`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      const assignedShipment = activeRes.data.shipment || activeRes.data.data;
+
+      if (assignedShipment && assignedShipment.status === "assigned") {
+        // Prevent reloading same one repeatedly
+        if (!activeShipment || activeShipment._id !== assignedShipment._id) {
+          // toast.success(`🚚 Assigned shipment ${assignedShipment._id} found — activating...`);
+          setActiveShipment(assignedShipment);
+          localStorage.setItem("lastShipment", JSON.stringify(assignedShipment));
+        } else {
+          // toast.info(`🟢 Shipment ${assignedShipment._id} already active — skipping duplicate`);
+        }
+      } else {
+        // toast.info("📭 No assigned shipment found from backend.");
+      }
+    } catch (err) {
+      if (err.response?.status === 404) {
+        // toast.warn("❌ No active shipment endpoint (404) — none assigned currently.");
+      } else {
+        // toast.error(`🔥 Error checking assigned shipment: ${err.message}`);
+      }
+    }
+
+    // toast.info("🔄 Poll cycle complete ✅");
+
   } catch (error) {
-    console.error('Error fetching data:', error);
+    console.error("Error fetching data:", error);
+
+    if (error.response?.status === 404) {
+      // toast.warn("❌ No shipments found (404)");
+    } else {
+      // toast.error(`🔥 Fetch error: ${error.message}`);
+    }
   } finally {
     setLoading(false);
   }
 };
+
 
 
   const fetchAvailableShipments = async (token) => {
@@ -159,10 +294,10 @@ if (shipmentData) {
           try {
             const audio = new Audio('/notification.wav');
             audio.play().catch(err => {
-              console.warn("Audio playback prevented:", err);
+              // console.warn("Audio playback prevented:", err);
             });
           } catch (err) {
-            console.warn("Audio error:", err);
+            // console.warn("Audio error:", err);
           }
 
           notifiedSet.add(shipment._id);
@@ -171,7 +306,7 @@ if (shipmentData) {
 
       setShipments(newShipments);
     } catch (error) {
-      console.error('Error fetching shipments:', error);
+      // console.error('Error fetching shipments:', error);
       toast.error('Failed to load shipment');
     }
   };
@@ -190,7 +325,7 @@ if (shipmentData) {
         const options = { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 };
         navigator.geolocation.getCurrentPosition(resolve, reject, options);
       }).catch(error => {
-        console.error("Geolocation error:", error);
+        // console.error("Geolocation error:", error);
         throw error;
       });
 
@@ -339,6 +474,14 @@ const handleStatusUpdate = useCallback((newStatus) => {
 });
 
 export default AvailableShipments;
+
+
+
+
+
+
+
+
 
 
 

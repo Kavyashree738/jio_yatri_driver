@@ -1071,7 +1071,8 @@ const [driverData, setDriverData] = useState(() => {
                 rcFileId: null,
                 insuranceFileId: null,
                 aadharFileId: null,
-                panFileId: null
+                panFileId: null,
+                acceptedTerms: false
             });
             setMessage({ text: 'Logged out successfully', isError: false });
             navigate('/home', { replace: true });
@@ -1236,14 +1237,63 @@ const [driverData, setDriverData] = useState(() => {
                                 )}
                             </div>
 
+                                    <div className="form-groups terms-checkbox" style={{ marginTop: '10px' }}>
+  <label className="terms-label">
+    <input
+      type="checkbox"
+      id="termsCheckbox"
+      checked={driverData.acceptedTerms || false}
+      onChange={(e) =>
+        setDriverData({ ...driverData, acceptedTerms: e.target.checked })
+      }
+      required
+    />
+    <span className="custom-checkbox">
+      {driverData.acceptedTerms && <FaCheck className="checkmark-icon" />}
+    </span>
+    <span className="terms-text">
+      I accept&nbsp;
+      <a
+        href="/terms"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="terms-link"
+      >
+        Terms & Conditions
+      </a>
+      &nbsp;and&nbsp;
+      <a
+        href="/privacy-policy"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="terms-link"
+      >
+        Privacy Policy
+      </a>
+    </span>
+  </label>
+</div>
+
+
                             <button
-                                onClick={sendCode}
-                                type="button"
-                                disabled={!phoneNumber || isLoading}
-                                className={`button ${(!phoneNumber || isLoading) ? 'disabled' : ''}`}
-                            >
-                                {isLoading ? 'Sending...' : 'Send Verification Code'}
-                            </button>
+  onClick={sendCode}
+  type="button"
+  disabled={
+    isLoading ||
+    !driverData.acceptedTerms ||
+    phoneNumber.replace('+91', '').length !== 10
+  }
+  className={`button ${
+    isLoading ||
+    !driverData.acceptedTerms ||
+    phoneNumber.replace('+91', '').length !== 10
+      ? 'disabled'
+      : ''
+  }`}
+>
+  {isLoading ? 'Sending...' : 'Send Verification Code'}
+</button>
+
 
                             <div className="referral-toggle" onClick={() => setShowReferralField(!showReferralField)}>
                                 {showReferralField ? 'Hide referral code' : 'Have a referral code?'}
@@ -1573,49 +1623,7 @@ const [driverData, setDriverData] = useState(() => {
                                         </div>
                                     </div>
 
-                                    {/* ✅ Terms and Conditions Checkbox */}
-                                    <div className="form-groups terms-checkbox">
-                                        <label className="terms-label">
-                                            <input
-                                                type="checkbox"
-                                                id="termsCheckbox"
-                                                checked={driverData.acceptedTerms || false}
-                                                onChange={(e) =>
-                                                    setDriverData({ ...driverData, acceptedTerms: e.target.checked })
-                                                }
-                                                required
-                                            />
-                                            <span className="custom-checkbox">
-                                                {driverData.acceptedTerms && <FaCheck className="checkmark-icon" />}
-                                            </span>
-                                            <span className="terms-text">
-                                                I have read, understood and accept&nbsp;
-                                                <a
-                                                    href="#"
-                                                    onClick={(e) => {
-                                                        e.preventDefault();
-                                                        window.open('http://driver.jioyatri.com/terms', '_blank', 'noopener,noreferrer');
-                                                    }}
-                                                    className="terms-link"
-                                                >
-                                                    Terms & Conditions
-                                                </a>
-                                                &nbsp;and&nbsp;
-                                                <a
-                                                    href="#"
-                                                    onClick={(e) => {
-                                                        e.preventDefault();
-                                                        window.open('http://driver.jioyatri.com/privacy-policy', '_blank', 'noopener,noreferrer');
-                                                    }}
-                                                    className="terms-link"
-                                                >
-                                                    Privacy Policy
-                                                </a>
 
-
-                                            </span>
-                                        </label>
-                                    </div>
 
 
                                     <div className="form-navigation">
@@ -1625,13 +1633,14 @@ const [driverData, setDriverData] = useState(() => {
                                         >
                                             Back
                                         </button>
-                                        <button
-                                            onClick={submitDriverRegistration}
-                                            disabled={isSubmitting || !driverData.phone || !driverData.licenseFileId || !driverData.acceptedTerms}
-                                            className={`submit-btn ${!driverData.acceptedTerms ? 'disabled' : ''}`}
-                                        >
-                                            {isSubmitting ? 'Registering...' : 'Register'}
-                                        </button>
+<button
+  onClick={submitDriverRegistration}
+  disabled={isSubmitting || !driverData.phone || !driverData.licenseFileId}
+  className="submit-btn"
+>
+  {isSubmitting ? 'Registering...' : 'Register'}
+</button>
+
                                     </div>
                                 </>
                             )}

@@ -944,6 +944,9 @@ exports.getShipmentById = async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
+
+
+
 exports.getShopShipments = async (req, res) => {
   try {
     const { shopId } = req.params;
@@ -1064,6 +1067,56 @@ exports.getShipmentPaymentStatus = async (req, res) => {
     });
   }
 };
+
+
+
+// ✅ Get the currently active shipment for the logged-in driver
+exports.getActiveShipment = async (req, res) => {
+  try {
+    // 1. Get the current Firebase user
+    const firebaseUid = req.user.uid;
+
+    // 2. Find the driver associated with this Firebase UID
+    const driver = await Driver.findOne({ userId: firebaseUid }).populate('activeShipment');
+
+    if (!driver) {
+      return res.status(404).json({ success: false, message: 'Driver not found' });
+    }
+
+    // 3. If driver has no active shipment
+    if (!driver.activeShipment) {
+      return res.status(404).json({ success: false, message: 'No active shipment assigned' });
+    }
+
+    // 4. Load the full shipment details
+    const shipment = await Shipment.findById(driver.activeShipment)
+      .populate('sender')
+      .populate('receiver')
+      .populate('assignedDriver')
+      .lean();
+
+    if (!shipment) {
+      return res.status(404).json({ success: false, message: 'Shipment not found' });
+    }
+
+    // 5. Respond with the active shipment
+    res.status(200).json({
+      success: true,
+      shipment,
+    });
+  } catch (error) {
+    console.error('Error fetching active shipment:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while fetching active shipment',
+      error: error.message,
+    });
+  }
+};
+
+
+
+
 
 
 
