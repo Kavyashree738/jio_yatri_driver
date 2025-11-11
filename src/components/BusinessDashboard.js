@@ -14,12 +14,15 @@ import '../styles/ShopDisplay.css';
 import { useAuth } from '../context/AuthContext';
 import { IoAddCircleSharp } from 'react-icons/io5';
 
+import HelplineButton from '../components/HelplineButton'
+
 const OwnerShops = () => {
   const [shops, setShops] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
   const { user, softLogout } = useAuth();
+  const [showLogoutPopup, setShowLogoutPopup] = useState(false);
 
   const categoryIcons = {
     hotel: <FaUtensils />,
@@ -80,6 +83,10 @@ const OwnerShops = () => {
 
 
   const handleLogoutClick = () => {
+    setShowLogoutPopup(true);
+  };
+
+  const confirmLogout = () => {
     softLogout();
     navigate('/home', { replace: true });
   };
@@ -101,8 +108,8 @@ const OwnerShops = () => {
     switch (category) {
       case 'hotel':
         return <FaHamburger />;
-        case 'bakery':    return <FaBreadSlice />;
-            case 'cafe':      return <FaCoffee />;    
+      case 'bakery': return <FaBreadSlice />;
+      case 'cafe': return <FaCoffee />;
       case 'grocery':
         return <FaShoppingBag />;
       case 'vegetable':
@@ -136,13 +143,17 @@ const OwnerShops = () => {
     <>
       <Header />
       <div className="sd-container">
-        <div className="sd-header">
-          <h1 className="sd-title">Your Shops</h1>
-          <button onClick={handleLogoutClick} className="logout-btn gradient-btn">Logout</button>
-          <button className="youtube-btn" onClick={handleYoutubeClick}>
-            <FaYoutube className='youtube-icon' />
+        <div className="sds-header">
+          <h1 className="sds-title">Shops</h1>
+
+          <button onClick={handleLogoutClick} className="sds-logout-btn">
+            Logout
           </button>
-          <p className="sd-subtitle">Manage your registered businesses</p>
+
+          <button className="sds-youtube-btn" onClick={handleYoutubeClick}>
+            <FaYoutube className="sds-youtube-icon" />
+          </button>
+          <HelplineButton />
         </div>
 
         {shops.length === 0 ? (
@@ -256,6 +267,22 @@ const OwnerShops = () => {
           </>
         )}
       </div>
+      {showLogoutPopup && (
+        <div className="sds-popup-overlay">
+          <div className="sds-popup">
+            <div className="sds-popup-alert">
+              <span className="sds-popup-icon">!</span>
+            </div>
+            <h2>Log out now?</h2>
+            <p>You can always log back in whenever you need us.</p>
+            <div className="sds-popup-buttons">
+              <button className="sds-cancel-btn" onClick={() => setShowLogoutPopup(false)}>Cancel</button>
+              <button className="sds-logout-confirm-btn" onClick={confirmLogout}>Log out</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <Footer />
     </>
   );

@@ -275,7 +275,7 @@
 @media (max-width: 768px) {
   .sd-container {
     padding: 1.5rem 1rem;
-    margin-top:26px;
+    margin-top:0px;
   }
   
   .sd-title {
@@ -431,6 +431,9 @@
     .add-another-shop-section {
         padding: 1.5rem;
         margin: 2rem 1rem;
+    }
+    .sd-container{
+      margin-top:50px;
     }
     
     .add-another-shop-content h3 {
@@ -678,4 +681,212 @@
 .youtube-btn:hover {
   background: #df0505;
   transform: scale(1.05);
+}
+
+/* ===== HEADER BAR ===== */
+.sds-header {
+  background: linear-gradient(90deg, #0066ff, #00aaff);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 25px;
+  border-radius: 0 0 15px 15px;
+  box-shadow: 0 4px 12px rgba(0, 102, 255, 0.3);
+  color: #fff;
+  /* position: sticky; */
+  width: 100%;
+  height: 70px;
+  transition: all 0.3s ease;
+}
+
+/* ===== TITLE ===== */
+.sds-title {
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin: 0;
+  color: #fff;
+  letter-spacing: 0.5px;
+  flex: 1;
+}
+
+/* ===== LOGOUT BUTTON ===== */
+.sds-logout-btn {
+  background: #ff0000;
+  color: #fbfdff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.3s ease;
+  box-shadow: 0 2px 8px rgba(255, 255, 255, 0.3);
+}
+.sds-logout-btn:hover {
+  background: #e20707c4;
+  transform: scale(1.05);
+}
+
+/* ===== YOUTUBE BUTTON ===== */
+.sds-youtube-btn {
+  background: #ff0000;
+  border: none;
+  color: #fff;
+  font-size: 20px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  cursor: pointer;
+  margin-left: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+.sds-youtube-btn:hover {
+  background: #cc0000;
+  transform: scale(1.1);
+}
+
+.sds-youtube-icon {
+  font-size: 22px;
+}
+
+/* ===== MOBILE VIEW ===== */
+@media (max-width: 600px) {
+  .sds-header {
+    height: 70px;
+    flex-direction: row;
+    justify-content: space-around;
+    align-items: center;
+    flex-wrap: nowrap;
+    padding: 10px;
+    margin-top:-25px;
+    margin-bottom:20px;
+  }
+
+  .sds-title {
+    font-size: 1.2rem;
+    flex: none;
+    margin-right: 5px;
+  }
+
+  .sds-logout-btn {
+    padding: 6px 12px;
+    font-size: 0.9rem;
+    border-radius: 15px;
+  }
+
+  .sds-youtube-btn {
+    width: 35px;
+    height: 35px;
+    font-size: 18px;
+  }
+}
+
+/* ===== Overlay Background ===== */
+.sds-popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+/* ===== Popup Box ===== */
+.sds-popup {
+  background: #fff;
+  width: 90%;
+  max-width: 360px;
+  border-radius: 18px;
+  padding: 25px 20px 20px;
+  text-align: center;
+  box-shadow: 0 4px 25px rgba(0, 0, 0, 0.2);
+  animation: slideUp 0.3s ease-out;
+}
+
+/* ===== Red Alert Circle ===== */
+.sds-popup-alert {
+  width: 50px;
+  height: 50px;
+  background: #ff4d4f;
+  border-radius: 50%;
+  margin: 0 auto 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sds-popup-icon {
+  color: #fff;
+  font-weight: 700;
+  font-size: 22px;
+}
+
+/* ===== Title and Text ===== */
+.sds-popup h2 {
+  margin: 10px 0 5px;
+  color: #111;
+  font-size: 1.3rem;
+}
+
+.sds-popup p {
+  color: #555;
+  font-size: 0.95rem;
+  margin-bottom: 20px;
+}
+
+/* ===== Buttons ===== */
+.sds-popup-buttons {
+  display: flex;
+  justify-content: space-around;
+  gap: 10px;
+}
+
+.sds-cancel-btn,
+.sds-logout-confirm-btn {
+  flex: 1;
+  padding: 10px;
+  font-weight: 600;
+  border-radius: 25px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  transition: all 0.3s ease;
+}
+
+/* Cancel Button (outlined) */
+.sds-cancel-btn {
+  background: transparent;
+  color: #0066ff;
+  border: 2px solid #0066ff;
+}
+.sds-cancel-btn:hover {
+  background: #e6f0ff;
+}
+
+/* Logout Button (solid blue) */
+.sds-logout-confirm-btn {
+  background: #ff0000;
+  color: white;
+  border: none;
+}
+.sds-logout-confirm-btn:hover {
+  background: #cc4b00;
+}
+
+/* ===== Animation ===== */
+@keyframes slideUp {
+  from {
+    transform: translateY(40px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }

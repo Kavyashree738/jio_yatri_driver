@@ -62,6 +62,7 @@ import CartProvider from './context/CartContext';
 import CartPage from './components/Cart';
 import OrderConfirmation from './components/OrderConfirmation';
 import BusinessOrders from './components/BusinessOrders';
+import ShopDashboard from './components/ShopDashboard';
 
 import ShopMenuManager from './components/ShopMenuManager';
 import KycPending from './components/KycPending';
@@ -116,6 +117,7 @@ const App = () => {
           <Route path="/shop/:shopId/menu" element={<ShopMenuManager />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/terms" element={<TermsAndConditions />} />
+          <Route path="/shop-dashboard" element={<ShopDashboard />} />
 
           {/* DRIVER-ONLY */}
           <Route path="/orders" element={

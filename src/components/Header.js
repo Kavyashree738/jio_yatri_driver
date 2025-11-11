@@ -78,6 +78,7 @@ import {
 import logo from '../assets/images/logo.jpg';
 import { useAuth } from '../context/AuthContext';
 import { LuPackage2 } from "react-icons/lu";
+import { CgProfile } from "react-icons/cg";
 const apiBase = 'https://jio-yatri-driver.onrender.com';
 
 const Header = () => {
@@ -156,12 +157,14 @@ const BUSINESS = {
     { to: '/home', label: 'Home' },
     { to: '/business-dashboard', label: 'Dashboard' },
     { to: '/business-orders', label: 'Orders' }, // aggregate
+        { to: '/shop-dashboard', label: 'Dashboard' },
     { to: '/owner-documents', label: 'Documents' },
   ],
   mobile: [
     { to: '/home', label: 'Home', icon: <FaHome className="mobile-nav-icon" /> },
     { to: '/business-dashboard', label: 'Dashboard', icon: <FaStore className="mobile-nav-icon" /> },
     { to: '/business-orders', label: 'Orders', icon: <LuPackage2 className="mobile-nav-icon" /> }, // aggregate
+        { to: '/shop-dashboard', label: 'Dashboard', icon: <FaClipboardList className="mobile-nav-icon" /> }, 
     { to: '/owner-documents', label: 'Documents', icon: <FaFileAlt className="mobile-nav-icon" /> },
   ],
 };
