@@ -4,13 +4,26 @@ import { useAuth } from '../context/AuthContext';
 import '../styles/DeliveryHistory.css';
 import Header from './Header';
 import Footer from './Footer';
+import { Bar } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+} from 'chart.js';
+
+ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
+
 
 const DeliveryHistory = () => {
   const { user } = useAuth();
   const [shipments, setShipments] = useState([]);
   const [error, setError] = useState('');
 
-  useEffect(() => {
+   useEffect(() => {
     let intervalId;
 
     const fetchDriverShipments = async () => {
@@ -35,6 +48,80 @@ const DeliveryHistory = () => {
     return () => clearInterval(intervalId);
   }, [user]);
 
+  // 📊 Group shipments by day and sum earnings
+// 📊 Filter only delivered shipments
+const deliveredShipments = shipments.filter(
+  (s) => s.status?.toLowerCase() === 'delivered'
+);
+
+// 🧮 Group delivered shipments by date
+const earningsMap = deliveredShipments.reduce((acc, s) => {
+  const date = new Date(s.createdAt).toLocaleDateString();
+  const cost = Number(s.cost || 0);
+  acc[date] = (acc[date] || 0) + cost;
+  return acc;
+}, {});
+
+// 📅 Sort dates and keep only the last 7
+const sortedDates = Object.keys(earningsMap)
+  .sort((a, b) => new Date(a) - new Date(b))
+  .slice(-7);
+
+// 📊 Prepare data for Chart.js
+const chartData = {
+  labels: sortedDates,
+  datasets: [
+    {
+      label: 'Delivered Earnings (₹)',
+      data: sortedDates.map((date) => earningsMap[date]),
+      backgroundColor: 'rgba(75, 192, 192, 0.6)',
+      borderColor: 'rgba(75, 192, 192, 1)',
+      borderWidth: 1,
+      borderRadius: 8,
+      hoverBackgroundColor: 'rgba(54, 162, 235, 0.7)',
+    },
+  ],
+};
+
+// ⚙️ Chart Options
+const chartOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: {
+      position: 'top',
+      labels: { color: '#333', font: { size: 12 } },
+    },
+    title: {
+      display: true,
+      text: 'Delivered Earnings (Last 7 Days)',
+      color: '#111',
+      font: { size: 16, weight: 'bold' },
+    },
+    tooltip: {
+      callbacks: {
+        label: (context) => `₹${context.parsed.y.toFixed(2)}`,
+      },
+    },
+  },
+  scales: {
+    x: { ticks: { color: '#444' } },
+    y: {
+      ticks: {
+        color: '#444',
+        callback: (value) => `₹${value}`,
+      },
+    },
+  },
+  animation: {
+    duration: 1000,
+    easing: 'easeInOutCubic',
+  },
+};
+
+
+ 
+
   const getStatusClass = (status) => {
     switch (status.toLowerCase()) {
       case 'pending': return 'dh-status-pending';
@@ -55,8 +142,14 @@ const DeliveryHistory = () => {
   return (
     <>
       <Header />
+
+
       <div className="dh-container">
         <h2 className="dh-title">Your Delivery History</h2>
+
+        <div className="dh-chart-wrapper">
+          <Bar data={chartData} options={chartOptions} />
+        </div>
         {error && <p className="dh-error">{error}</p>}
         {shipments.length === 0 ? (
           <p className="dh-empty">No shipments found.</p>
@@ -84,6 +177,33 @@ const DeliveryHistory = () => {
                 <p className="dh-detail">
                   <strong>Cost:</strong> ₹{shipment.cost.toFixed(2)}
                 </p>
+                <p className="dh-detail">
+                  <strong>Sender Address:</strong> {shipment.sender?.address?.addressLine1 || "N/A"}
+
+
+                </p>
+                <p className="dh-detail">
+                  <strong>Receiver Address:</strong> {shipment.receiver?.address?.addressLine1 || "N/A"}
+
+                </p>
+
+                <div className="dh-map-container">
+                  <iframe
+                    title={`map-${shipment._id}`}
+                    width="100%"
+                    height="200"
+                    style={{ border: 0, borderRadius: "8px" }}
+                    loading="lazy"
+                    allowFullScreen
+                    src={`https://www.google.com/maps/embed/v1/directions?key=${process.env.REACT_APP_GOOGLE_API_KEY}&origin=${encodeURIComponent(
+                      shipment.sender?.address?.addressLine1 || ""
+                    )}&destination=${encodeURIComponent(
+                      shipment.receiver?.address?.addressLine1 || ""
+                    )}&zoom=12`}
+                  ></iframe>
+                </div>
+
+
 
                 <hr className="dh-divider" />
 
