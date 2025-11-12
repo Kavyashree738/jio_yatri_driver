@@ -330,6 +330,18 @@ const DriverDashboard = () => {
                 lastUpdated: new Date().toISOString()
             }));
             setMessage({ text: 'Status updated', isError: false });
+
+            if (window.DriverStatus) {
+            if (newStatus === 'active') {
+                window.DriverStatus.postMessage('online');
+                console.log('📡 Sent online → Flutter');
+            } else {
+                window.DriverStatus.postMessage('offline');
+                console.log('📡 Sent offline → Flutter');
+            }
+        } else {
+            console.warn('⚠️ Flutter DriverStatus bridge not available');
+        }
         } catch (err) {
             setMessage({ text: err.message, isError: true });
         } finally {
