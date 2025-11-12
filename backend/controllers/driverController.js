@@ -1327,6 +1327,15 @@ exports.updateLastKnownLocation = async (req, res) => {
       return res.status(400).json({ success: false, error: 'coords must be [lng,lat]' });
     }
 
+
+    console.log(
+      '📍 [Heartbeat]',
+      req.user.uid,
+      '→',
+      coords,
+      new Date().toLocaleTimeString()
+    );
+
     const driver = await Driver.findOneAndUpdate(
       { userId: req.user.uid },
       {
