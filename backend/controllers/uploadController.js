@@ -239,7 +239,7 @@ exports.getProfileImage = async (req, res) => {
     console.log('GridFS initialized:', !!gfs);
 
     const driver = await Driver.findOne({ userId: req.params.userId });
-    console.log('Driver found:', driver);
+    
 
     if (!driver) {
       console.warn('Driver not found for userId:', req.params.userId);
@@ -251,9 +251,9 @@ exports.getProfileImage = async (req, res) => {
       return res.status(404).json({ error: 'Profile image not found' });
     }
 
-    console.log('Fetching file from GridFS with _id:', driver.profileImage);
+    
     const files = await gfs.find({ _id: driver.profileImage }).toArray();
-    console.log('Files found:', files);
+ 
 
     if (!files.length) {
       console.warn('No file found in GridFS with _id:', driver.profileImage);
