@@ -240,6 +240,29 @@ const DriverDashboard = () => {
     }
 }, [status]);
 
+    // 🔑 Send Firebase ID Token to Flutter so Android can use it
+useEffect(() => {
+    const sendTokenToFlutter = async () => {
+        if (!window.DriverAuth) {
+            console.warn("⚠️ DriverAuth bridge not ready");
+            return;
+        }
+
+        try {
+            const token = await user.getIdToken(true);
+            console.log("🔑 Sending ID token → Flutter");
+            window.DriverAuth.postMessage(token);
+        } catch (err) {
+            console.error("❌ Failed to get token:", err);
+        }
+    };
+
+    if (status === "active" && user) {
+        sendTokenToFlutter();
+    }
+}, [status, user]);
+
+
 
     useEffect(() => {
         const onErr = (e) => {
