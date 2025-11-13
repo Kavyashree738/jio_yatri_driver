@@ -226,6 +226,22 @@ const DriverDashboard = () => {
     }, [user]);
 
     useEffect(() => {
+    if (!window.DriverStatus) {
+        console.warn("⚠️ DriverStatus bridge not available yet");
+        return;
+    }
+
+    if (status === "active") {
+        console.log("🔵 Sync ONLINE with Flutter (status change)");
+        window.DriverStatus.postMessage("online");
+    } else {
+        console.log("🔴 Sync OFFLINE with Flutter (status change)");
+        window.DriverStatus.postMessage("offline");
+    }
+}, [status]);
+
+
+    useEffect(() => {
         const onErr = (e) => {
             const msg = e?.message || e?.error?.message || String(e);
             const file = e?.filename ? ` @ ${e.filename}:${e.lineno || ''}:${e.colno || ''}` : '';
