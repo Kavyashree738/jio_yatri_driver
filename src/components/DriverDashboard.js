@@ -263,6 +263,27 @@ useEffect(() => {
 }, [status, user]);
 
 
+    // 🔄 AUTO-REFRESH TOKEN every 45 minutes and send to Flutter
+useEffect(() => {
+    if (!user) return;
+
+    const interval = setInterval(async () => {
+        try {
+            const newToken = await user.getIdToken(true); // force refresh
+            console.log("♻️ Auto-refreshed token → sending to Flutter");
+
+            if (window.DriverAuth) {
+                window.DriverAuth.postMessage(newToken);
+            }
+        } catch (err) {
+            console.error("❌ Error refreshing token:", err);
+        }
+    }, 45 * 60 * 1000); // every 45 minutes
+
+    return () => clearInterval(interval);
+}, [user]);
+
+
 
     useEffect(() => {
         const onErr = (e) => {
