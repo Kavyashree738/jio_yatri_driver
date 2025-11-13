@@ -1333,7 +1333,7 @@ exports.updateLastKnownLocation = async (req, res) => {
       req.user.uid,
       '→',
       coords,
-      new Date().toLocaleTimeString()
+      new Date().toLocaleTimeString("en-IN", { timeZone: "Asia/Kolkata" })
     );
 
     const driver = await Driver.findOneAndUpdate(
