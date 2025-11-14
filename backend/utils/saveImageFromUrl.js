@@ -6,8 +6,9 @@ module.exports = async function saveImageFromUrl(url) {
   try {
     const conn = mongoose.connection;
 
+    // ✅ IMPORTANT: use SAME bucket as uploadProfileImage & getProfileImage
     const bucket = new GridFSBucket(conn.db, {
-      bucketName: "userphotos"
+      bucketName: "driver_docs"
     });
 
     const response = await axios({
@@ -19,13 +20,17 @@ module.exports = async function saveImageFromUrl(url) {
     const contentType = response.headers["content-type"] || "image/jpeg";
 
     const uploadStream = bucket.openUploadStream("google-photo", {
-      contentType
+      metadata: {
+        mimetype: contentType,
+        docType: "profile",
+        uploadDate: new Date()
+      }
     });
 
     uploadStream.end(response.data);
 
     return new Promise((resolve, reject) => {
-      uploadStream.on("finish", () => resolve(uploadStream.id));  // <-- ObjectId
+      uploadStream.on("finish", () => resolve(uploadStream.id));
       uploadStream.on("error", reject);
     });
 
