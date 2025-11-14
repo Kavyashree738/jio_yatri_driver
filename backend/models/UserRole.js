@@ -19,7 +19,7 @@ const userSchema = new mongoose.Schema({
   // NEW
   name: { type: String, trim: true, default: '' },
 
-  phone: { type: String, required: true },
+  phone: { type: String },
   email: { type: String },
   role: {
     type: String,
