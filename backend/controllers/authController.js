@@ -317,6 +317,7 @@ const googleLogin = async (req, res) => {
         uid: firebaseUid,
         email,
         name,
+        phone:null,
         role,
         googleProvider: true,
         referredBy: referralCode || null
@@ -358,6 +359,7 @@ const googleLogin = async (req, res) => {
 
 
 module.exports = { sendOtp, verifyOtp,sendReceiverOtp,verifyReceiverOtp,googleLogin };
+
 
 
 
