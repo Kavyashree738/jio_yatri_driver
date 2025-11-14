@@ -208,6 +208,13 @@ exports.registerDriver = async (req, res) => {
 
     // console.log('[Registration] Extracted referralCode:', referralCode);
 
+    // Fetch Google photo from User model
+const user = await User.findOne({ userId });
+
+// If user logged in with Google, use Google photo. Otherwise (OTP login), set null.
+let googlePhotoForDriver = user?.photo || null;
+
+
 
     // Validate required fields
     if (!userId || !name || !phone || !aadharFileId || !panFileId ||
@@ -266,6 +273,7 @@ exports.registerDriver = async (req, res) => {
       userId,
       name,
       phone,
+       profileImage: googlePhotoForDriver, 
       documents: {
         aadhar: aadharFileId,
         pan: panFileId,
