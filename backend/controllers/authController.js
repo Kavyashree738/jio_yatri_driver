@@ -297,6 +297,13 @@ const googleLogin = async (req, res) => {
     const name = decoded.name || "";
     const googlePhotoUrl = decoded.picture || null;
 
+    // ⭐ DOWNLOAD GOOGLE PROFILE IMAGE
+    let googleProfileImage = null;
+    if (googlePhotoUrl) {
+      googleProfileImage = await saveImageFromUrl(googlePhotoUrl);
+    }
+
+
     console.log("✅ Firebase Token Decoded:", {
       firebaseUid,
       email,
@@ -317,7 +324,7 @@ const googleLogin = async (req, res) => {
         uid: firebaseUid,
         email,
         name,
-        phone:null,
+        phone: null,
         role,
         googleProvider: true,
         referredBy: referralCode || null
@@ -328,10 +335,24 @@ const googleLogin = async (req, res) => {
     } else {
       console.log("👤 User exists → Updating role if needed");
 
+      // ⭐ IF ROLE IS DRIVER → UPDATE DRIVER PROFILE IMAGE
+
+
+
       user.role = role;
       await user.save();
 
       console.log("🔄 Updated existing user:", user._id);
+    }
+
+    if (role === "driver") {
+      let driver = await Driver.findOne({ userId: firebaseUid });
+
+      if (driver && googleProfileImage) {
+        driver.profileImage = googleProfileImage;   // SAVE PHOTO HERE
+        await driver.save();
+        console.log("📸 Driver Google profile photo saved.");
+      }
     }
 
     // 3️⃣ Create Firebase custom token
@@ -347,8 +368,12 @@ const googleLogin = async (req, res) => {
       success: true,
       firebaseToken: customToken,
       isNewUser,
+      name,                // ⭐ ADD
+      email,               // ⭐ ADD
+      photo: googlePhotoUrl,  // ⭐ ADD
       user
     });
+
 
   } catch (error) {
     console.error("❌ Google Login Error:", error);
@@ -359,6 +384,7 @@ const googleLogin = async (req, res) => {
 
 
 module.exports = { sendOtp, verifyOtp,sendReceiverOtp,verifyReceiverOtp,googleLogin };
+
 
 
 
