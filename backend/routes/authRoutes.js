@@ -38,7 +38,7 @@ router.use((req, res, next) => {
 
 router.post('/send-otp', authController.sendOtp);
 router.post('/verify-otp', verifyLimiter, authController.verifyOtp);
-
+router.post("/google-login", authController.googleLogin);
 
 router.post('/:id/send-receiver-otp',  authController.sendReceiverOtp);
 router.post('/:id/verify-receiver-otp', authController.verifyReceiverOtp);

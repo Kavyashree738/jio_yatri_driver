@@ -3,6 +3,10 @@ const crypto = require('crypto');
 const sendSms = require('../services/otpService');
 const axios = require('axios');
 const Shipment = require('../models/Shipment');
+const User=require('../models/UserRole')
+const Driver=require('../models/Driver')
+const Shop=require('../models/CategoryModel')
+const saveImageFromUrl = require("../utils/saveImageFromUrl");
 
 const sendOtp = async (req, res) => {
   try {
@@ -262,8 +266,98 @@ const verifyReceiverOtp = async (req, res) => {
 };
 
 
+const googleLogin = async (req, res) => {
+  try {
+    console.log("\n===============================");
+    console.log("📥 GOOGLE LOGIN API HIT");
+    console.log("===============================\n");
 
-module.exports = { sendOtp, verifyOtp,sendReceiverOtp,verifyReceiverOtp };
+    const { firebaseToken, referralCode, role } = req.body;
+
+    console.log("📌 Received Data:", {
+      firebaseTokenExists: !!firebaseToken,
+      referralCode,
+      role
+    });
+
+    if (!firebaseToken || !role) {
+      console.log("❌ Missing firebaseToken or role");
+      return res.status(400).json({
+        success: false,
+        message: "firebaseToken and role are required"
+      });
+    }
+
+    // 1️⃣ Verify Google token from Flutter
+    console.log("🔍 Verifying Firebase token...");
+    const decoded = await admin.auth().verifyIdToken(firebaseToken);
+
+    const firebaseUid = decoded.uid;
+    const email = decoded.email || "";
+    const name = decoded.name || "";
+    const googlePhotoUrl = decoded.picture || null;
+
+    console.log("✅ Firebase Token Decoded:", {
+      firebaseUid,
+      email,
+      name,
+      googlePhotoUrl
+    });
+
+    // 2️⃣ MongoDB user
+    console.log("🔎 Checking if user exists in MongoDB...");
+    let user = await User.findOne({ userId: firebaseUid });
+    const isNewUser = !user;
+
+    if (isNewUser) {
+      console.log("🆕 User does not exist → Creating new user");
+
+      user = new User({
+        userId: firebaseUid,
+        uid: firebaseUid,
+        email,
+        name,
+        role,
+        googleProvider: true,
+        referredBy: referralCode || null
+      });
+
+      await user.save();
+      console.log("✅ New user saved:", user._id);
+    } else {
+      console.log("👤 User exists → Updating role if needed");
+
+      user.role = role;
+      await user.save();
+
+      console.log("🔄 Updated existing user:", user._id);
+    }
+
+    // 3️⃣ Create Firebase custom token
+    console.log("🎟️ Creating Firebase Custom Token...");
+    const customToken = await admin.auth().createCustomToken(firebaseUid);
+
+    console.log("✅ Custom Firebase Token Created!");
+
+    // 4️⃣ Response
+    console.log("🚀 Sending Response Back To Client...\n");
+
+    return res.status(200).json({
+      success: true,
+      firebaseToken: customToken,
+      isNewUser,
+      user
+    });
+
+  } catch (error) {
+    console.error("❌ Google Login Error:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+
+
+module.exports = { sendOtp, verifyOtp,sendReceiverOtp,verifyReceiverOtp,googleLogin };
 
 
 
