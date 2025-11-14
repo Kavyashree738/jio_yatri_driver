@@ -327,10 +327,12 @@ const googleLogin = async (req, res) => {
         phone: null,
         role,
         googleProvider: true,
-        referredBy: referralCode || null
+        referredBy: referralCode || null,
+        photo: googleProfileImage
       });
 
       await user.save();
+     
       console.log("✅ New user saved:", user._id);
     } else {
       console.log("👤 User exists → Updating role if needed");
@@ -340,6 +342,8 @@ const googleLogin = async (req, res) => {
 
 
       user.role = role;
+
+       if (googleProfileImage) user.photo = googleProfileImage; 
       await user.save();
 
       console.log("🔄 Updated existing user:", user._id);
@@ -370,7 +374,7 @@ const googleLogin = async (req, res) => {
       isNewUser,
       name,                // ⭐ ADD
       email,               // ⭐ ADD
-      photo: googlePhotoUrl,  // ⭐ ADD
+      photo: googleProfileImage ,  // ⭐ ADD
       user
     });
 
@@ -384,6 +388,7 @@ const googleLogin = async (req, res) => {
 
 
 module.exports = { sendOtp, verifyOtp,sendReceiverOtp,verifyReceiverOtp,googleLogin };
+
 
 
 
