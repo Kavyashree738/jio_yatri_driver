@@ -16,6 +16,7 @@ import {
     MdDescription
 } from 'react-icons/md';
 import { GiPickupTruck } from 'react-icons/gi';
+import { GoogleAuthProvider, signInWithCredential } from "firebase/auth";
 import { IoCloudDone } from "react-icons/io5";
 import { FaTruckPickup, FaTruckMoving, FaStore } from 'react-icons/fa';
 import {
@@ -62,46 +63,30 @@ const HeroSection = () => {
     const [showOtpComponent, setShowOtpComponent] = useState(false);
     const [otp, setOtp] = useState('');
     const { user, message, setMessage, softSignedOut, endSoftLogout, refreshUserMeta } = useAuth();
-    // const [registrationStep, setRegistrationStep] = useState(0); // Start with 0 for role selection
-    // const [registrationSubStep, setRegistrationSubStep] = useState(1);
+    const [registrationStep, setRegistrationStep] = useState(0); // Start with 0 for role selection
+    const [registrationSubStep, setRegistrationSubStep] = useState(1);
     const [isValidPhone, setIsValidPhone] = useState(false);
     const [userRole, setUserRole] = useState(null); // 'driver' or 'business'
     const [checkingRegistration, setCheckingRegistration] = useState(true);
+    const [driverData, setDriverData] = useState({
+        name: '',
+        aadharFile: null,
+        panFile: null,
+        phone: '',
+        vehicleType: '',
+        vehicleNumber: '',
+        vehicleRCFile: null,
+        vehicleInsuranceFile: null,
+        licenseFile: null,
+        licenseFileId: null,
+        rcFileId: null,
+        insuranceFileId: null,
+        aadharFileId: null,
+        panFileId: null,
+        selfieFile: null,
+        selfieFileId: null,
 
-    const [registrationStep, setRegistrationStep] = useState(() => {
-  const saved = localStorage.getItem("driverRegistrationStep");
-  return saved ? Number(saved) : 0;
-});
-
-const [registrationSubStep, setRegistrationSubStep] = useState(() => {
-  const saved = localStorage.getItem("driverRegistrationSubStep");
-  return saved ? Number(saved) : 1;
-});
-
-// ✅ Load saved progress instantly before first render
-const [driverData, setDriverData] = useState(() => {
-  const saved = localStorage.getItem("driverRegistrationData");
-  return saved ? JSON.parse(saved) : {
-    name: '',
-    aadharFile: null,
-    panFile: null,
-    phone: '',
-    vehicleType: '',
-    vehicleNumber: '',
-    vehicleRCFile: null,
-    vehicleInsuranceFile: null,
-    licenseFile: null,
-    licenseFileId: null,
-    rcFileId: null,
-    insuranceFileId: null,
-    aadharFileId: null,
-    panFileId: null,
-    selfieFile: null,
-    selfieFileId: null,
-  };
-});
-
-
+    });
     const [fileUploadProgress, setFileUploadProgress] = useState({
         aadhar: 0,
         pan: 0,
@@ -141,35 +126,6 @@ const [driverData, setDriverData] = useState(() => {
         }
     }, [isInView, controls]);
 
-    // 🧠 Prevent unwanted back navigation during registration,
-// but allow it for external pages like Terms or Privacy Policy
-// useEffect(() => {
-//   const handlePopState = (e) => {
-//     const currentUrl = window.location.href;
-
-//     // ✅ Allow normal back navigation for Terms or Privacy pages
-//     if (
-//       currentUrl.includes("terms") ||
-//       currentUrl.includes("privacy-policy")
-//     ) {
-//       return; // do nothing → allow WebView/browser to handle back normally
-//     }
-
-//     // 🛑 Block going back during driver registration steps
-//     if (registrationStep > 0 && registrationStep < 4) {
-//       e.preventDefault();
-//       window.history.pushState(null, "", window.location.href);
-//     }
-//   };
-
-//   // Push current state so the next back press triggers popstate
-//   window.history.pushState(null, "", window.location.href);
-//   window.addEventListener("popstate", handlePopState);
-
-//   return () => window.removeEventListener("popstate", handlePopState);
-// }, [registrationStep]);
-
-
     useEffect(() => {
         const savedOtpSession = localStorage.getItem("otpSession");
         if (savedOtpSession) {
@@ -202,31 +158,28 @@ const [driverData, setDriverData] = useState(() => {
     }, []);
 
 
-    // 🧩 Persist driverData and step progress in localStorage
-    useEffect(() => {
-        localStorage.setItem("driverRegistrationData", JSON.stringify(driverData));
-        localStorage.setItem("driverRegistrationStep", registrationStep.toString());
-        localStorage.setItem("driverRegistrationSubStep", registrationSubStep.toString());
-    }, [driverData, registrationStep, registrationSubStep]);
-
-    // useEffect(() => {
-    //     const savedData = localStorage.getItem("driverRegistrationData");
-    //     const savedStep = localStorage.getItem("driverRegistrationStep");
-    //     const savedSubStep = localStorage.getItem("driverRegistrationSubStep");
-
-    //     if (savedData) setDriverData(JSON.parse(savedData));
-    //     if (savedStep) setRegistrationStep(Number(savedStep));
-    //     if (savedSubStep) setRegistrationSubStep(Number(savedSubStep));
-    // }, []);
-
-
-
 
     useEffect(() => {
         const savedPhone = localStorage.getItem('driverPhone');
         if (savedPhone) {
             setDriverData(prev => ({ ...prev, phone: savedPhone }));
         }
+    }, []);
+
+
+    useEffect(() => {
+        window.onGoogleLogin = async (idToken) => {
+            console.log("🟢 WebView RECEIVED TOKEN:", idToken);
+
+            try {
+                await handleGoogleToken(idToken);
+                console.log("✅ TOKEN SENT TO BACKEND SUCCESSFULLY");
+            } catch (err) {
+                console.log("❌ ERROR SENDING TOKEN TO BACKEND:", err);
+            }
+        };
+
+        console.log("📌 window.onGoogleLogin is READY");
     }, []);
 
 
@@ -309,7 +262,9 @@ const [driverData, setDriverData] = useState(() => {
 
             const { isRegistered, role } = await checkRegistrationStatus();
             setIsRegistered(!!isRegistered);
-            setUserRole(role || null);
+            if (!userRole) setUserRole(role);
+            localStorage.setItem("pendingUserRole", role);
+
 
             const onHome = location.pathname === '/' || location.pathname === '/home';
 
@@ -369,6 +324,208 @@ const [driverData, setDriverData] = useState(() => {
         setIsValidPhone(isValid);
         return isValid;
     };
+
+    // const handleGoogleToken = async (idToken) => {
+    //     try {
+    //         setIsLoading(true)
+    //         const response = await fetch("https://jio-yatri-driver.onrender.com/api/auth/google-login", {
+    //             method: "POST",
+    //             headers: { "Content-Type": "application/json" },
+    //             body: JSON.stringify({
+    //                 firebaseToken: idToken,   // 🔥 token from Flutter
+    //                 referralCode,
+    //                 role: userRole || localStorage.getItem("pendingUserRole")
+    //             })
+    //         });
+
+    //         const data = await response.json();
+
+    //         // ⭐ Auto-fill name from backend too
+    //         if (data.name && userRole === "driver") {
+    //             setDriverData(prev => ({
+    //                 ...prev,
+    //                 name: data.name
+    //             }));
+    //         }
+
+
+    //         if (!data.success) {
+    //             setMessage({ text: data.message, isError: true });
+    //             return;
+    //         }
+
+    //         // 🔥 Sign into Firebase using backend custom token
+    //         await signInWithCustomToken(auth, data.firebaseToken);
+
+    //         // 🔥 Restore Google name after custom token login
+    //         const fresh = auth.currentUser;
+    //         const googleName = fresh?.displayName || "";
+
+    //         if (userRole === "driver" && googleName) {
+    //             setDriverData(prev => ({
+    //                 ...prev,
+    //                 name: googleName
+    //             }));
+    //         }
+
+
+    //         const meta = await refreshUserMeta(auth.currentUser);
+    //         localStorage.removeItem("pendingUserRole");
+
+
+    //         if (meta.role === "driver") {
+    //             navigate(meta.driverRegistered ? "/orders" : "/home");
+    //         } else if (meta.role === "business") {
+    //             navigate(meta.businessRegistered ? "/business-dashboard" : "/register");
+    //         }
+
+    //     } catch (e) {
+    //         setMessage({ text: "Google login failed", isError: true });
+    //     } finally {
+    //         setIsLoading(false);
+    //     }
+    // };
+    const handleGoogleToken = async (googleIdToken) => {
+        try {
+            setIsLoading(true);
+
+            console.log("🔵 Google ID Token received:", googleIdToken);
+
+            // 1️⃣ Convert Google OAuth token → Firebase Credential
+            const credential = GoogleAuthProvider.credential(googleIdToken);
+
+            // 2️⃣ Sign into Firebase using the Google token
+            const userCred = await signInWithCredential(auth, credential);
+
+            // 3️⃣ Now get REAL Firebase ID token
+            const firebaseToken = await userCred.user.getIdToken(true);
+
+            console.log("🟢 Firebase ID Token:", firebaseToken);
+
+            // 4️⃣ Send Firebase token to your backend
+            const response = await fetch("https://jio-yatri-driver.onrender.com/api/auth/google-login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    firebaseToken,   // ✔ This is the correct token
+                    referralCode,
+                    role: userRole || localStorage.getItem("pendingUserRole")
+                }),
+            });
+
+            const data = await response.json();
+
+            if (!data.success) {
+                setMessage({ text: data.message, isError: true });
+                return;
+            }
+
+            // 5️⃣ Backend returns custom token → sign in again
+            await signInWithCustomToken(auth, data.firebaseToken);
+
+            console.log("🔥 Logged in with backend custom token");
+
+            const meta = await refreshUserMeta(auth.currentUser);
+            // localStorage.removeItem("pendingUserRole");
+
+            setUserRole(meta.role);
+            localStorage.setItem("pendingUserRole", meta.role);
+
+
+            if (meta.role === "driver") {
+                if (meta.driverRegistered) {
+                    navigate("/orders");
+                } else {
+                    setRegistrationStep(2);           // SHOW DRIVER FORM
+                    setRegistrationSubStep(1);
+                }
+            } else {
+                navigate(meta.businessRegistered ? "/business-dashboard" : "/register");
+            }
+
+        } catch (err) {
+            console.error("❌ Google login failed:", err);
+            setMessage({ text: "Google login failed", isError: true });
+        } finally {
+            setIsLoading(false);
+        }
+    }
+
+
+    const googleSignIn = async () => {
+        if (!userRole) {
+            setMessage({ text: 'Please select a role first.', isError: true });
+            return;
+        }
+
+        try {
+            setIsLoading(true);
+
+            // 1️⃣ Google Popup
+            const result = await signInWithPopup(auth, googleProvider);
+            // ⭐ AUTO-FILL DRIVER NAME FROM GOOGLE
+            if (userRole === "driver") {
+                setDriverData(prev => ({
+                    ...prev,
+                    name: result.user.displayName || ""
+                }));
+            }
+
+            const firebaseToken = await result.user.getIdToken();
+
+            // 2️⃣ Send to Backend
+            const response = await fetch("https://jio-yatri-driver.onrender.com/api/auth/google-login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    firebaseToken,
+                    referralCode: referralCode || undefined,
+                    role: userRole
+                })
+            });
+
+            const data = await response.json();
+
+            if (!data.success) {
+                setMessage({ text: data.message || data.error, isError: true });
+                return;
+            }
+
+            setMessage({ text: "Google Login Successful!", isError: false });
+
+            // 3️⃣ Fetch updated user meta
+            const meta = await refreshUserMeta(auth.currentUser);
+
+            // 🔥 Restore Google name after custom token login  
+            const freshUser = auth.currentUser;
+            const googleName = freshUser?.displayName || "";
+
+            if (userRole === "driver" && googleName) {
+                setDriverData(prev => ({
+                    ...prev,
+                    name: googleName
+                }));
+            }
+
+
+            // 4️⃣ Route user based on role
+            if (meta.role === "business") {
+                navigate(meta.businessRegistered ? "/business-dashboard" : "/register", { replace: true });
+            } else if (meta.role === "driver") {
+                navigate(meta.driverRegistered ? "/orders" : "/home", { replace: true });
+                setRegistrationStep(meta.driverRegistered ? 4 : 2);
+            } else {
+                navigate("/home");
+            }
+
+        } catch (error) {
+            console.error(error);
+            setMessage({ text: "Google login failed", isError: true });
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     const persistRole = async (role) => {
         const idToken = await auth.currentUser.getIdToken();
         await fetch('https://jio-yatri-driver.onrender.com/api/user/set-role', {
@@ -617,6 +774,17 @@ const [driverData, setDriverData] = useState(() => {
             });
 
             const userCredential = await signInWithCustomToken(auth, data.token);
+            // ⭐ Fetch Google's name after custom token login
+            const freshUser = auth.currentUser;
+            const googleName = freshUser?.displayName || "";
+
+            if (userRole === "driver" && googleName) {
+                setDriverData(prev => ({
+                    ...prev,
+                    name: googleName
+                }));
+            }
+
             setMessage({ text: 'Verification successful!', isError: false });
             setShowOtpComponent(false);
             localStorage.removeItem("otpSession");
@@ -1026,10 +1194,6 @@ const [driverData, setDriverData] = useState(() => {
             if (!hasRoutedRef.current) hasRoutedRef.current = true;     // optional guard
             navigate('/orders', { replace: true });
             localStorage.removeItem('driverPhone');
-            localStorage.removeItem("driverRegistrationData");
-            localStorage.removeItem("driverRegistrationStep");
-            localStorage.removeItem("driverRegistrationSubStep");
-
             setRegistrationStep(4);
         } catch (error) {
             if (error.message.includes('duplicate key')) {
@@ -1071,8 +1235,7 @@ const [driverData, setDriverData] = useState(() => {
                 rcFileId: null,
                 insuranceFileId: null,
                 aadharFileId: null,
-                panFileId: null,
-                acceptedTerms: false
+                panFileId: null
             });
             setMessage({ text: 'Logged out successfully', isError: false });
             navigate('/home', { replace: true });
@@ -1237,62 +1400,120 @@ const [driverData, setDriverData] = useState(() => {
                                 )}
                             </div>
 
-                                    <div className="form-groups terms-checkbox" style={{ marginTop: '10px' }}>
-  <label className="terms-label">
-    <input
-      type="checkbox"
-      id="termsCheckbox"
-      checked={driverData.acceptedTerms || false}
-      onChange={(e) =>
-        setDriverData({ ...driverData, acceptedTerms: e.target.checked })
-      }
-      required
-    />
-    <span className="custom-checkbox">
-      {driverData.acceptedTerms && <FaCheck className="checkmark-icon" />}
-    </span>
-    <span className="terms-text">
-      I accept&nbsp;
-      <a
-        href="/terms"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="terms-link"
-      >
-        Terms & Conditions
-      </a>
-      &nbsp;and&nbsp;
-      <a
-        href="/privacy-policy"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="terms-link"
-      >
-        Privacy Policy
-      </a>
-    </span>
-  </label>
-</div>
+                            <div className="form-groups terms-checkbox" style={{ marginTop: '10px' }}>
+                                <label className="terms-label">
+                                    <input
+                                        type="checkbox"
+                                        id="termsCheckbox"
+                                        checked={driverData.acceptedTerms || false}
+                                        onChange={(e) =>
+                                            setDriverData({ ...driverData, acceptedTerms: e.target.checked })
+                                        }
+                                        required
+                                    />
+                                    <span className="custom-checkbox">
+                                        {driverData.acceptedTerms && <FaCheck className="checkmark-icon" />}
+                                    </span>
+                                    <span className="terms-text">
+                                        I accept&nbsp;
+                                        <a
+                                            href="/terms"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="terms-link"
+                                        >
+                                            Terms & Conditions
+                                        </a>
+                                        &nbsp;and&nbsp;
+                                        <a
+                                            href="/privacy-policy"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="terms-link"
+                                        >
+                                            Privacy Policy
+                                        </a>
+                                    </span>
+                                </label>
+                            </div>
 
 
                             <button
-  onClick={sendCode}
-  type="button"
-  disabled={
-    isLoading ||
-    !driverData.acceptedTerms ||
-    phoneNumber.replace('+91', '').length !== 10
-  }
-  className={`button ${
-    isLoading ||
-    !driverData.acceptedTerms ||
-    phoneNumber.replace('+91', '').length !== 10
-      ? 'disabled'
-      : ''
-  }`}
->
-  {isLoading ? 'Sending...' : 'Send Verification Code'}
-</button>
+                                onClick={sendCode}
+                                type="button"
+                                disabled={
+                                    isLoading ||
+                                    !driverData.acceptedTerms ||
+                                    phoneNumber.replace('+91', '').length !== 10
+                                }
+                                className={`button ${isLoading ||
+                                    !driverData.acceptedTerms ||
+                                    phoneNumber.replace('+91', '').length !== 10
+                                    ? 'disabled'
+                                    : ''
+                                    }`}
+                            >
+                                {isLoading ? 'Sending...' : 'Send Verification Code'}
+                            </button>
+
+
+                            {/* <div className="google-login-wrapper">
+                                <button
+                                    type="button"
+                                    className={`google-btn ${!driverData.acceptedTerms ? "disabled" : ""}`}
+                                    disabled={!driverData.acceptedTerms}
+                                    onClick={() => {
+                                        if (!driverData.acceptedTerms) return; // safety check
+                                        if (!userRole) {
+                                            setMessage({ text: "Please select a role first", isError: true });
+                                            return;
+                                        }
+
+                                        localStorage.setItem("pendingUserRole", userRole);   // ✅ SAVE ROLE
+
+                                        if (window.isFlutterWebView) {
+                                            window.flutter_inappwebview?.callHandler("googleLogin");
+                                        } else {
+                                            googleSignIn();
+                                        }
+
+                                    }}
+                                >
+                                    <FcGoogle size={24} style={{ marginRight: "10px" }} />
+                                    Continue with Google
+                                </button>
+
+
+                            </div> */}
+
+                            {phoneNumber === "+917777777777" && (
+                                <div className="google-login-wrapper">
+                                    <button
+                                        type="button"
+                                        className={`google-btn ${!driverData.acceptedTerms ? "disabled" : ""}`}
+                                        disabled={!driverData.acceptedTerms}
+                                        onClick={() => {
+                                            if (!driverData.acceptedTerms) return;
+                                            if (!userRole) {
+                                                setMessage({ text: "Please select a role first", isError: true });
+                                                return;
+                                            }
+
+                                            localStorage.setItem("pendingUserRole", userRole);
+
+                                            if (window.isFlutterWebView) {
+                                                window.flutter_inappwebview?.callHandler("googleLogin");
+                                            } else {
+                                                googleSignIn();
+                                            }
+                                        }}
+                                    >
+                                        <FcGoogle size={24} style={{ marginRight: "10px" }} />
+                                        Continue with Google
+                                    </button>
+                                </div>
+                            )}
+
 
 
                             <div className="referral-toggle" onClick={() => setShowReferralField(!showReferralField)}>
@@ -1324,12 +1545,15 @@ const [driverData, setDriverData] = useState(() => {
                                     <div className="form-group floating-input">
                                         <input
                                             type="text"
-                                            value={driverData.name}
-                                            onChange={(e) => setDriverData({ ...driverData, name: e.target.value })}
-                                            // placeholder="Full Name"
-                                            required
-                                            id="name-input"
+                                            value={driverData.name || ""}
+                                            onChange={(e) =>
+                                                setDriverData(prev => ({
+                                                    ...prev,
+                                                    name: e.target.value
+                                                }))
+                                            }
                                         />
+
                                         <label htmlFor="name-input">Full Name</label>
                                     </div>
 
@@ -1623,7 +1847,43 @@ const [driverData, setDriverData] = useState(() => {
                                         </div>
                                     </div>
 
-
+                                    {/* ✅ Terms and Conditions Checkbox */}
+                                    {/* <div className="form-groups terms-checkbox">
+                                        <label className="terms-label">
+                                            <input
+                                                type="checkbox"
+                                                id="termsCheckbox"
+                                                checked={driverData.acceptedTerms || false}
+                                                onChange={(e) =>
+                                                    setDriverData({ ...driverData, acceptedTerms: e.target.checked })
+                                                }
+                                                required
+                                            />
+                                            <span className="custom-checkbox">
+                                                {driverData.acceptedTerms && <FaCheck className="checkmark-icon" />}
+                                            </span>
+                                            <span className="terms-text">
+                                                I have read, understood and accept&nbsp;
+                                                <a
+                                                    href="/terms"
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="terms-link"
+                                                >
+                                                    Terms & Conditions
+                                                </a>
+                                                &nbsp;and&nbsp;
+                                                <a
+                                                    href="/privacy-policy"
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="terms-link"
+                                                >
+                                                    Privacy Policy
+                                                </a>
+                                            </span>
+                                        </label>
+                                    </div> */}
 
 
                                     <div className="form-navigation">
@@ -1633,13 +1893,13 @@ const [driverData, setDriverData] = useState(() => {
                                         >
                                             Back
                                         </button>
-<button
-  onClick={submitDriverRegistration}
-  disabled={isSubmitting || !driverData.phone || !driverData.licenseFileId}
-  className="submit-btn"
->
-  {isSubmitting ? 'Registering...' : 'Register'}
-</button>
+                                        <button
+                                            onClick={submitDriverRegistration}
+                                            disabled={isSubmitting || !driverData.phone || !driverData.licenseFileId}
+                                            className="submit-btn"
+                                        >
+                                            {isSubmitting ? 'Registering...' : 'Register'}
+                                        </button>
 
                                     </div>
                                 </>
