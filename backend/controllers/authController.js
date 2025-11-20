@@ -269,7 +269,7 @@ const verifyReceiverOtp = async (req, res) => {
 const googleLogin = async (req, res) => {
   try {
     console.log("\n===============================");
-    console.log("📥 GOOGLE LOGIN API HIT");
+    console.log("📥 GOOGLE LOGIN API HIT (DRIVER)");
     console.log("===============================\n");
 
     const { firebaseToken, referralCode, role } = req.body;
@@ -288,7 +288,7 @@ const googleLogin = async (req, res) => {
       });
     }
 
-    // 1️⃣ Verify Google token from Flutter
+    // 1️⃣ Verify Firebase token
     console.log("🔍 Verifying Firebase token...");
     const decoded = await admin.auth().verifyIdToken(firebaseToken);
 
@@ -297,13 +297,6 @@ const googleLogin = async (req, res) => {
     const name = decoded.name || "";
     const googlePhotoUrl = decoded.picture || null;
 
-    // ⭐ DOWNLOAD GOOGLE PROFILE IMAGE
-    let googleProfileImage = null;
-    if (googlePhotoUrl) {
-      googleProfileImage = await saveImageFromUrl(googlePhotoUrl);
-    }
-
-
     console.log("✅ Firebase Token Decoded:", {
       firebaseUid,
       email,
@@ -311,83 +304,107 @@ const googleLogin = async (req, res) => {
       googlePhotoUrl
     });
 
-    // 2️⃣ MongoDB user
+    // ⭐ Download Google profile image (if exists)
+    let googleProfileImage = null;
+    if (googlePhotoUrl) {
+      console.log("📸 Fetching Google profile image...");
+      googleProfileImage = await saveImageFromUrl(googlePhotoUrl);
+      console.log("📸 Image saved successfully:", googleProfileImage);
+    }
+
     console.log("🔎 Checking if user exists in MongoDB...");
-    let user = await User.findOne({ userId: firebaseUid });
-    const isNewUser = !user;
 
-    if (isNewUser) {
-      console.log("🆕 User does not exist → Creating new user");
+    // 🔥 FIXED SEARCH — find user using uid or userId
+    let user = await User.findOne({
+      $or: [{ uid: firebaseUid }, { userId: firebaseUid }]
+    });
 
-      user = new User({
-        userId: firebaseUid,
+    if (!user) {
+      console.log("🆕 No user found → Creating new user document...");
+
+      user = await User.create({
         uid: firebaseUid,
+        userId: firebaseUid,
         email,
         name,
-        phone: null,
         role,
         googleProvider: true,
         referredBy: referralCode || null,
         photo: googleProfileImage
       });
 
-      await user.save();
-     
-      console.log("✅ New user saved:", user._id);
+      console.log("🎉 New MongoDB user created:", {
+        _id: user._id,
+        uid: user.uid,
+        role: user.role
+      });
     } else {
-      console.log("👤 User exists → Updating role if needed");
+      console.log("👤 Existing user found:", {
+        _id: user._id,
+        uid: user.uid,
+        role: user.role
+      });
 
-      // ⭐ IF ROLE IS DRIVER → UPDATE DRIVER PROFILE IMAGE
-
-
-
+      // 🔄 Update existing user
+      user.uid = firebaseUid;
+      user.userId = firebaseUid;
       user.role = role;
 
-       if (googleProfileImage) user.photo = googleProfileImage; 
+      if (googleProfileImage) {
+        user.photo = googleProfileImage;
+        console.log("📸 Updated Google profile image for user");
+      }
+
       await user.save();
 
-      console.log("🔄 Updated existing user:", user._id);
+      console.log("🔄 User updated successfully:", {
+        _id: user._id,
+        role: user.role
+      });
     }
 
+    // 3️⃣ If driver role, update driver model
     if (role === "driver") {
+      console.log("🚚 Checking driver record...");
       let driver = await Driver.findOne({ userId: firebaseUid });
 
       if (driver && googleProfileImage) {
-        driver.profileImage = googleProfileImage;   // SAVE PHOTO HERE
+        driver.profileImage = googleProfileImage;
         await driver.save();
-        console.log("📸 Driver Google profile photo saved.");
+        console.log("📸 Driver profile image saved to driver model");
+      } else {
+        console.log("⚠ No driver document found or no new image");
       }
     }
 
-    // 3️⃣ Create Firebase custom token
-    console.log("🎟️ Creating Firebase Custom Token...");
+    // 4️⃣ Create Firebase custom token
+    console.log("🎟 Creating Firebase Custom Token...");
     const customToken = await admin.auth().createCustomToken(firebaseUid);
+    console.log("🎟 Custom Token Created Successfully");
 
-    console.log("✅ Custom Firebase Token Created!");
-
-    // 4️⃣ Response
-    console.log("🚀 Sending Response Back To Client...\n");
+    // 5️⃣ Response
+    console.log("\n🚀 Sending Response Back To Client...\n");
 
     return res.status(200).json({
       success: true,
       firebaseToken: customToken,
-      isNewUser,
-      name,                // ⭐ ADD
-      email,               // ⭐ ADD
-      photo: googleProfileImage ,  // ⭐ ADD
       user
     });
 
-
   } catch (error) {
     console.error("❌ Google Login Error:", error);
-    res.status(500).json({ success: false, message: error.message });
+    return res.status(500).json({
+      success: false,
+      message: error.message
+    });
   }
 };
 
 
 
+
 module.exports = { sendOtp, verifyOtp,sendReceiverOtp,verifyReceiverOtp,googleLogin };
+
 
 
 
