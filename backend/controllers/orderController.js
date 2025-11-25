@@ -444,24 +444,19 @@ exports.getOwnerEarnings = async (req, res) => {
   try {
     const { ownerId } = req.params;
 
-    // 🔍 Fetch all shops owned by the user
     const shops = await Shop.find({ userId: ownerId }).select('_id shopName').lean();
     if (!shops.length) {
-      return res.json({ success: true, totalEarnings: 0, shopDetails: [] });
+      return res.json({ success: true, totalEarnings: 0, totalOrders: 0, shopDetails: [] });
     }
 
-    const shopIds = shops.map(s => s._id);
+    const shopIds = shops.map(s => s._id.toString());
 
-    // 🔍 Fetch completed orders for those shops
     const orders = await Order.find({
       'shop._id': { $in: shopIds },
-      status: 'completed'
+      status: { $in: ['accepted', 'completed'] }
     }).lean();
 
-    // 💰 Calculate total earnings
-    const totalEarnings = orders.reduce((sum, order) => {
-      return sum + (order.pricing?.total || 0);
-    }, 0);
+    const totalEarnings = orders.reduce((sum, o) => sum + (o.pricing?.total || 0), 0);
 
     res.json({
       success: true,
@@ -471,10 +466,7 @@ exports.getOwnerEarnings = async (req, res) => {
     });
 
   } catch (e) {
-    console.error('[getOwnerEarnings] error:', e);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to calculate earnings'
-    });
+    console.error(e);
+    res.status(500).json({ success: false, error: 'Failed to calculate earnings' });
   }
 };
