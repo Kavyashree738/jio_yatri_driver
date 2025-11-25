@@ -263,7 +263,10 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
   const [receiverOtp, setReceiverOtp] = useState('');
 
   const [isSendingReceiverOtp, setIsSendingReceiverOtp] = useState(false);
-  const [receiverOtpSent, setReceiverOtpSent] = useState(false);
+  const [receiverOtpSent, setReceiverOtpSent] = useState(
+    localStorage.getItem("receiverOtpSent") === "true"
+  );
+
 
   const [receiverOtpVerified, setReceiverOtpVerified] = useState(
     localStorage.getItem('receiverOtpVerified') === 'true'
@@ -299,6 +302,7 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
     if (shipment) {
       localStorage.setItem('lastShipment', JSON.stringify(shipment));
       localStorage.removeItem('pickupVerified');
+      localStorage.removeItem("receiverOtpSent");
       localStorage.removeItem('receiverOtpVerified');
       setLocalShipment(shipment);
       // console.log('💾 Saved shipment to localStorage');
@@ -617,6 +621,7 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
       );
       toast.success(t("receiver_otp_sent"));
       setReceiverOtpSent(true);
+      localStorage.setItem("receiverOtpSent", "true");
       setShowReceiverOtpPopup(true); // open your existing popup
     } catch (error) {
       toast.error(error.response?.data?.message || t("receiver_otp_failed"));
@@ -1079,6 +1084,8 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
       localStorage.removeItem('lastShipment');
       localStorage.removeItem('pickupVerified');
       localStorage.removeItem('receiverOtpVerified');
+      localStorage.removeItem("receiverOtpSent");
+
       setLocalShipment(null);
       if (onStatusUpdate) onStatusUpdate('cancelled');
       mapRef.current = null;
@@ -1103,6 +1110,8 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
       localStorage.removeItem('lastShipment');
       localStorage.removeItem('pickupVerified');
       localStorage.removeItem('receiverOtpVerified');
+      localStorage.removeItem("receiverOtpSent");
+
       setLocalShipment(null);
       if (onStatusUpdate) onStatusUpdate('delivered');
       mapRef.current = null;
@@ -1606,16 +1615,17 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
               </>
             ) : (
               // ✅ After OTP verified — show swipe to mark as delivered
-              <div className="swipe-container">
-                <div
-                  className="swipe-track green"
-                  onMouseDown={(e) => handleSwipeStart(e, true)}
-                  onTouchStart={(e) => handleSwipeStart(e.touches[0], true)}
-                >
-                  <span className="swipe-text">{t("swipe_mark_delivered")}</span>
-                  <div className="swipe-handle green-handle" ref={swipeDeliverRef}>➜</div>
+              <div className="swipe-track green"
+                onMouseDown={(e) => handleSwipeStart(e, true)}
+                onTouchStart={(e) => handleSwipeStart(e.touches[0], true)}
+              >
+                <span className="swipe-text">{t("swipe_mark_delivered")}</span>
+
+                <div className="swipe-handle green-handle" ref={swipeDeliverRef}>
+                  ➜
                 </div>
               </div>
+
             )}
           </>
         )}
@@ -1806,8 +1816,11 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
                 onTouchStart={(e) => handleSwipeStart(e.touches[0], true)}
               >
 
-                <span className="swipe-text">{t("swipe_to_complete")}</span>
-                <div className="swipe-handle green-handle" ref={swipeDeliverRef} />➜
+                <span className="swipe-text">{t("swipe_mark_delivered")}</span>
+                <div className="swipe-handle green-handle" ref={swipeDeliverRef}>
+                  ➜
+                </div>
+
               </div>
             </div>
           )}
@@ -1831,7 +1844,7 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
                     onTouchStart={(e) => handleSwipeStart(e.touches[0])}
                   >
                     <span className="swipe-text">
-                     {isSendingReceiverOtp ? t("sending_otp") : t("swipe_receiver_otp")}
+                      {isSendingReceiverOtp ? t("sending_otp") : t("swipe_receiver_otp")}
 
                     </span>
                     <div
