@@ -29,6 +29,20 @@ export default function RequireKycVerified({ children }) {
     run();
   }, [user, nav]);
 
-  if (ok === null) return <div style={{ padding:16 }}>Checking KYC…</div>;
+if (ok === null) {
+  return (
+    <div style={{
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+      height: "100vh",
+      width: "100%",
+      background: "#ffffff"
+    }}>
+      <div className="loader"></div>
+    </div>
+  );
+}
+
   return <>{children}</>;
 }
