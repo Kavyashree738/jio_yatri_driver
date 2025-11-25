@@ -20,12 +20,14 @@ import img from '../assets/images/avatar.jpg'
 import 'moment/locale/en-in'; // Import the locale you need
 import DailyEarningsFilter from './DailyEarningsFilter';
 import HelplineButton from './HelplineButton';
+import { useTranslation } from "react-i18next";
 // import useDriverHeartbeat from '../hooks/useDriverHeartbeat';
 // Initialize moment with the desired locale
 moment.locale('en-in');
 
 const DriverDashboard = () => {
     const { user, setMessage } = useAuth();
+    const { t, i18n } = useTranslation();
     const navigate = useNavigate();
     const [driverInfo, setDriverInfo] = useState(null);
     const [shipments, setShipments] = useState([]);
@@ -120,7 +122,7 @@ const DriverDashboard = () => {
                         { headers: { Authorization: `Bearer ${token}` } }
                     );
 
-                    setMessage({ text: 'Payment successful. Settlement cleared.', isError: false });
+                    setMessage({ text: t("payment_success"), isError: false });
                     fetchDriverInfo(); // refresh settlements
                 },
                 prefill: {
@@ -227,68 +229,68 @@ const DriverDashboard = () => {
     }, [user]);
 
     useEffect(() => {
-    if (!window.DriverStatus) {
-        console.warn("⚠️ DriverStatus bridge not available yet");
-        return;
-    }
+        if (!window.DriverStatus) {
+            console.warn("⚠️ DriverStatus bridge not available yet");
+            return;
+        }
 
-    if (status === "active") {
-        console.log("🔵 Sync ONLINE with Flutter (status change)");
-        window.DriverStatus.postMessage("online");
-    } else {
-        console.log("🔴 Sync OFFLINE with Flutter (status change)");
-        window.DriverStatus.postMessage("offline");
-    }
-}, [status]);
+        if (status === "active") {
+            console.log("🔵 Sync ONLINE with Flutter (status change)");
+            window.DriverStatus.postMessage("online");
+        } else {
+            console.log("🔴 Sync OFFLINE with Flutter (status change)");
+            window.DriverStatus.postMessage("offline");
+        }
+    }, [status]);
 
     // 🔑 Send Firebase ID Token to Flutter so Android can use it
-useEffect(() => {
-    const sendTokenToFlutter = async () => {
-       if (!window.DriverAuth) {
-    console.warn("⚠️ DriverAuth bridge not ready");
-    return;
-}
+    useEffect(() => {
+        const sendTokenToFlutter = async () => {
+            if (!window.DriverAuth) {
+                console.warn("⚠️ DriverAuth bridge not ready");
+                return;
+            }
 
 
 
-        try {
-            const token = await user.getIdToken(true);
-            console.log("🔑 Sending ID token → Flutter");
-window.DriverAuth.postMessage(token);
+            try {
+                const token = await user.getIdToken(true);
+                console.log("🔑 Sending ID token → Flutter");
+                window.DriverAuth.postMessage(token);
 
 
-        } catch (err) {
-            console.error("❌ Failed to get token:", err);
+            } catch (err) {
+                console.error("❌ Failed to get token:", err);
+            }
+        };
+
+        if (status === "active" && user) {
+            sendTokenToFlutter();
         }
-    };
-
-    if (status === "active" && user) {
-        sendTokenToFlutter();
-    }
-}, [status, user]);
+    }, [status, user]);
 
 
     // 🔄 AUTO-REFRESH TOKEN every 45 minutes and send to Flutter
-useEffect(() => {
-    if (!user) return;
+    useEffect(() => {
+        if (!user) return;
 
-    const interval = setInterval(async () => {
-        try {
-            const newToken = await user.getIdToken(true); // force refresh
-            console.log("♻️ Auto-refreshed token → sending to Flutter");
+        const interval = setInterval(async () => {
+            try {
+                const newToken = await user.getIdToken(true); // force refresh
+                console.log("♻️ Auto-refreshed token → sending to Flutter");
 
-            if (window.DriverAuth) {
-                window.DriverAuth.postMessage(newToken);
+                if (window.DriverAuth) {
+                    window.DriverAuth.postMessage(newToken);
 
 
+                }
+            } catch (err) {
+                console.error("❌ Error refreshing token:", err);
             }
-        } catch (err) {
-            console.error("❌ Error refreshing token:", err);
-        }
-    }, 45 * 60 * 1000); // every 45 minutes
+        }, 45 * 60 * 1000); // every 45 minutes
 
-    return () => clearInterval(interval);
-}, [user]);
+        return () => clearInterval(interval);
+    }, [user]);
 
 
 
@@ -396,19 +398,19 @@ useEffect(() => {
                 status: newStatus,
                 lastUpdated: new Date().toISOString()
             }));
-            setMessage({ text: 'Status updated', isError: false });
+            setMessage({ text: t("status_updated"), isError: false });
 
             if (window.DriverStatus) {
-            if (newStatus === 'active') {
-                window.DriverStatus.postMessage('online');
-                console.log('📡 Sent online → Flutter');
+                if (newStatus === 'active') {
+                    window.DriverStatus.postMessage('online');
+                    console.log('📡 Sent online → Flutter');
+                } else {
+                    window.DriverStatus.postMessage('offline');
+                    console.log('📡 Sent offline → Flutter');
+                }
             } else {
-                window.DriverStatus.postMessage('offline');
-                console.log('📡 Sent offline → Flutter');
+                console.warn('⚠️ Flutter DriverStatus bridge not available');
             }
-        } else {
-            console.warn('⚠️ Flutter DriverStatus bridge not available');
-        }
         } catch (err) {
             setMessage({ text: err.message, isError: true });
         } finally {
@@ -435,7 +437,7 @@ useEffect(() => {
             };
             reader.readAsDataURL(file);
         } else {
-            setMessage({ text: 'Only image or PDF files are allowed.', isError: true });
+            setMessage({ text: t("only_image_pdf"), isError: true });
         }
     };
 
@@ -496,7 +498,7 @@ useEffect(() => {
             if (!res.ok) throw new Error('Passbook upload failed');
 
             setPassbookUploaded(true);
-            setMessage({ text: 'Passbook uploaded successfully', isError: false });
+            setMessage({ text: t("passbook_uploaded"), isError: false });
         } catch (err) {
             console.error('Error uploading passbook:', err);
             setMessage({ text: err.message, isError: true });
@@ -570,7 +572,7 @@ useEffect(() => {
     const handleLogout = async () => {
         try {
             await signOut(auth);
-            setMessage({ text: 'Logged out', isError: false });
+            setMessage({ text: t("logged_out"), isError: false });
             navigate('/');
         } catch (error) {
             setMessage({ text: error.message, isError: true });
@@ -614,7 +616,7 @@ useEffect(() => {
         try {
             // If you want, you can notify owner via a non-mutating endpoint.
             // Otherwise just show a toast/snackbar message:
-            setMessage({ text: 'Thanks! The owner will confirm your settlement shortly.', isError: false });
+            setMessage({ text: t("owner_confirm_soon"), isError: false });
 
             // Optionally re-fetch settlements to show it is still "pending"
             const token = await user.getIdToken();
@@ -674,7 +676,7 @@ useEffect(() => {
 
         return (
             <div className="dd-document-status">
-                <h3>Document Verification Status</h3>
+                <h3>{t("document_verification_status")}</h3>
                 {Object.entries(driverInfo.documentVerification).map(([docType, status]) => (
                     <div key={docType} className={`dd-doc-item ${status}`}>
                         <span>{docType.replace(/([A-Z])/g, ' $1').trim()}:</span>
@@ -693,17 +695,16 @@ useEffect(() => {
     };
 
     // 🚨 Block dashboard if pending settlements exist
-    // 🚨 Block dashboard if pending settlements exist
     if (settlement?.pending?.length > 0) {
         return (
             <>
                 <Header />
                 <div className="pending-overlay">
                     <div className="pending-modal">
-                        <h2 className="pending-title">Pending Settlements</h2>
+                        <h2 className="pending-title">{t("pending_settlements")}</h2>
                         <p className="pending-message">
-                            You have pending settlements. Please clear them first.
-                            Once the owner confirms your payment, your dashboard will unlock automatically.
+                            {t("pending_settlement_message")}
+
                         </p>
 
                         <div className="pending-list">
@@ -715,13 +716,13 @@ useEffect(() => {
                                             className="settle-btn"
                                             onClick={() => handleSettlementPayment(item._id, item.driverToOwner)}
                                         >
-                                            Pay Owner: ₹{(item.driverToOwner || 0).toFixed(2)}
+                                            {t("pay_owner")}: ₹{(item.driverToOwner || 0).toFixed(2)}
                                         </button>
                                     )}
 
                                     {item.ownerToDriver > 0 && (
                                         <span className="pending-receive">
-                                            Receive: ₹{(item.ownerToDriver || 0).toFixed(2)}
+                                            {t("receive_amount")}: ₹{(item.ownerToDriver || 0).toFixed(2)}
                                         </span>
                                     )}
                                 </div>
@@ -729,7 +730,7 @@ useEffect(() => {
                         </div>
 
                         <button onClick={handleLogout} className="pending-btn">
-                            Logout
+                            {t("logout")}
                         </button>
                     </div>
                 </div>
@@ -766,13 +767,13 @@ useEffect(() => {
                 <Header />
                 <div className="dd-auth-required">
                     <div className="dd-auth-card">
-                        <h2>You are not logged in</h2>
-                        <p>Please log in to access your dashboard.</p>
+                        <h2>{t("not_logged_in")}</h2>
+                        <p>{t("login_required_message")}</p>
                         <button
                             className="dd-auth-login-btn"
                             onClick={() => navigate('/home')}
                         >
-                            Go to Login
+                            {t("go_to_login")}
                         </button>
                     </div>
                 </div>
@@ -785,7 +786,7 @@ useEffect(() => {
         <div className="dd-loading">
             <div className="dd-spinner-container">
                 <div className="dd-beautiful-spinner"></div>
-                <p className="dd-loading-text">Loading Dashboard...</p>
+                <p className="dd-loading-text">{t("loading_dashboard")}</p>
             </div>
         </div>
     );
@@ -794,12 +795,12 @@ useEffect(() => {
         <>
             <Header />
             <div className="registration-required">
-                <h2>Complete Your Registration</h2>
-                <p>You need to complete the registration process before accessing the dashboard.</p>
+                <h2>{t("complete_registration")}</h2>
+                <p>{t("registration_required_message")}</p>
                 <button onClick={() => navigate('/home')}>
-                    Complete Registration
+                    {t("complete_registration")}
                 </button>
-                <button onClick={handleLogout}>Logout</button>
+                <button onClick={handleLogout}> {t("logout")}</button>
             </div>
             <Footer />
         </>
@@ -813,13 +814,13 @@ useEffect(() => {
             <Header />
             <div className="verify-container">
                 <div className="verify-card">
-                    <h2 className="verify-title">Documents Verification Required</h2>
+                    <h2 className="verify-title">{t("documents_verification_required")}</h2>
                     <p className="verify-message">
-                        Your documents are under review. You'll get full access once all documents are verified by our team.
+                        {t("documents_pending_message")}
                     </p>
                     {renderDocumentStatus()}
                     <button className="verify-logout-btn" onClick={handleLogout}>
-                        Logout
+                        {t("logout")}
                     </button>
 
 
@@ -838,7 +839,7 @@ useEffect(() => {
 
 
                 <div className="driverTopUI-header">
-                    <h2 className="driverTopUI-title">Driver Dashboard</h2>
+                    <h2 className="driverTopUI-title">{t("driver_dashboard")}</h2>
                     <img src={profileImage || img} alt="Driver" className="driverTopUI-avatar" />
                     <HelplineButton />
                 </div>
@@ -846,7 +847,7 @@ useEffect(() => {
                 <div className="driverTopUI-row">
                     <button className="driverTopUI-share" onClick={handleShareClick}>
                         <div className="driverTopUI-marquee">
-                            <span>Earn ₹10 Cashback — Share & Earn Now!</span>
+                            <span>{t("earn_cashback_share")}</span>
                         </div>
                     </button>
 
@@ -864,7 +865,7 @@ useEffect(() => {
                             <span className="driverTopUI-slider"></span>
                         </label>
                         <span className="driverTopUI-status-text">
-                            {status === 'active' ? 'Active' : 'Inactive'}
+                            {status === "active" ? t("status_active") : t("status_inactive")}
                         </span>
                     </div>
                 </div>
@@ -878,10 +879,12 @@ useEffect(() => {
                         <div className="dd-passbook-marquee-container">
                             <div className="dd-passbook-marquee-content">
                                 <span className="dd-passbook-marquee-text">
-                                    Please upload your passbook for payment settlements. We keep your information safe and secure.
+                                    {t("upload_passbook_message")}
+
                                 </span>
                                 <span className="dd-passbook-marquee-text dd-passbook-marquee-duplicate">
-                                    Please upload your passbook for payment settlements. We keep your information safe and secure.
+                                    {t("upload_passbook_message")}
+
                                 </span>
                             </div>
                         </div>
@@ -1004,23 +1007,23 @@ useEffect(() => {
                 </div> */}
 
                 <div className="settlement-card">
-                    <h3>Today's Earnings</h3>
+                    <h3>{t("todays_earnings")}</h3>
 
                     {!settlement?.today ? (
-                        <p>No rides today</p>
+                        <p>{t("no_rides_today")}</p>
                     ) : (
                         <>
                             <div className="settlement-row">
-                                <span>Cash Collected:</span>
+                                <span>{t("cash_collected")}</span>
                                 <span>₹{(settlement.today.cashCollected || 0).toFixed(2)}</span>
                             </div>
                             <div className="settlement-row">
-                                <span>Online Payments:</span>
+                                <span>{t("online_payments")}:</span>
                                 <span>₹{(settlement.today.onlineCollected || 0).toFixed(2)}</span>
                             </div>
                             {(settlement.today.cashCollected || 0) > 0 && (
                                 <div className="settlement-row highlight">
-                                    <span>Owner Share (20%):</span>
+                                    <span>{t("owner_share")} (20%):</span>
                                     <span className="negative">
                                         ₹{((settlement.today.cashCollected || 0) * 0.2).toFixed(2)}
                                     </span>
@@ -1029,7 +1032,7 @@ useEffect(() => {
 
                             {(settlement.today.onlineCollected || 0) > 0 && (
                                 <div className="settlement-row highlight">
-                                    <span>Your Share (80%):</span>
+                                    <span>{t("your_share")} (80%):</span>
                                     <span className="positive">
                                         ₹{((settlement.today.onlineCollected || 0) * 0.8).toFixed(2)}
                                     </span>
@@ -1041,7 +1044,7 @@ useEffect(() => {
 
                     {settlement?.pending?.length > 0 && (
                         <div className="pending-settlements">
-                            <h4>Pending Settlements</h4>
+                            <h4>{t("pending_settlements")}</h4>
                             {settlement.pending.map(item => (
                                 <div key={item._id} className="pending-item">
                                     <span>{moment(item.date).format('MMM D')}: </span>
@@ -1056,13 +1059,13 @@ useEffect(() => {
                                             className="settle-btn"
                                             onClick={() => handleSettlementPayment(item._id, item.driverToOwner)}
                                         >
-                                            Pay Owner: ₹{(item.driverToOwner || 0).toFixed(2)}
+                                            {t("pay_owner")}: ₹{(item.driverToOwner || 0).toFixed(2)}
                                         </button>
 
                                     )}
                                     {item.ownerToDriver > 0 && (
                                         <span className="positive">
-                                            Receive: ₹{(item.ownerToDriver || 0).toFixed(2)}
+                                            {t("receive")}: ₹{(item.ownerToDriver || 0).toFixed(2)}
                                         </span>
                                     )}
                                 </div>
@@ -1120,7 +1123,7 @@ useEffect(() => {
             {showUploadOptions && (
                 <div className="upload-bottomsheet-overlay" onClick={() => setShowUploadOptions(false)}>
                     <div className="upload-bottomsheet" onClick={(e) => e.stopPropagation()}>
-                        <h3>Select Upload Option</h3>
+                        <h3>{t("select_upload_option")}</h3>
 
                         <button
                             className="upload-option"
@@ -1129,7 +1132,7 @@ useEffect(() => {
                                 setShowUploadOptions(false);
                             }}
                         >
-                            📷 Camera
+                            📷 {t("camera")}
                         </button>
 
                         <button
@@ -1139,14 +1142,14 @@ useEffect(() => {
                                 setShowUploadOptions(false);
                             }}
                         >
-                            📂 Gallery / Files
+                            📂 {t("gallery_files")}
                         </button>
 
                         <button
                             className="upload-cancel"
                             onClick={() => setShowUploadOptions(false)}
                         >
-                            Cancel
+                            {t("cancel")}
                         </button>
                     </div>
                 </div>
@@ -1157,12 +1160,11 @@ useEffect(() => {
                 <div className="go-overlay">
                     <div className="go-container">
                         <div className="go-circle" onClick={toggleStatus}>
-                            Go!
+                            {t("go_button")}
                         </div>
                         <div className="go-bottom">
                             <p className="go-message">
-                                You are currently offline.<br />
-                                Tap below to go online and start receiving shipments!
+                                {t("offline_message")}
                             </p>
                         </div>
                     </div>
@@ -1182,4 +1184,3 @@ useEffect(() => {
 };
 
 export default DriverDashboard;
-

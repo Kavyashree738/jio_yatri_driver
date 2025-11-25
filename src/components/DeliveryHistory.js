@@ -5,6 +5,8 @@ import '../styles/DeliveryHistory.css';
 import Header from './Header';
 import Footer from './Footer';
 import { Bar } from 'react-chartjs-2';
+import { useTranslation } from "react-i18next";
+
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -22,6 +24,8 @@ const DeliveryHistory = () => {
   const { user } = useAuth();
   const [shipments, setShipments] = useState([]);
   const [error, setError] = useState('');
+  const { t } = useTranslation();
+
 
    useEffect(() => {
     let intervalId;
@@ -72,7 +76,7 @@ const chartData = {
   labels: sortedDates,
   datasets: [
     {
-      label: 'Delivered Earnings (₹)',
+      label: t("chart_label_earnings"),
       data: sortedDates.map((date) => earningsMap[date]),
       backgroundColor: 'rgba(75, 192, 192, 0.6)',
       borderColor: 'rgba(75, 192, 192, 1)',
@@ -94,7 +98,7 @@ const chartOptions = {
     },
     title: {
       display: true,
-      text: 'Delivered Earnings (Last 7 Days)',
+      text: t("delivered_earnings_chart"),
       color: '#111',
       font: { size: 16, weight: 'bold' },
     },
@@ -145,14 +149,14 @@ const chartOptions = {
 
 
       <div className="dh-container">
-        <h2 className="dh-title">Your Delivery History</h2>
+        <h2 className="dh-title">{t("delivery_history_title")}</h2>
 
         <div className="dh-chart-wrapper">
           <Bar data={chartData} options={chartOptions} />
         </div>
         {error && <p className="dh-error">{error}</p>}
         {shipments.length === 0 ? (
-          <p className="dh-empty">No shipments found.</p>
+          <p className="dh-empty">{t("no_shipments_found")}</p>
         ) : (
           <ul className="dh-shipments-list">
             {shipments.map((shipment) => (
@@ -165,25 +169,25 @@ const chartOptions = {
                 </div>
 
                 <p className="dh-detail">
-                  <strong>Created:</strong> {formatDateTime(shipment.createdAt)}
+                  <strong>{t("created")}:</strong> {formatDateTime(shipment.createdAt)}
                 </p>
 
                 <p className="dh-detail">
-                  <strong>Sender:</strong> {shipment.sender?.name} - {shipment.sender?.phone}
+                  <strong>{t("sender")}:</strong> {shipment.sender?.name} - {shipment.sender?.phone}
                 </p>
                 <p className="dh-detail">
-                  <strong>Receiver:</strong> {shipment.receiver?.name} - {shipment.receiver?.phone}
+                  <strong>{t("receiver")}:</strong> {shipment.receiver?.name} - {shipment.receiver?.phone}
                 </p>
                 <p className="dh-detail">
-                  <strong>Cost:</strong> ₹{shipment.cost.toFixed(2)}
+                  <strong>{t("cost")}:</strong> ₹{shipment.cost.toFixed(2)}
                 </p>
                 <p className="dh-detail">
-                  <strong>Sender Address:</strong> {shipment.sender?.address?.addressLine1 || "N/A"}
+                  <strong>{t("sender_address")}:</strong> {shipment.sender?.address?.addressLine1 || "N/A"}
 
 
                 </p>
                 <p className="dh-detail">
-                  <strong>Receiver Address:</strong> {shipment.receiver?.address?.addressLine1 || "N/A"}
+                  <strong>{t("receiver_address")}:</strong> {shipment.receiver?.address?.addressLine1 || "N/A"}
 
                 </p>
 
@@ -211,18 +215,18 @@ const chartOptions = {
                   <div className="dh-payment-section">
                     {shipment.status.toLowerCase() === 'assigned' ? (
                       <p className="dh-detail">
-                        <strong>Payment Status:</strong> {shipment.payment?.status || 'pending'}
+                        <strong>{t("payment_status")}</strong> {shipment.payment?.status || 'pending'}
                       </p>
                     ) : (
                       <>
                         <p className="dh-detail">
-                          <strong>Payment Method:</strong> {shipment.payment?.method || 'N/A'}
+                          <strong>{t("payment_method")}:</strong> {shipment.payment?.method || 'N/A'}
                         </p>
                         <p className="dh-detail">
-                          <strong>Payment Status:</strong> {shipment.payment?.status || 'pending'}
+                          <strong>{t("payment_status")}</strong> {shipment.payment?.status || 'pending'}
                         </p>
                         <p className="dh-detail">
-                          <strong>Collected At:</strong> {formatDateTime(shipment.payment?.collectedAt) || 'N/A'}
+                          <strong>{t("collected_at")}:</strong> {formatDateTime(shipment.payment?.collectedAt) || 'N/A'}
                         </p>
                       </>
                     )}

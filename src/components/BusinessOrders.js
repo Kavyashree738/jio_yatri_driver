@@ -6,6 +6,7 @@ import { initializeOwnerFCM } from '../services/ownerFCM';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { FaPhoneAlt } from 'react-icons/fa';
+import { useTranslation } from "react-i18next";
 
 
 const apiBase = 'https://jio-yatri-driver.onrender.com';
@@ -16,6 +17,7 @@ export default function BusinessOrders({ shopId }) {
     const [err, setErr] = useState(null);
     const [loading, setLoading] = useState(true);
     const [firstLoadDone, setFirstLoadDone] = useState(false);
+    const { t } = useTranslation();
 
     const [busy, setBusy] = useState(null);
     const [hidePaid, setHidePaid] = useState(true);
@@ -247,21 +249,23 @@ export default function BusinessOrders({ shopId }) {
     }, [orders, hidePaid]);
 
 
-    const title = resolvedShopId ? 'Incoming Orders' : 'All Incoming Orders';
+    <h2>{resolvedShopId ? t("incoming_orders") : t("all_incoming_orders")}</h2>
+
     // console.log('[BusinessOrders] Rendering with title:', title);
 
     if (!resolvedShopId && !user?.uid) {
         // console.log('[BusinessOrders] Rendering: Please sign in to view your orders.');
-        return <div className="bo">Please sign in to view your orders.</div>;
+        return <div className="bo">{t("signin_to_view_orders")}</div>;
+
     }
 
-      if (loading) {
-    return (
-      <div className="sd-loading-container">
-        <div className="sd-spinner"></div>
-      </div>
-    );
-  }
+    if (loading) {
+        return (
+            <div className="sd-loading-container">
+                <div className="sd-spinner"></div>
+            </div>
+        );
+    }
 
     // console.log('[BusinessOrders] Rendering main component with', visibleOrders.length, 'visible orders');
 
@@ -270,7 +274,7 @@ export default function BusinessOrders({ shopId }) {
             <Header />
             <div className="bo">
                 <div className="bo-header">
-                    <h2>{title}</h2>
+                    <h2>{resolvedShopId ? t("incoming_orders") : t("all_incoming_orders")}</h2>
                     <label className="bo-toggle">
                         <input
                             type="checkbox"
@@ -280,7 +284,7 @@ export default function BusinessOrders({ shopId }) {
                                 setHidePaid(e.target.checked);
                             }}
                         />
-                        <span>Hide paid orders</span>
+                        <span>{t("hide_paid_orders")}</span>
                     </label>
                 </div>
 
@@ -291,7 +295,8 @@ export default function BusinessOrders({ shopId }) {
 
                 {visibleOrders.length === 0 && !err && (
                     console.log('[BusinessOrders] Rendering: No orders message'),
-                    <p>{hidePaid ? 'All done! No unpaid orders.' : 'No orders yet.'}</p>
+                    <p>{hidePaid ? t("no_unpaid_orders") : t("no_orders_yet")}</p>
+
                 )}
 
                 {visibleOrders.map((o) => {
@@ -302,17 +307,17 @@ export default function BusinessOrders({ shopId }) {
                                 <div>
                                     <b>{o.orderCode}</b> • {new Date(o.createdAt).toLocaleString()}
                                     {!resolvedShopId && o.shop?.name ? (
-                                        <> • Shop: <b>{o.shop.name}</b></>
+                                        <> • {t("shops_title")}: <b>{o.shop.name}</b></>
                                     ) : null}
                                 </div>
                                 <div>
-                                    Status: <b>{o.status}</b> • Payment: <b>{o.payment?.status || 'unpaid'}</b>
+                                    {t("status")}: <b>{o.status}</b> • {t("payment")}: <b>{o.payment?.status || 'unpaid'}</b>
                                 </div>
                             </div>
 
                             <div className="bo-customer">
                                 <div className="bo-customer-phone">
-                                    Customer: {o.customer?.name} ({o.customer?.phone})
+                                    {t("customer")}: {o.customer?.name} ({o.customer?.phone})
                                     {o.customer?.phone && (
                                         <a
                                             href={`tel:${o.customer.phone.replace('+91', '').trim()}`}
@@ -324,8 +329,8 @@ export default function BusinessOrders({ shopId }) {
                                 </div>
 
 
-                                <div>Address: {o.customer?.address?.line}</div>
-                                {o.notes ? <div>Notes: {o.notes}</div> : null}
+                                <div>{t("address")}: {o.customer?.address?.line}</div>
+                                {o.notes ? <div>{t("notes")}: {o.notes}</div> : null}
                             </div>
 
                             <div className="bo-items">
@@ -357,7 +362,7 @@ export default function BusinessOrders({ shopId }) {
                             </div>
 
                             <div className="bo-total">
-                                Total: ₹{Number(o.pricing?.total || 0).toFixed(2)}
+                                {t("total")}: ₹{Number(o.pricing?.total || 0).toFixed(2)}
                             </div>
 
                             <div className="bo-actions">
@@ -370,7 +375,8 @@ export default function BusinessOrders({ shopId }) {
                                         }}
                                         disabled={busy === o._id}
                                     >
-                                        {busy === o._id ? 'Accepting…' : 'Accept order'}
+                                        {busy === o._id ? t("accepting") : t("accept_order")}
+
                                     </button>
                                 )}
 
@@ -383,7 +389,8 @@ export default function BusinessOrders({ shopId }) {
                                         }}
                                         disabled={busy === o._id}
                                     >
-                                        {busy === o._id ? 'Marking…' : 'Payment done'}
+                                        {busy === o._id ? t("marking_payment") : t("payment_done")}
+
                                     </button>
                                 )}
                             </div>

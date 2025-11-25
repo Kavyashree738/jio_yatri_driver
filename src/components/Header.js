@@ -80,10 +80,18 @@ import logo from '../assets/images/logo.jpg';
 import { useAuth } from '../context/AuthContext';
 import { LuPackage2 } from "react-icons/lu";
 import { CgProfile } from "react-icons/cg";
+import { useTranslation } from "react-i18next";
+import DriverSidebar from './DriverSidebar';
+import BusinessSidebar from './BusinessSidebar';
+
 const apiBase = 'https://jio-yatri-driver.onrender.com';
 
 const Header = () => {
   const { user, userRole, loading, isRegistered } = useAuth();
+  const { t, i18n } = useTranslation();
+
+  const [showSidebar, setShowSidebar] = useState(false);
+
   const [activeShopId, setActiveShopId] = useState(() => {
     // let dashboard set this ahead of time if it wants
     return localStorage.getItem('active_shop_id') || null;
@@ -110,13 +118,24 @@ const Header = () => {
 
   if (loading) return null;
 
+
+
   // Logged-out minimal header
   if (!user) {
     return (
       <>
         <div className="top-strip">
-          <h1>Mokshambani Tech Services PVT LTD</h1>
+          <h1>{t("company_name")}</h1>
+          {/* <div className="lang-options">
+            <span onClick={() => i18n.changeLanguage("en")}>EN</span>
+            <span onClick={() => i18n.changeLanguage("kn")}>KN</span>
+            <span onClick={() => i18n.changeLanguage("hi")}>HI</span>
+            <span onClick={() => i18n.changeLanguage("te")}>TE</span>
+          </div> */}
+
         </div>
+
+
         <header className="main-header">
           <div className="header-container">
             <div className="logo">
@@ -136,41 +155,41 @@ const Header = () => {
   // DRIVER links
   const DRIVER = {
     desktop: [
-      { to: '/home', label: 'Home' },
+      { to: '/home', label: t("nav_home") },
       ...(isRegistered ? [
-        { to: '/orders', label: 'Dashboard' },
-         { to: '/profile', label: 'Profile' },
-        { to: '/my-documents', label: 'My documents' },
+        { to: '/orders', label: t("nav_orders") },
+        { to: '/profile', label: t("nav_profile") },
+        { to: '/my-documents', label: t("nav_documents") },
       ] : []),
     ],
     mobile: [
-      { to: '/home', label: 'Home', icon: <FaHome className="mobile-nav-icon" /> },
+      { to: '/home', label: t("nav_home"), icon: <FaHome className="mobile-nav-icon" /> },
       ...(isRegistered ? [
-        { to: '/orders', label: 'Dashboard', icon: <FaChartLine className="mobile-nav-icon" /> },
-         { to: '/profile', label: 'Profile', icon: <CgProfile className="mobile-nav-icon" /> },
-        { to: '/my-documents', label: 'My Documents', icon: <FaFileAlt className="mobile-nav-icon" /> },
+        { to: '/orders', label: t("nav_orders"), icon: <FaChartLine className="mobile-nav-icon" /> },
+        { to: '/profile', label: t("nav_profile"), icon: <CgProfile className="mobile-nav-icon" /> },
+        { to: '/my-documents', label: t("nav_documents"), icon: <FaFileAlt className="mobile-nav-icon" /> },
       ] : []),
     ],
   };
 
   // BUSINESS links (note: Orders only when activeShopId is known)
- // Header.jsx BUSINESS links
-const BUSINESS = {
-  desktop: [
-    { to: '/home', label: 'Home' },
-    { to: '/business-dashboard', label: 'Dashboard' },
-    { to: '/business-orders', label: 'Orders' }, // aggregate
-        { to: '/shop-dashboard', label: 'Dashboard' },
-    { to: '/owner-documents', label: 'Documents' },
-  ],
-  mobile: [
-    { to: '/home', label: 'Home', icon: <FaHome className="mobile-nav-icon" /> },
-    { to: '/business-dashboard', label: 'Dashboard', icon: <FaStore className="mobile-nav-icon" /> },
-    { to: '/business-orders', label: 'Orders', icon: <LuPackage2 className="mobile-nav-icon" /> }, // aggregate
-        { to: '/shop-dashboard', label: 'Dashboard', icon: <FaClipboardList className="mobile-nav-icon" /> }, 
-    { to: '/owner-documents', label: 'Documents', icon: <FaFileAlt className="mobile-nav-icon" /> },
-  ],
-};
+  // Header.jsx BUSINESS links
+  const BUSINESS = {
+    desktop: [
+      { to: '/home', label: t("nav_home") },
+      { to: '/business-dashboard', label: t("nav_dashboard") },
+      { to: '/business-orders', label: t("nav_orders") }, // aggregate
+      { to: '/shop-dashboard', label: t("shop_history") },
+      { to: '/owner-documents', label: t("nav_documents") },
+    ],
+    mobile: [
+      { to: '/home', label: t("nav_home"), icon: <FaHome className="mobile-nav-icon" /> },
+      { to: '/business-dashboard', label: t("nav_dashboard"), icon: <FaStore className="mobile-nav-icon" /> },
+      { to: '/business-orders', label: t("nav_orders"), icon: <LuPackage2 className="mobile-nav-icon" /> }, // aggregate
+      { to: '/shop-dashboard', label: t("shop_history"), icon: <FaClipboardList className="mobile-nav-icon" /> },
+      { to: '/owner-documents', label: t("nav_documents"), icon: <FaFileAlt className="mobile-nav-icon" /> },
+    ],
+  };
 
 
   const FALLBACK = {
@@ -183,7 +202,18 @@ const BUSINESS = {
   return (
     <>
       <div className="top-strip">
-        <h1>Mokshambani Tech Services PVT LTD</h1>
+        <div className="menu-btn" onClick={() => setShowSidebar(true)}>
+          ☰
+        </div>
+
+        <h1 className="app-title">{t("company_name")}</h1>
+
+        {/* <div className="lang-options">
+          <span onClick={() => i18n.changeLanguage("en")}>EN</span>
+          <span onClick={() => i18n.changeLanguage("kn")}>KN</span>
+          <span onClick={() => i18n.changeLanguage("hi")}>HI</span>
+          <span onClick={() => i18n.changeLanguage("te")}>TE</span>
+        </div> */}
       </div>
 
       <header className="main-header">
@@ -222,6 +252,16 @@ const BUSINESS = {
           </NavLink>
         ))}
       </div>
+      {userRole === "driver" && (
+        <DriverSidebar isOpen={showSidebar} onClose={() => setShowSidebar(false)} />
+      )}
+
+      {userRole === "business" && (
+  <BusinessSidebar isOpen={showSidebar} onClose={() => setShowSidebar(false)} />
+)}
+      
+
+
     </>
   );
 };

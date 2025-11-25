@@ -2,49 +2,39 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
 import '../styles/ItemCatalogPicker.css';
+import { useTranslation } from "react-i18next";
 
-const FIELDS_BY_CATEGORY = {
+const getFieldsByCategory = (t) => ({
   grocery: [
-    { key: 'price', label: 'Price (₹)', type: 'number', required: true, min: 0 },
-    { key: 'weight', label: 'Weight (e.g., 1kg / 500g)', type: 'text' },
-    // { key: 'brand', label: 'Brand', type: 'text' },
-    { key: 'quantity', label: 'Quantity (stock available)', type: 'number', required: true, min: 0, def: 1 },
+    { key: 'price', label: t("price_amount"), type: 'number', required: true, min: 0 },
+    { key: 'weight', label: t("weight_example"), type: 'text' },
+    { key: 'quantity', label: t("quantity_stock"), type: 'number', required: true, min: 0, def: 1 },
   ],
   provision: [
-    { key: 'price', label: 'Price (₹)', type: 'number', required: true, min: 0 },
-    { key: 'weight', label: 'Weight (e.g., 1kg / 500g)', type: 'text' },
-    // { key: 'brand', label: 'Brand', type: 'text' },
-    { key: 'quantity', label: 'Quantity (stock available)', type: 'number', required: true, min: 0, def: 1 },
+    { key: 'price', label: t("price_amount"), type: 'number', required: true, min: 0 },
+    { key: 'weight', label: t("weight_example"), type: 'text' },
+    { key: 'quantity', label: t("quantity_stock"), type: 'number', required: true, min: 0, def: 1 },
   ],
   hotel: [
-    { key: 'price', label: 'Price (₹)', type: 'number', required: true, min: 1 },
-    { key: 'veg', label: 'Vegetarian', type: 'boolean', def: true },
-     {
-      key: 'category',
-      label: 'Menu Section',
-      type: 'select',
-      required: true,
-      options: ['main', 'breakfast', 'lunch', 'dinner', 'snacks', 'beverages'],
-      def: 'main'   // 👈 Default value
-    },
+    { key: 'price', label: t("price_amount"), type: 'number', required: true, min: 1 },
+    { key: 'veg', label: t("vegetarian"), type: 'boolean', def: true },
   ],
   bakery: [
-    { key: 'price', label: 'Price (₹)', type: 'number', required: true, min: 1 },
-    { key: 'veg', label: 'Vegetarian', type: 'boolean', def: true },
+    { key: 'price', label: t("price_amount"), type: 'number', required: true, min: 1 },
+    { key: 'veg', label: t("vegetarian"), type: 'boolean', def: true },
   ],
   cafe: [
-    { key: 'price', label: 'Price (₹)', type: 'number', required: true, min: 1 },
+    { key: 'price', label: t("price_amount"), type: 'number', required: true, min: 1 },
   ],
   vegetable: [
-    { key: 'price', label: 'Price (₹)', type: 'number', required: true, min: 0 },
-    { key: 'organic', label: 'Organic', type: 'boolean', def: false },
-        { key: 'weight', label: 'Weight (e.g., 1kg / 500g)', type: 'text' },
+    { key: 'price', label: t("price_amount"), type: 'number', required: true, min: 0 },
+    { key: 'organic', label: t("organic"), type: 'boolean', def: false },
   ],
   medical: [
-    { key: 'price', label: 'Price (₹)', type: 'number', required: true, min: 0 },
-    //{ key: 'prescriptionRequired', label: 'Prescription Required', type: 'boolean', def: false },
+    { key: 'price', label: t("price_amount"), type: 'number', required: true, min: 0 },
   ],
-};
+});
+
 
 export default function ItemCatalogPicker({ category, onAdd }) {
   const [list, setList] = useState([]);
@@ -53,7 +43,11 @@ export default function ItemCatalogPicker({ category, onAdd }) {
   const [form, setForm] = useState({});
   const [error, setError] = useState('');
 
-  const fields = FIELDS_BY_CATEGORY[category] || [];
+  const { t } = useTranslation();
+
+  // ❌ OLD → const fields = FIELDS_BY_CATEGORY[category] || [];
+  // ✅ FIX:
+  const fields = getFieldsByCategory(t)[category] || [];
 
   useEffect(() => {
     const run = async () => {
@@ -74,7 +68,7 @@ export default function ItemCatalogPicker({ category, onAdd }) {
       else init[f.key] = '';
     });
     setForm(init);
-  }, [category]);
+  }, [category, t]); // 🔥 Rebuild when language changes
 
   const filtered = useMemo(() => {
     const s = q.trim().toLowerCase();
@@ -98,12 +92,12 @@ export default function ItemCatalogPicker({ category, onAdd }) {
     for (const f of fields) {
       if (f.required) {
         const v = form[f.key];
-        if (v === '' || v === undefined || v === null) {
-          setError(`Please fill ${f.label}`);
+        if (!v && v !== 0) {
+          setError(t("fill_required", { field: f.label }));
           return;
         }
         if (f.type === 'number' && f.min != null && Number(v) < f.min) {
-          setError(`${f.label} must be at least ${f.min}`);
+          setError(t("value_min", { field: f.label, min: f.min }));
           return;
         }
       }
@@ -121,7 +115,6 @@ export default function ItemCatalogPicker({ category, onAdd }) {
     if ('prescriptionRequired' in form) item.prescriptionRequired = form.prescriptionRequired === true || form.prescriptionRequired === 'true';
     if ('quantity' in form) item.quantity = Number(form.quantity);
 
-    // 👇 Save directly via parent
     onAdd(item);
     setPicked(null);
   };
@@ -129,11 +122,12 @@ export default function ItemCatalogPicker({ category, onAdd }) {
   return (
     <div className="catalog-picker">
       <div className="catalog-picker-header">
-        <h3 className="catalog-picker-title">Select from Catalog</h3>
+        <h3 className="catalog-picker-title">{t("select_from_catalog")}</h3>
+
         <input
           value={q}
           onChange={e => setQ(e.target.value)}
-          placeholder="Search item…"
+          placeholder={t("search_item")}
           className="catalog-picker-search"
         />
       </div>
@@ -141,28 +135,46 @@ export default function ItemCatalogPicker({ category, onAdd }) {
       <div className="catalog-picker-grid-horizontal">
         {filtered.map(it => (
           <div className="catalog-picker-card-horizontal" key={it._id}>
-            <div className="catalog-picker-image-horizontal" style={{ backgroundImage: `url(${it.imageUrl})` }} />
+            <div
+              className="catalog-picker-image-horizontal"
+              style={{ backgroundImage: `url(${it.imageUrl})` }}
+            />
             <div className="catalog-picker-content-horizontal">
               <div className="catalog-picker-name-horizontal">{it.name}</div>
-              <button className="catalog-picker-add-btn-horizontal" onClick={() => openDialog(it)}>Add</button>
+              <button
+                className="catalog-picker-add-btn-horizontal"
+                onClick={() => openDialog(it)}
+              >
+                {t("add")}
+              </button>
             </div>
           </div>
         ))}
-        {!filtered.length && <div className="catalog-picker-empty">No items found</div>}
+
+        {!filtered.length && <div className="catalog-picker-empty">{t("no_items_found")}</div>}
       </div>
 
       {picked && (
         <div className="catalog-picker-modal">
           <div className="catalog-picker-dialog">
+            {/* Header */}
             <div className="catalog-picker-dialog-header">
-              <div className="catalog-picker-thumb" style={{ backgroundImage: `url(${picked.imageUrl})` }} />
+              <div
+                className="catalog-picker-thumb"
+                style={{ backgroundImage: `url(${picked.imageUrl})` }}
+              />
               <div className="catalog-picker-dialog-title">{picked.name}</div>
             </div>
 
+            {/* Form */}
             <div className="catalog-picker-fields">
               {fields.map(f => (
                 <div key={f.key} className="catalog-picker-field">
-                  <label>{f.label}{f.required && <span className="required">*</span>}</label>
+                  <label>
+                    {f.label}
+                    {f.required && <span className="required">*</span>}
+                  </label>
+
                   {f.type === 'text' && (
                     <input
                       type="text"
@@ -170,6 +182,7 @@ export default function ItemCatalogPicker({ category, onAdd }) {
                       onChange={e => setForm({ ...form, [f.key]: e.target.value })}
                     />
                   )}
+
                   {f.type === 'number' && (
                     <input
                       type="number"
@@ -178,13 +191,7 @@ export default function ItemCatalogPicker({ category, onAdd }) {
                       onChange={e => setForm({ ...form, [f.key]: e.target.value })}
                     />
                   )}
-                  {f.type === 'textarea' && (
-                    <textarea
-                      maxLength={f.maxLength}
-                      value={form[f.key] ?? ''}
-                      onChange={e => setForm({ ...form, [f.key]: e.target.value })}
-                    />
-                  )}
+
                   {f.type === 'boolean' && (
                     <label className="catalog-picker-toggle">
                       <input
@@ -195,27 +202,27 @@ export default function ItemCatalogPicker({ category, onAdd }) {
                       <span className="catalog-picker-toggle-slider"></span>
                     </label>
                   )}
-                  {f.type === 'select' && (
-                    <select
-                      value={form[f.key] ?? f.options?.[0]}
-                      onChange={e => setForm({ ...form, [f.key]: e.target.value })}
-                    >
-                      {(f.options || []).map(opt => (
-                        <option key={opt} value={opt}>
-                          {opt[0].toUpperCase() + opt.slice(1)}
-                        </option>
-                      ))}
-                    </select>
-                  )}
                 </div>
               ))}
             </div>
 
             {error && <div className="catalog-picker-error">{error}</div>}
 
+            {/* Buttons */}
             <div className="catalog-picker-dialog-actions">
-              <button onClick={() => setPicked(null)} className="catalog-picker-cancel-btn">Cancel</button>
-              <button onClick={commit} className="catalog-picker-confirm-btn">Add Item</button>
+              <button
+                onClick={() => setPicked(null)}
+                className="catalog-picker-cancel-btn"
+              >
+                {t("cancel")}
+              </button>
+
+              <button
+                onClick={commit}
+                className="catalog-picker-confirm-btn"
+              >
+                {t("add_item")}
+              </button>
             </div>
           </div>
         </div>

@@ -2,7 +2,7 @@ import React, { useState, useCallback } from "react";
 import ReactCrop, { centerCrop, makeAspectCrop } from "react-image-crop";
 import "react-image-crop/dist/ReactCrop.css";
 import { FaArrowLeft } from "react-icons/fa";
-
+import { useTranslation } from "react-i18next";
 const ImageCropper = ({ image, onCropComplete, onCancel }) => {
   const [crop, setCrop] = useState();
   const [completedCrop, setCompletedCrop] = useState(null);
@@ -12,6 +12,8 @@ const ImageCropper = ({ image, onCropComplete, onCancel }) => {
     const { width, height } = e.currentTarget;
     setCrop(centerCrop(makeAspectCrop({ unit: "%", width: 90 }, 3 / 4, width, height), width, height));
   }, []);
+
+  const { t } = useTranslation();
 
   const getCroppedImg = () => {
     if (!completedCrop || !imgRef) return;
@@ -70,8 +72,8 @@ const ImageCropper = ({ image, onCropComplete, onCancel }) => {
 
       {/* Bottom Buttons */}
       <div className="scan-buttons">
-        <button className="done" onClick={handleDone}>Done</button>
-        <button className="cancel" onClick={onCancel}>Cancel</button>
+        <button className="done" onClick={handleDone}>{t("done")}</button>
+        <button className="cancel" onClick={onCancel}>{t("cancel")}</button>
       </div>
     </div>
   );

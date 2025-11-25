@@ -14,5 +14,5 @@ router.get('/:id', orderCtrl.getOrder);
 
 router.patch('/:id/status', /*verifyFirebaseToken,*/ orderCtrl.updateOrderStatus);
 router.patch('/:id/payment', orderCtrl.updatePaymentStatus);
-
+router.get('/earnings/owner/:ownerId',orderCtrl.getOwnerEarnings);
 module.exports = router;

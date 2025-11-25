@@ -173,12 +173,13 @@ import React, { useState, useEffect } from 'react';
 import moment from 'moment';
 import 'moment/locale/en-in';
 import '../styles/DailyEarningsFilter.css';
-
+import { useTranslation } from "react-i18next";
 moment.locale('en-in');
 
 const DailyEarningsFilter = ({ paymentSettlements, registrationDate, onFilter }) => {
   const getDefaultDateRange = () => {
     const endDate = new Date();
+
     let startDate = new Date();
     startDate.setDate(startDate.getDate() - 7);
 
@@ -198,6 +199,8 @@ const DailyEarningsFilter = ({ paymentSettlements, registrationDate, onFilter })
   const [dateRange, setDateRange] = useState(getDefaultDateRange());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [filteredEarnings, setFilteredEarnings] = useState([]);
+  const { t } = useTranslation();
+
 
   const toInput = (d) => moment(d).format('YYYY-MM-DD');
   const fromInput = (s) => (s ? new Date(s + 'T00:00:00') : new Date());
@@ -263,15 +266,15 @@ const DailyEarningsFilter = ({ paymentSettlements, registrationDate, onFilter })
   return (
     <div className="earnings-filter-container">
       <div className="filter-header">
-        <h3>Daily Earnings</h3>
         <div className="filter-actions">
           <button
             onClick={() => setShowDatePicker(!showDatePicker)}
             className="filter-btn"
           >
             {showDatePicker
-              ? 'Hide Filter'
-              : `Filter: ${formatDate(dateRange[0].startDate)} - ${formatDate(dateRange[0].endDate)}`}
+              ? t("filter_button_hide")
+              : `${t("filter_button_show")}: ${formatDate(dateRange[0].startDate)} - ${formatDate(dateRange[0].endDate)}`}
+
           </button>
           <button
             onClick={() => {
@@ -280,7 +283,7 @@ const DailyEarningsFilter = ({ paymentSettlements, registrationDate, onFilter })
             }}
             className="reset-btn"
           >
-            Reset
+            {t("reset_button")}
           </button>
         </div>
       </div>
@@ -290,7 +293,7 @@ const DailyEarningsFilter = ({ paymentSettlements, registrationDate, onFilter })
           <div className="date-picker-container">
             <div className="date-inputs">
               <label className="date-field">
-                <span>From</span>
+                <span>{t("from_label")}</span>
                 <input
                   type="date"
                   value={toInput(dateRange[0].startDate)}
@@ -300,7 +303,7 @@ const DailyEarningsFilter = ({ paymentSettlements, registrationDate, onFilter })
                 />
               </label>
               <label className="date-field">
-                <span>To</span>
+                <span>{t("to_label")}</span>
                 <input
                   type="date"
                   value={toInput(dateRange[0].endDate)}
@@ -312,8 +315,8 @@ const DailyEarningsFilter = ({ paymentSettlements, registrationDate, onFilter })
             </div>
 
             <div className="quick-presets">
-              <button onClick={() => applyPreset(7)} className="preset-btn">Last 7 days</button>
-              <button onClick={() => applyPreset(30)} className="preset-btn">Last 30 days</button>
+              <button onClick={() => applyPreset(7)} className="preset-btn"> {t("last_7_days")}</button>
+              <button onClick={() => applyPreset(30)} className="preset-btn">{t("last_30_days")}</button>
               <button
                 onClick={() => {
                   const end = new Date();
@@ -323,13 +326,14 @@ const DailyEarningsFilter = ({ paymentSettlements, registrationDate, onFilter })
                 }}
                 className="preset-btn"
               >
-                All time
+                {t("all_time")}
+
               </button>
             </div>
 
             <div className="date-picker-actions">
               <button onClick={() => setShowDatePicker(false)} className="apply-btn">
-                Apply
+                {t("apply_button")}
               </button>
             </div>
           </div>
@@ -342,44 +346,44 @@ const DailyEarningsFilter = ({ paymentSettlements, registrationDate, onFilter })
             <div key={earning._id || index} className="earning-item">
               <div className="earning-date">{formatDate(earning.date)}</div>
               <div className="earning-details">
-  <div className="earning-row">
-    <span>Cash Collected:</span>
-    <span>₹{(earning.cashCollected || 0).toFixed(2)}</span>
-  </div>
-  <div className="earning-row">
-    <span>Online Collected:</span>
-    <span>₹{(earning.onlineCollected || 0).toFixed(2)}</span>
-  </div>
+                <div className="earning-row">
+                  <span>{t("cash_collected")}:</span>
+                  <span>₹{(earning.cashCollected || 0).toFixed(2)}</span>
+                </div>
+                <div className="earning-row">
+                  <span>{t("online_collected")}:</span>
+                  <span>₹{(earning.onlineCollected || 0).toFixed(2)}</span>
+                </div>
 
-  {/* 👇 NEW - Driver paid to Owner */}
-  {earning.driverToOwner > 0 && (
-    <div className="earning-row">
-      <span>Driver → Owner:</span>
-      <span className="negative">₹{earning.driverToOwner.toFixed(2)}</span>
-    </div>
-  )}
+                {/* 👇 NEW - Driver paid to Owner */}
+                {earning.driverToOwner > 0 && (
+                  <div className="earning-row">
+                    <span>{t("driver_to_owner")}:</span>
+                    <span className="negative">₹{earning.driverToOwner.toFixed(2)}</span>
+                  </div>
+                )}
 
-  {/* 👇 NEW - Owner paid to Driver */}
-  {earning.ownerToDriver > 0 && (
-    <div className="earning-row">
-      <span>Owner → Driver:</span>
-      <span className="positive">₹{earning.ownerToDriver.toFixed(2)}</span>
-    </div>
-  )}
+                {/* 👇 NEW - Owner paid to Driver */}
+                {earning.ownerToDriver > 0 && (
+                  <div className="earning-row">
+                    <span>{t("owner_to_driver")}:</span>
+                    <span className="positive">₹{earning.ownerToDriver.toFixed(2)}</span>
+                  </div>
+                )}
 
-  <div className="earning-row">
-    <span>Status:</span>
-    <span>{earning.status || 'unknown'}</span>
-  </div>
+                <div className="earning-row">
+                  <span>{t("status")}:</span>
+                  <span>{earning.status || 'unknown'}</span>
+                </div>
 
-  {/* 👇 Optional - SettledAt date */}
-  {earning.status === 'settled' && earning.settledAt && (
-    <div className="earning-row">
-      <span>Settled At:</span>
-      <span>{moment(earning.settledAt).format('MMM D, YYYY')}</span>
-    </div>
-  )}
-</div>
+                {/* 👇 Optional - SettledAt date */}
+                {earning.status === 'settled' && earning.settledAt && (
+                  <div className="earning-row">
+                    <span>{t("settled_at")}:</span>
+                    <span>{moment(earning.settledAt).format('MMM D, YYYY')}</span>
+                  </div>
+                )}
+              </div>
 
             </div>
           ))
@@ -387,12 +391,13 @@ const DailyEarningsFilter = ({ paymentSettlements, registrationDate, onFilter })
           <div className="no-earnings">
             {paymentSettlements?.length > 0 ? (
               <>
-                <p>No earnings found for selected period</p>
-                <p>Try expanding your date range</p>
+                <p>{t("no_earnings_period")}</p>
+                <p>{t("try_expand_range")}</p>
               </>
             ) : (
-              'No earnings data available yet'
+              <p>{t("no_earnings_available")}</p>
             )}
+
           </div>
         )}
       </div>
@@ -401,4 +406,3 @@ const DailyEarningsFilter = ({ paymentSettlements, registrationDate, onFilter })
 };
 
 export default DailyEarningsFilter;
-

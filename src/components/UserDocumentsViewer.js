@@ -6,9 +6,11 @@ import '../styles/UserDocumentViewer.css';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from "react-i18next";
 
 const DocumentViewer = () => {
   const { user } = useAuth();
+   const { t, i18n } = useTranslation();
   const [documents, setDocuments] = useState([]);
   const [statusMap, setStatusMap] = useState({});
   const [loading, setLoading] = useState(true);
@@ -17,6 +19,7 @@ const DocumentViewer = () => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [currentDocType, setCurrentDocType] = useState('');
   const navigate = useNavigate();
+     
 
   // Generate a unique key for each document
   const generateDocumentKey = (doc) => {
@@ -216,16 +219,16 @@ const DocumentViewer = () => {
     <>
       <Header />
       <div className="document-container">
-        <h2 className="document-title">My Documents</h2>
+        <h2 className="document-title">{t("my_documents")}</h2>
 
         {loading ? (
-          <div className="loading">Loading documents...</div>
+          <div className="loading">{t("loading_documents")}</div>
         ) : error === 'incomplete-registration' ? (
           <div className="error-ui">
-            <h3>Registration Incomplete</h3>
-            <p>Please complete your registration to upload and view documents.</p>
+            <h3>{t("registration_incomplete")}</h3>
+            <p>{t("registration_incomplete_msg")}</p>
             <button onClick={() => navigate('/home')} className="register-btn">
-              Complete Registration
+            {t("complete_registration")}
             </button>
           </div>
         ) : error === 'unauthorized' ? (
@@ -288,21 +291,21 @@ const DocumentViewer = () => {
 
         {selectedFile && (
           <div className="upload-preview">
-            <p>Selected file: {selectedFile.name}</p>
+            <p>{t("selected_file")} {selectedFile.name}</p>
             <div className="upload-buttons">
               <button
                 onClick={handleUpload}
                 disabled={uploading}
                 className="upload-confirm-btn"
               >
-                {uploading ? 'Uploading...' : 'Confirm Upload'}
+                {uploading ? t("uploading") : t("confirm_upload")}
               </button>
               <button
                 onClick={() => setSelectedFile(null)}
                 className="upload-cancel-btn"
                 disabled={uploading}
               >
-                Cancel
+                {t("cancel")}
               </button>
             </div>
           </div>

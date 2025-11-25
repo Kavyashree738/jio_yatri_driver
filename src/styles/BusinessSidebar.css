@@ -1,0 +1,105 @@
+.bs-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  opacity: 0;
+  pointer-events: none;
+  transition: 0.3s;
+  z-index: 9999;
+}
+
+.bs-overlay.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.bs-side {
+  width: 80%;
+  max-width: 330px;
+  height: 100vh;
+  background: #fff;
+  padding: 20px;
+  overflow-y: auto;
+  position: absolute;
+  left: 0;
+  top: 0;
+  border-radius: 0 10px 10px 0;
+}
+
+/* Profile */
+.bs-profile {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.bs-avatar {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+}
+
+.bs-p-text h3 {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+/* Shops */
+.bs-shop-card {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+  padding: 10px;
+  background: #f6f6f6;
+  border-radius: 10px;
+}
+
+.bs-shop-img {
+  width: 60px;
+  height: 60px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.bs-address {
+  font-size: 13px;
+  color: #666;
+}
+
+/* Menu */
+.bs-menu {
+  margin-top: 20px;
+  border-top: 1px solid #ddd;
+  padding-top: 15px;
+}
+
+.bs-item {
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.bs-item.logout {
+  color: red;
+}
+.bs-shop-card {
+    display: flex;
+    flex-wrap: wrap;     /* ⭐ allows text to move below image */
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.bs-shop-img {
+    width: 70px;
+    height: 70px;
+    flex-shrink: 0;       /* ⭐ image stays fixed, won’t shrink */
+}
+
+.bs-shop-details {
+    flex: 1 1 150px;      /* ⭐ This allows the text to drop below when space is not enough */
+    min-width: 150px;
+}

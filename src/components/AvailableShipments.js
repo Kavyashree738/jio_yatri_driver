@@ -7,6 +7,9 @@ import '../styles/AvailableShipments.css';
 import LocationTracker from './LocationTracker';
 import parcelImg from '../assets/images/parcel.png';
 import { FaPhone } from 'react-icons/fa';
+import { useTranslation } from "react-i18next";
+import Lottie from "lottie-react";
+import loadingAnimation from "../assets/animations/loading.json";
 
 
 
@@ -16,8 +19,10 @@ const AvailableShipments = forwardRef((props, ref) => {
   const [loading, setLoading] = useState(true);
   const [activeShipment, setActiveShipment] = useState(null);
   const [isMobile, setIsMobile] = useState(false);
-  const sectionRef = useRef(null);
+  const { t } = useTranslation();
 
+  const sectionRef = useRef(null);
+   
   const notifiedShipmentIdsRef = useRef(new Set());
 
   useEffect(() => {
@@ -192,7 +197,7 @@ const fetchData = async () => {
       }
 
       if (shipmentData) {
-        toast.info(`✅ Keeping active shipment ${shipmentData._id} (${shipmentData.status})`);
+        // toast.info(`✅ Keeping active shipment ${shipmentData._id} (${shipmentData.status})`);
         setActiveShipment(shipmentData);
         localStorage.setItem("lastShipment", JSON.stringify(shipmentData));
       }
@@ -338,7 +343,7 @@ const fetchData = async () => {
       ];
 
       const token = await user.getIdToken();
-      const toastId = toast.loading('Accepting shipment...');
+      const toastId = toast.loading(t("accepting_shipment"));
 
       const response = await axios.put(
         `https://jio-yatri-driver.onrender.com/api/shipments/${shipmentId}/accept`,
@@ -347,7 +352,7 @@ const fetchData = async () => {
       );
 
       toast.update(toastId, {
-        render: 'Order accepted successfully!',
+        render: t("order_accepted"),
         type: 'success',
         isLoading: false,
         autoClose: 3000,
@@ -403,10 +408,14 @@ const fetchData = async () => {
       />
 
       {/* ✅ Hide heading when driver has an active shipment */}
-      {!activeShipment && <h2>Available Shipments</h2>}
+      {!activeShipment && <h2>{t("available_shipments")}</h2>}
 
       {loading ? (
-        <div className="loading-message">Loading data...</div>
+        
+        <div className="loading-containerss">
+          <Lottie animationData={loadingAnimation} loop={true} />
+        </div>
+        
       ) : activeShipment ? (
         // ✅ Show only the active shipment tracker
         <div className="active-shipment-container">
@@ -425,7 +434,7 @@ const fetchData = async () => {
         // ✅ Hide this "No matching..." message if driver has an active shipment
         !activeShipment && (
           <div className="no-shipments">
-            No matching shipments available at this time.
+            {t("no_matching_shipments")}
           </div>
         )
       ) : (
@@ -435,7 +444,7 @@ const fetchData = async () => {
             <div className="shipment-overlay"></div>
 
             <div className="shipment-popup-card">
-              <h4 className="popup-title">New Delivery Request</h4>
+              <h4 className="popup-title">{t("new_delivery_request")}</h4>
 
               <div className="popup-user">
                 <div className="popup-user-icon">
@@ -487,7 +496,7 @@ const fetchData = async () => {
                   alt="Parcel"
                 />
                 <div className="popup-item-name">
-                  {shipments[0].parcel?.description || 'Parcel'}
+                  {shipments[0].parcel?.description || t("parcel")}
                 </div>
                 <div className="popup-item-cost">
                   ₹{shipments[0].cost?.toFixed(2) || '0.00'}
@@ -499,13 +508,13 @@ const fetchData = async () => {
                   className="accept-btn"
                   onClick={() => handleAccept(shipments[0]._id)}
                 >
-                  Accept
+                  {t("accept")}
                 </button>
                 <button
                   className="reject-btn"
                   onClick={() => handleReject(shipments[0]._id)}
                 >
-                  Reject
+                  {t("reject")}
                 </button>
               </div>
             </div>
@@ -518,7 +527,6 @@ const fetchData = async () => {
 });
 
 export default AvailableShipments;
-
 
 
 

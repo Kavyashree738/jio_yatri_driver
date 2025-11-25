@@ -7,11 +7,13 @@ import gift from '../assets/images/gift-box.png';
 import axios from 'axios';
 import confetti from 'canvas-confetti';
 import { FaRupeeSign } from 'react-icons/fa';
+import { useTranslation } from "react-i18next"; // 🔥 added
 
 const ReferralShareShop = () => {
   const { shopId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { t } = useTranslation(); // 🔥 added
 
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
@@ -32,19 +34,19 @@ const ReferralShareShop = () => {
         const res = await axios.get(`${base}/api/shops/${shopId}/referral-code`, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        if (!res.data?.success) throw new Error(res.data?.error || 'Failed to fetch');
+        if (!res.data?.success) throw new Error(res.data?.error || t("failed_fetch")); // 🔥 updated
         setReferral({
           referralCode: res.data.referralCode,
           shareLink: res.data.shareLink
         });
       } catch (e) {
-        setError(e.response?.data?.error || e.message || 'Failed to load referral code');
+        setError(e.response?.data?.error || e.message || t("failed_fetch")); // 🔥 updated
       } finally {
         setLoading(false);
       }
     };
     fetchReferral();
-  }, [user, shopId]);
+  }, [user, shopId, t]);
 
   const fireConfetti = () => {
     confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
@@ -62,7 +64,7 @@ const ReferralShareShop = () => {
 
   const shareViaWhatsApp = () => {
     if (!referral) return;
-    const msg = `Join using my shop referral code ${referral.referralCode} and get ₹10 cashback! ${referral.shareLink}`;
+    const msg = `${t("whatsapp_msg")} ${referral.referralCode} ${referral.shareLink}`; // 🔥 updated
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
   };
 
@@ -94,8 +96,8 @@ const shareNative = async () => {
   else if (navigator.share) {
     try {
       await navigator.share({
-        title: 'Join and get ₹10 cashback!',
-        text: `Use my shop referral code ${referral.referralCode} to get ₹10 cashback!`,
+        title: t("share_title"), // 🔥 updated
+        text: `${t("share_text")} ${referral.referralCode}`, // 🔥 updated
         url: referral.shareLink,
       });
     } catch (err) {
@@ -105,7 +107,7 @@ const shareNative = async () => {
   } 
   // 5️⃣ WhatsApp fallback for mobile
   else if (/Android|iPhone|iPad/i.test(navigator.userAgent)) {
-    const waMsg = `Join using my shop referral code ${referral.referralCode} and get ₹10 cashback! ${referral.shareLink}`;
+    const waMsg = `${t("whatsapp_msg")} ${referral.referralCode} ${referral.shareLink}`; // 🔥 updated
     window.open(`https://wa.me/?text=${encodeURIComponent(waMsg)}`, '_blank');
   } 
   // 6️⃣ Final fallback: clipboard
@@ -115,7 +117,7 @@ const shareNative = async () => {
 
   function fallbackToClipboard() {
     navigator.clipboard.writeText(`${referral.shareLink} (Code: ${referral.referralCode})`);
-    alert('Referral link copied to clipboard!');
+    alert(t("copied")); // 🔥 updated
   }
 };
 
@@ -136,7 +138,7 @@ const shareNative = async () => {
       <div className="referral-share-container">
         <div className="error-message">
           <p>{error}</p>
-          <button onClick={() => navigate(-1)}>Back</button>
+          <button onClick={() => navigate(-1)}>{t("back")}</button> {/* 🔥 updated */}
         </div>
       </div>
     );
@@ -148,14 +150,14 @@ const shareNative = async () => {
         <div className="referral-hero-section">
           <div className="referral-share-header">
             <button className="back-button" onClick={() => navigate(-1)}>x</button>
-            <h2>Shop Refer & Earn</h2>
+            <h2>{t("refer_earn_title")}</h2> {/* 🔥 updated */}
           </div>
           <div className="gift-icon">
             <img src={gift} alt="Gift" />
           </div>
-          <h3>Invite Shops & Earn!</h3>
+          <h3>{t("invite_earn")}</h3> {/* 🔥 updated */}
           <p className="subtext">
-            Share your <b>shop referral code</b> and get <span className="highlight">₹10 cashback</span> when they register
+            {t("share_referral")} <span className="highlight">{t("cashback_amount")}</span> {/* 🔥 updated */}
           </p>
         </div>
 
@@ -163,8 +165,8 @@ const shareNative = async () => {
           <>
             <div className="referral-card">
               <div className="card-header">
-                <span className="card-title">Your Shop Referral Code</span>
-                <div className="card-badge">Active</div>
+                <span className="card-title">{t("referral_code_title")}</span> {/* 🔥 updated */}
+                <div className="card-badge">{t("active")}</div> {/* 🔥 updated */}
               </div>
               <div className="code-display">
                 <span className="code-text">{referral.referralCode}</span>
@@ -172,16 +174,16 @@ const shareNative = async () => {
                   className={`copy-button ${copied ? 'copied' : ''}`}
                   onClick={copyToClipboard}
                 >
-                  <FaCopy /> {copied ? 'Copied!' : 'Copy Link'}
+                  <FaCopy /> {copied ? t("copied") : t("copy_link")} {/* 🔥 updated */}
                 </button>
               </div>
             </div>
 
             <div className="share-section">
               <div className="share-buttons">
-            
+
                 <button className="share-button other" onClick={shareNative}>
-                  <FaShareAlt className="button-icon" /> Share
+                  <FaShareAlt className="button-icon" /> {t("share")} {/* 🔥 updated */}
                 </button>
               </div>
             </div>
@@ -194,10 +196,10 @@ const shareNative = async () => {
             <FaRupeeSign />
           </div>
           <div className="reward-details">
-            <h4>Your Referral Earnings</h4>
+            <h4>{t("earnings_title")}</h4> {/* 🔥 updated */}
             <p className="reward-amount">₹{referralStats.totalEarnings}</p>
             <p className="reward-sub">
-              {referralStats.totalReferrals} friend{referralStats.totalReferrals !== 1 ? 's' : ''} joined using your code
+              {referralStats.totalReferrals} {t("joined_using_code")} {/* 🔥 updated */}
             </p>
           </div>
         </div>

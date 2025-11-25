@@ -5,16 +5,19 @@ import { useAuth } from "../context/AuthContext";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import { FaSearch } from "react-icons/fa";
+import { useTranslation } from "react-i18next";
 
 const ShopDashboard = () => {
   const { user } = useAuth();
+  const { t } = useTranslation();
+
   const [shops, setShops] = useState([]);
   const [selectedShop, setSelectedShop] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
 
   const API_BASE_URL =
-    "https://jio-yatri-driver.onrender.com";
+    'https://jio-yatri-driver.onrender.com'
 
   useEffect(() => {
     if (user?.uid) fetchOwnerDashboard(user.uid);
@@ -40,7 +43,6 @@ const ShopDashboard = () => {
     return (
       <div className="loading-container">
         <div className="spinner"></div>
-        {/* <p>Loading dashboard...</p> */}
       </div>
     );
 
@@ -53,16 +55,16 @@ const ShopDashboard = () => {
       <>
         <Header />
         <div className="shop-dashboard contain">
-          <h2 className="dashboard-title">Shop Dashboard</h2>
+          <h2 className="dashboard-title">{t("shop_dashboard")}</h2>
 
           <div className="dashboard-stats">
             <div className="stat-card">
               <h3>{shops.length}</h3>
-              <p>Shops</p>
+              <p>{t("shops")}</p>
             </div>
             <div className="stat-card">
               <h3>{shops.reduce((acc, s) => acc + s.totalOrders, 0)}</h3>
-              <p>Orders</p>
+              <p>{t("orders")}</p>
             </div>
           </div>
 
@@ -70,7 +72,7 @@ const ShopDashboard = () => {
             <FaSearch className="search-icon" />
             <input
               type="text"
-              placeholder="Search shops..."
+              placeholder={t("search_shops")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -95,8 +97,8 @@ const ShopDashboard = () => {
                   <h3>{shop.shopName}</h3>
                   <p className="category">{shop.category}</p>
                   <div className="shop-stats-small">
-                    <span>Orders: {shop.totalOrders}</span>
-                    <span>Completed: {shop.completedOrders}</span>
+                    <span>{t("orders")}: {shop.totalOrders}</span>
+                    <span>{t("completed")}: {shop.completedOrders}</span>
                   </div>
                 </div>
               </div>
@@ -115,7 +117,7 @@ const ShopDashboard = () => {
       <Header />
       <div className="shop-orders-page contain">
         <button className="back-btns" onClick={() => setSelectedShop(null)}>
-          ← Back
+          ← {t("back")}
         </button>
 
         <div className="shop-banner">
@@ -132,19 +134,17 @@ const ShopDashboard = () => {
           </div>
         </div>
 
-
-
         <div className="orders-list">
-
           <div className="search-container">
             <FaSearch className="search-icon" />
             <input
               type="text"
-              placeholder="Search orders by name, code or status..."
+              placeholder={t("search_orders")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
+
           {selectedShop.recentOrders
             ?.filter((order) => {
               const q = searchQuery.toLowerCase();
@@ -163,17 +163,18 @@ const ShopDashboard = () => {
                   </span>
                 </div>
                 <p className="customer">
-                  <strong>{order.customer?.name || "Unknown"}</strong>
+                  <strong>{order.customer?.name || t("unknown")}</strong>
                 </p>
                 <div className="order-meta">
                   <span>₹{order.total}</span>
-                  <span>{order.items?.length || 0} items</span>
+                  <span>{order.items?.length || 0} {t("items")}</span>
                 </div>
               </div>
             ))}
+
           {(!selectedShop.recentOrders ||
             selectedShop.recentOrders.length === 0) && (
-              <p>No recent orders found.</p>
+              <p>{t("no_recent_orders")}</p>
             )}
         </div>
       </div>

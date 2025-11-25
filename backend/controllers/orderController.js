@@ -439,3 +439,42 @@ exports.getOrdersByOwner = async (req, res) => {
     return res.status(500).json({ success: false, error: 'Failed to fetch owner orders' });
   }
 };
+
+exports.getOwnerEarnings = async (req, res) => {
+  try {
+    const { ownerId } = req.params;
+
+    // 🔍 Fetch all shops owned by the user
+    const shops = await Shop.find({ userId: ownerId }).select('_id shopName').lean();
+    if (!shops.length) {
+      return res.json({ success: true, totalEarnings: 0, shopDetails: [] });
+    }
+
+    const shopIds = shops.map(s => s._id);
+
+    // 🔍 Fetch completed orders for those shops
+    const orders = await Order.find({
+      'shop._id': { $in: shopIds },
+      status: 'completed'
+    }).lean();
+
+    // 💰 Calculate total earnings
+    const totalEarnings = orders.reduce((sum, order) => {
+      return sum + (order.pricing?.total || 0);
+    }, 0);
+
+    res.json({
+      success: true,
+      totalEarnings,
+      totalOrders: orders.length,
+      shopDetails: shops
+    });
+
+  } catch (e) {
+    console.error('[getOwnerEarnings] error:', e);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to calculate earnings'
+    });
+  }
+};

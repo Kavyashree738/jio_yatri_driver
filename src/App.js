@@ -31,7 +31,7 @@
 
 import React from 'react';
 import { Routes, Route, Navigate, useParams } from 'react-router-dom';
-import  { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import RequireAuth from './components/guards/RequireAuth';
 import RoleGuard from './components/guards/RoleGuard';
@@ -74,6 +74,10 @@ import TermsAndConditions from './components/TermsAndConditions';
 
 import Profile from './components/DriverProfile'
 
+import Wallet from './components/Wallet'
+import LanguageSelector from './components/LanguageSelector';
+import ShopWallet from './components/ShopWallet'
+
 
 // Smart landing
 function LandingRedirect() {
@@ -108,125 +112,134 @@ const App = () => {
     // ✅ CartProvider should wrap the whole app
     <CartProvider>
       <AuthProvider>
-    <OfflineHandler>
-        <OwnerFCMInit />
-        <ScrollToTop />
-        <Routes>
+        <OfflineHandler>
+          <OwnerFCMInit />
+          <ScrollToTop />
+          <Routes>
           // <Route path="/" element={<SplashScreen />} />
-          <Route path="/" element={<LandingRedirect />} />
-          <Route path="/home" element={<Home />} />
+            <Route path="/" element={<LandingRedirect />} />
+            <Route path="/home" element={<Home />} />
 
-          <Route path="/shop/:shopId/menu" element={<ShopMenuManager />} />
-          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-          <Route path="/terms" element={<TermsAndConditions />} />
-          <Route path="/shop-dashboard" element={<ShopDashboard />} />
+            <Route path="/shop/:shopId/menu" element={<ShopMenuManager />} />
+            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+            <Route path="/terms" element={<TermsAndConditions />} />
+            <Route path="/shop-dashboard" element={<ShopDashboard />} />
 
-          {/* DRIVER-ONLY */}
-          <Route path="/orders" element={
-            <RequireAuth><RoleGuard allow="driver"><DriverDashboard /></RoleGuard></RequireAuth>
-          } />
-           <Route path="/profile" element={
-            <RequireAuth><RoleGuard allow="driver"><Profile /></RoleGuard></RequireAuth>
-          } />
-          <Route path="/owner-dashboard" element={
-            <RequireAuth><RoleGuard allow="driver"><OwnerDashboard /></RoleGuard></RequireAuth>
-          } />
-          <Route path="/my-documents" element={
-            <RequireAuth><RoleGuard allow="driver"><UserDocumentsViewer /></RoleGuard></RequireAuth>
-          } />
-          <Route path="/profile" element={
-            <RequireAuth><RoleGuard allow="driver"><UserProfile /></RoleGuard></RequireAuth>
-          } />
-          <Route path="/delivery-history" element={
-            <RequireAuth><RoleGuard allow="driver"><DeliveryHistory /></RoleGuard></RequireAuth>
-          } />
-          <Route path="/full-map" element={
-            <RequireAuth><RoleGuard allow="driver"><FullMapPage /></RoleGuard></RequireAuth>
-          } />
-          <Route path="/driver/earnings" element={
-            <RequireAuth><RoleGuard allow="driver"><DailyEarningsPage /></RoleGuard></RequireAuth>
-          } />
-          <Route path="/refferal" element={
-            <RequireAuth><RoleGuard allow="driver"><ReferralShare /></RoleGuard></RequireAuth>
-          } />
+            <Route path="/wallet" element={<Wallet />} />
+            <Route path="/select-language" element={<LanguageSelector />} />
 
-          {/* BUSINESS-ONLY */}
 
-          <Route
-            path="/kyc-pending"
-            element={
-              <RequireAuth>
-                <RoleGuard allow="business">
-                  <KycPending />
-                </RoleGuard>
-              </RequireAuth>
-            }
-          />
-           <Route
-            path="/business-dashboard"
-            element={
-              <RequireAuth>
-                <RoleGuard allow="business">
-                  <RequireKycVerified>
-                    <BusinessDashboard />
-                  </RequireKycVerified>
-                </RoleGuard>
-              </RequireAuth>
-            }
-          />
-          <Route path="/edit-shop/:shopId" element={
-            <RequireAuth><RoleGuard allow="business"><EditShopRegistration /></RoleGuard></RequireAuth>
-          } />
-          <Route path="/shop/:id" element={
-            <RequireAuth><RoleGuard allow="business"><ShopDetails /></RoleGuard></RequireAuth>
-          } />
-          <Route path="/register-shop" element={
-            <RequireAuth><RoleGuard allow="business"><CategoryRegistration /></RoleGuard></RequireAuth>
-          } />
-          <Route path="/shops/:shopId/share" element={
-            <RequireAuth><RoleGuard allow="business"><ReferralShareShop /></RoleGuard></RequireAuth>
-          } />
-          <Route path="/shops/:shopId/items" element={
-            <RequireAuth><RoleGuard allow="business"><ShopItemsManager /></RoleGuard></RequireAuth>
-          } />
-          <Route path="/register" element={
-            <RequireAuth><RoleGuard allow="business"><OnlyIfNotRegistered><CategoryRegistration /></OnlyIfNotRegistered></RoleGuard></RequireAuth>
-          } />
+            {/* DRIVER-ONLY */}
+            <Route path="/orders" element={
+              <RequireAuth><RoleGuard allow="driver"><DriverDashboard /></RoleGuard></RequireAuth>
+            } />
+            <Route path="/profile" element={
+              <RequireAuth><RoleGuard allow="driver"><Profile /></RoleGuard></RequireAuth>
+            } />
+            <Route path="/owner-dashboard" element={
+              <RequireAuth><RoleGuard allow="driver"><OwnerDashboard /></RoleGuard></RequireAuth>
+            } />
+            <Route path="/my-documents" element={
+              <RequireAuth><RoleGuard allow="driver"><UserDocumentsViewer /></RoleGuard></RequireAuth>
+            } />
+            <Route path="/profile" element={
+              <RequireAuth><RoleGuard allow="driver"><UserProfile /></RoleGuard></RequireAuth>
+            } />
+            <Route path="/delivery-history" element={
+              <RequireAuth><RoleGuard allow="driver"><DeliveryHistory /></RoleGuard></RequireAuth>
+            } />
+            <Route path="/full-map" element={
+              <RequireAuth><RoleGuard allow="driver"><FullMapPage /></RoleGuard></RequireAuth>
+            } />
+            <Route path="/driver/earnings" element={
+              <RequireAuth><RoleGuard allow="driver"><DailyEarningsPage /></RoleGuard></RequireAuth>
+            } />
+            <Route path="/refferal" element={
+              <RequireAuth><RoleGuard allow="driver"><ReferralShare /></RoleGuard></RequireAuth>
+            } />
 
-         
+            {/* BUSINESS-ONLY */}
 
-           <Route
-            path="/owner-documents"
-            element={
-              <RequireAuth>
-                <RoleGuard allow="business">
-                  <OwnerDocumentViews />
-                </RoleGuard>
-              </RequireAuth>
-            }
-          />
+            <Route
+              path="/kyc-pending"
+              element={
+                <RequireAuth>
+                  <RoleGuard allow="business">
+                    <KycPending />
+                  </RoleGuard>
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/shop-wallet"
+              element={<RequireAuth><RoleGuard allow="business"><ShopWallet /></RoleGuard></RequireAuth>}
+            />
 
-          {/* ✅ NEW ROUTES (Cart & Orders) */}
-          {/* Cart & confirmation are user-facing; keep them accessible without role restriction,
+            <Route
+              path="/business-dashboard"
+              element={
+                <RequireAuth>
+                  <RoleGuard allow="business">
+                    <RequireKycVerified>
+                      <BusinessDashboard />
+                    </RequireKycVerified>
+                  </RoleGuard>
+                </RequireAuth>
+              }
+            />
+            <Route path="/edit-shop/:shopId" element={
+              <RequireAuth><RoleGuard allow="business"><EditShopRegistration /></RoleGuard></RequireAuth>
+            } />
+            <Route path="/shop/:id" element={
+              <RequireAuth><RoleGuard allow="business"><ShopDetails /></RoleGuard></RequireAuth>
+            } />
+            <Route path="/register-shop" element={
+              <RequireAuth><RoleGuard allow="business"><CategoryRegistration /></RoleGuard></RequireAuth>
+            } />
+            <Route path="/shops/:shopId/share" element={
+              <RequireAuth><RoleGuard allow="business"><ReferralShareShop /></RoleGuard></RequireAuth>
+            } />
+            <Route path="/shops/:shopId/items" element={
+              <RequireAuth><RoleGuard allow="business"><ShopItemsManager /></RoleGuard></RequireAuth>
+            } />
+            <Route path="/register" element={
+              <RequireAuth><RoleGuard allow="business"><OnlyIfNotRegistered><CategoryRegistration /></OnlyIfNotRegistered></RoleGuard></RequireAuth>
+            } />
+
+
+
+            <Route
+              path="/owner-documents"
+              element={
+                <RequireAuth>
+                  <RoleGuard allow="business">
+                    <OwnerDocumentViews />
+                  </RoleGuard>
+                </RequireAuth>
+              }
+            />
+
+            {/* ✅ NEW ROUTES (Cart & Orders) */}
+            {/* Cart & confirmation are user-facing; keep them accessible without role restriction,
               or wrap with RequireAuth if you want only signed-in users to order */}
-          <Route path="/cart/:shopId" element={<CartPage />} />
-          <Route path="/order-confirmation/:orderId" element={<OrderConfirmation />} />
+            <Route path="/cart/:shopId" element={<CartPage />} />
+            <Route path="/order-confirmation/:orderId" element={<OrderConfirmation />} />
 
-          {/* Shop owner’s incoming orders list */}
-          <Route
-            path="/business-orders"
-            element={
-              <RequireAuth>
-                <RoleGuard allow="business">
-                  <BusinessOrdersWrapper />
-                </RoleGuard>
-              </RequireAuth>
-            }
-          />
-          {/* Fallback */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-            </OfflineHandler>
+            {/* Shop owner’s incoming orders list */}
+            <Route
+              path="/business-orders"
+              element={
+                <RequireAuth>
+                  <RoleGuard allow="business">
+                    <BusinessOrdersWrapper />
+                  </RoleGuard>
+                </RequireAuth>
+              }
+            />
+            {/* Fallback */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </OfflineHandler>
       </AuthProvider>
     </CartProvider>
   );

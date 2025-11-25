@@ -1,0 +1,53 @@
+.lang-screen {
+  text-align: center;
+  padding: 20px;
+  background: #f6f6f6;
+  height: 100vh;
+}
+
+.lang-title {
+  font-size: 22px;
+  font-weight: 700;
+  margin-top: 20px;
+  color: #333;
+}
+
+.lang-sub {
+  font-size: 16px;
+  color: #777;
+  margin-bottom: 25px;
+}
+
+.lang-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 18px;
+  padding: 10px;
+}
+
+.lang-card {
+  border-radius: 12px;
+  padding: 35px 10px;
+  color: white;
+  cursor: pointer;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.15);
+  transition: transform 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.lang-card:hover {
+  transform: scale(1.05);
+}
+
+.lang-label {
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 5px;
+}
+
+.lang-display {
+  font-size: 38px;
+  font-weight: bold;
+}

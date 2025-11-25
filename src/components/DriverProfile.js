@@ -15,6 +15,7 @@ import threeWheelerImg from "../assets/images/vehicles/three-wheeler.png";
 import truckImg from "../assets/images/vehicles/tata-407.png";
 import pickupImg from "../assets/images/vehicles/bulara.png";
 import tata407Img from "../assets/images/vehicles/tata-407.png";
+import { useTranslation } from "react-i18next";
 
 import axios from "axios";
 
@@ -25,6 +26,8 @@ import Footer from "./Footer";
 const DriverProfile = () => {
     const { user, setMessage } = useAuth();
     const navigate = useNavigate();
+
+    const { t, i18n } = useTranslation();
 
     const [driverInfo, setDriverInfo] = useState(null);
     const [shipments, setShipments] = useState([]);
@@ -101,13 +104,13 @@ const DriverProfile = () => {
 
             // Then fetch all driver data
             const [driverRes, imageRes, settlementRes] = await Promise.all([
-                fetch(` https://jio-yatri-driver.onrender.com/api/driver/info/${user.uid}`, {
+                fetch(`https://jio-yatri-driver.onrender.com/api/driver/info/${user.uid}`, {
                     headers: { Authorization: `Bearer ${token}` }
                 }),
-                fetch(` https://jio-yatri-driver.onrender.com/api/upload/profile-image/${user.uid}`, {
+                fetch(`https://jio-yatri-driver.onrender.com/api/upload/profile-image/${user.uid}`, {
                     headers: { Authorization: `Bearer ${token}` }
                 }),
-                fetch(` https://jio-yatri-driver.onrender.com/api/settlement/driver/${user.uid}`, {
+                fetch(`https://jio-yatri-driver.onrender.com/api/settlement/driver/${user.uid}`, {
                     headers: { Authorization: `Bearer ${token}` }
                 })
             ]);
@@ -279,7 +282,11 @@ const DriverProfile = () => {
     const handleLogout = async () => {
         try {
             await signOut(auth);
+            if (window.Logout && window.Logout.postMessage) {
+                window.Logout.postMessage("logout");
+            }
             setMessage?.({ text: "Logged out successfully", isError: false });
+            localStorage.clear();
             navigate("/");
         } catch (err) {
             setMessage?.({ text: err.message, isError: true });
@@ -291,9 +298,9 @@ const DriverProfile = () => {
         return (
             <div className="p-center">
                 <div className="p-card p-auth">
-                    <h2>You are not logged in</h2>
+                    <h2>{t("not_logged_in")}</h2>
                     <button className="p-btn p-btn-primary" onClick={() => navigate("/home")}>
-                        Go to Login
+                        {t("go_to_login")}
                     </button>
                 </div>
             </div>
@@ -304,6 +311,7 @@ const DriverProfile = () => {
         return (
             <div className="p-loading-container">
                 <div className="p-spinner"></div>
+
             </div>
         );
     }
@@ -377,21 +385,21 @@ const DriverProfile = () => {
                     <div className="p-stats">
                         {/* Top full width earnings */}
                         <div className="p-stat-earnings">
-                            <div className="p-stat-label">Your Earnings</div>
+                            <div className="p-stat-label">{t("your_earnings")}</div>
                             <div className="p-stat-value">₹ {inr(driverInfo?.earnings)}</div>
                         </div>
 
                         {/* Bottom two columns */}
                         <div className="p-stats-bottom">
                             <div className="p-stat-box">
-                                <div className="p-stat-label">Rating</div>
+                                <div className="p-stat-label">{t("rating")}</div>
                                 <div className="p-stat-value">
                                     {ratingValue > 0 ? ratingValue.toFixed(1) : "—"}
                                 </div>
                             </div>
 
                             <div className="p-stat-box">
-                                <div className="p-stat-label">Completed Deliveries</div>
+                                <div className="p-stat-label">{t("completed_deliveries")}</div>
                                 <div className="p-stat-value">{completedDeliveries}</div>
                             </div>
                         </div>
@@ -402,17 +410,17 @@ const DriverProfile = () => {
                     <div className="p-buttons">
                         <div className="p-buttons-row">
                             <button className="p-btn half" onClick={() => navigate("/delivery-history")}>
-                                Delivery History
+                                {t("delivery_history")}
                             </button>
                             <button
                                 className="p-btn half"
                                 onClick={() => navigate("/driver/earnings", { state: { driverInfo } })}
                             >
-                                Daily Earnings
+                                {t("daily_earnings")}
                             </button>
                         </div>
                         <button className="p-btn logout" onClick={() => setShowLogoutPopup(true)}>
-                            Logout
+                            {t("logout")}
                         </button>
 
                     </div>
@@ -434,15 +442,15 @@ const DriverProfile = () => {
                 <div className="logout-overlay">
                     <div className="logout-popup">
                         <div className="logout-icon">❗</div>
-                        <h3>Log out now?</h3>
-                        <p>You can always log back in whenever you need us.</p>
+                        <h3>{t("logout_now")}</h3>
+                        <p>{t("logout_description")}.</p>
 
                         <div className="logout-buttons">
                             <button className="cancel-btn" onClick={() => setShowLogoutPopup(false)}>
-                                Cancel
+                                {t("cancel")}
                             </button>
                             <button className="logout-btn" onClick={handleLogout}>
-                                Log out
+                                {t("logout")}
                             </button>
                         </div>
                     </div>

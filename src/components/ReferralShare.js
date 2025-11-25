@@ -7,6 +7,8 @@ import gift from '../assets/images/gift-box.png';
 import axios from 'axios';
 import confetti from 'canvas-confetti';
 import { FaRupeeSign } from 'react-icons/fa';
+import { useTranslation } from "react-i18next"; // 🔥 added
+
 const ReferralShare = () => {
   const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -15,6 +17,7 @@ const ReferralShare = () => {
     const [referralStats, setReferralStats] = useState(null);
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { t } = useTranslation(); // 🔥 added
 
   useEffect(() => {
     const fetchReferralCode = async () => {
@@ -93,7 +96,7 @@ const ReferralShare = () => {
 
   const shareViaWhatsApp = () => {
     if (referralData) {
-      const message = `Join our platform using my referral code ${referralData.referralCode} and get ₹10 cashback! ${referralData.shareLink}`;
+      const message = `${t("whatsapp_msg")} ${referralData.referralCode} ${referralData.shareLink}`; // 🔥 updated
       const url = `https://wa.me/?text=${encodeURIComponent(message)}`;
       window.open(url, '_blank');
     }
@@ -120,8 +123,8 @@ const ReferralShare = () => {
   // Web Share API (for browsers)
   else if (navigator.share) {
     navigator.share({
-      title: 'Join JioYatri and get ₹10 cashback!',
-      text: `Use my referral code ${referralData.referralCode} to get ₹10 cashback!`,
+      title: t("share_title"), // 🔥 updated
+      text: `${t("share_text")} ${referralData.referralCode}`, // 🔥 updated
       url: referralData.shareLink,
     }).catch(err => {
       console.log('Web Share API failed:', err);
@@ -135,7 +138,7 @@ const ReferralShare = () => {
 
   function fallbackToClipboard() {
     navigator.clipboard.writeText(`${referralData.shareLink} (Code: ${referralData.referralCode})`);
-    alert('Link copied to clipboard!');
+    alert(t("copied")); // 🔥 updated
   }
 };
 
@@ -151,8 +154,8 @@ const ReferralShare = () => {
     return (
       <div className="referral-share-container">
         <div className="error-message">
-          <p>Error loading referral information. Please try again.</p>
-          <button onClick={() => window.location.reload()}>Retry</button>
+          <p>{t("failed_fetch")}</p> {/* 🔥 updated */}
+          <button onClick={() => window.location.reload()}>{t("retry")}</button> {/* 🔥 updated */}
         </div>
       </div>
     );
@@ -165,19 +168,19 @@ const ReferralShare = () => {
           <button className="back-button" onClick={() => navigate(-1)}>
             X
           </button>
-          <h2>Refer & Earn</h2>
+          <h2>{t("refer_earn_title")}</h2> {/* 🔥 updated */}
         </div>
         <div className="referral-share-content auth-required">
           <div className="gift-icon">
             <FaGift />
           </div>
-          <h3>Please sign in to access your referral code</h3>
-          <p>Log in to start earning rewards by inviting your friends</p>
+          <h3>{t("login_to_view")}</h3> {/* 🔥 new key */}
+          <p>{t("login_to_continue")}</p> {/* 🔥 new key */}
           <button
             className="login-button"
             onClick={() => navigate('/home')}
           >
-            Sign In
+            {t("sign_in")}
           </button>
         </div>
       </div>
@@ -194,14 +197,14 @@ const ReferralShare = () => {
             <button className="back-button" onClick={() => navigate(-1)}>
               x
             </button>
-            <h2>Refer & Earn</h2>
+            <h2>{t("refer_earn_title")}</h2> {/* 🔥 updated */}
           </div>
           <div className="gift-icon">
             <img src={gift} alt="Gift" />
           </div>
-          <h3>Invite Friends & Earn Together!</h3>
+          <h3>{t("invite_earn")}</h3> {/* 🔥 updated */}
           <p className="subtext">
-            Share your referral code and get <span className="highlight">₹10 cashback</span> when they sign up
+            {t("share_referral")} <span className="highlight">{t("cashback_amount")}</span> {/* 🔥 updated */}
           </p>
         </div>
 
@@ -209,8 +212,8 @@ const ReferralShare = () => {
           <>
             <div className="referral-card">
               <div className="card-header">
-                <span className="card-title">Your Referral Code</span>
-                <div className="card-badge">Active</div>
+                <span className="card-title">{t("referral_code_title")}</span> {/* 🔥 updated */}
+                <div className="card-badge">{t("active")}</div> {/* 🔥 updated */}
               </div>
               <div className="code-display">
                 <span className="code-text">{referralData.referralCode}</span>
@@ -218,7 +221,7 @@ const ReferralShare = () => {
                   className={`copy-button ${copied ? 'copied' : ''}`}
                   onClick={copyToClipboard}
                 >
-                  <FaCopy /> {copied ? 'Copied!' : 'Copy'}
+                  <FaCopy /> {copied ? t("copied") : t("copy_link")} {/* 🔥 updated */}
                 </button>
               </div>
             </div>
@@ -237,7 +240,7 @@ const ReferralShare = () => {
                   onClick={shareViaOther}
                 >
                   <FaShareAlt className="button-icon" />
-                  Share
+                  {t("share")} {/* 🔥 updated */}
                 </button>
               </div>
             </div>
@@ -250,10 +253,10 @@ const ReferralShare = () => {
       <FaRupeeSign />
     </div>
     <div className="reward-details">
-      <h4>Your Referral Earnings</h4>
+      <h4>{t("earnings_title")}</h4> {/* 🔥 updated */}
       <p className="reward-amount">₹{referralStats.totalEarnings}</p>
       <p className="reward-sub">
-        {referralStats.totalReferrals} friend{referralStats.totalReferrals !== 1 ? 's' : ''} joined using your code
+        {referralStats.totalReferrals} {t("joined_using_code")} {/* 🔥 updated */}
       </p>
     </div>
   </div>

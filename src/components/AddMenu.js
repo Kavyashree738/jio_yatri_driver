@@ -15,6 +15,7 @@ import Header from "../components/Header";
 import Footer from "../components/Footer";
 import "../styles/ShopItemsManager.css";
 import { useAuth } from "../context/AuthContext";
+import { useTranslation } from "react-i18next"; // 🔥 ADDED
 
 // ===============================
 // Category Config
@@ -24,17 +25,17 @@ const CATEGORY_CONFIG = {
     label: "Restaurant",
     requireImage: true,
     itemFields: [
-      { key: "veg", type: "boolean", label: "Vegetarian" },
+      { key: "veg", type: "boolean", label: "veg" },
       {
         key: "category",
         type: "select",
-        label: "Menu Category",
+        label: "menu_category",
         options: ["main", "breakfast", "lunch", "dinner", "snacks", "beverages"],
       },
       {
         key: "spiceLevel",
         type: "select",
-        label: "Spice Level",
+        label: "spice_level",
         options: ["mild", "medium", "spicy"],
       },
     ],
@@ -48,15 +49,15 @@ const CATEGORY_CONFIG = {
   vegetable: {
     label: "Vegetable",
     requireImage: false,
-    itemFields: [{ key: "organic", type: "boolean", label: "Organic" }],
+    itemFields: [{ key: "organic", type: "boolean", label: "organic" }],
     defaultItem: { organic: false },
   },
   provision: {
     label: "Provision",
     requireImage: false,
     itemFields: [
-      { key: "weight", type: "text", label: "Weight" },
-      { key: "brand", type: "text", label: "Brand" },
+      { key: "weight", type: "text", label: "weight" },
+      { key: "brand", type: "text", label: "brand" },
     ],
     defaultItem: { weight: "", brand: "" },
   },
@@ -67,6 +68,7 @@ const ShopItemsManager = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { shopId } = useParams();
+  const { t } = useTranslation(); // 🔥 ADDED
 
   const [isLoading, setIsLoading] = useState(true);
   const [shopCategory, setShopCategory] = useState(null);
@@ -97,8 +99,8 @@ const ShopItemsManager = () => {
   useEffect(() => {
     const init = async () => {
       if (!user) {
-        navigate("/home");
-        return;
+          navigate("/home");
+          return;
       }
       setIsLoading(true);
       setError("");
@@ -120,26 +122,26 @@ const ShopItemsManager = () => {
 
         const items = Array.isArray(shopData.items)
           ? shopData.items.map((item) => ({
-            ...item,
-            existingImageId:
-              item.image ||
-              (item.imageUrl
-                ? String(item.imageUrl).split("/").pop()
-                : undefined),
-            existingImageUrl: item.imageUrl,
-            image: null,
-          }))
+              ...item,
+              existingImageId:
+                item.image ||
+                (item.imageUrl
+                  ? String(item.imageUrl).split("/").pop()
+                  : undefined),
+              existingImageUrl: item.imageUrl,
+              image: null,
+            }))
           : [];
 
         setFormData({ items });
       } catch (err) {
-        setError(err?.response?.data?.error || "Failed to load shop data");
+        setError(t("load_failed"));
       } finally {
         setIsLoading(false);
       }
     };
     init();
-  }, [user, shopId, navigate]);
+  }, [user, shopId, navigate, t]);
 
   // ===============================
   // Item Handlers
@@ -170,7 +172,7 @@ const ShopItemsManager = () => {
   const handleItemImageUpload = (index, file) => {
     if (!file) return;
     if (file.size > 5 * 1024 * 1024) {
-      setError("Each image must be 5MB or less");
+      setError(t("max_5mb"));
       return;
     }
 
@@ -209,8 +211,8 @@ const ShopItemsManager = () => {
 
   const editItem = (index) => {
     setCurrentIndex(index);
-    const itemCopy = { ...formData.items[index] }; // make a copy
-    setEditDraft(itemCopy); // store temp editable copy
+    const itemCopy = { ...formData.items[index] };
+    setEditDraft(itemCopy);
     setView("edit");
   };
 
@@ -255,10 +257,10 @@ const ShopItemsManager = () => {
 
       setFormData({ items: updatedItems });
       setDeleteIndex(null);
-      setSuccess("Item removed successfully!");
+      setSuccess(t("item_removed"));
       setTimeout(() => setSuccess(""), 2000);
     } catch (err) {
-      setError("Failed to remove item. Try again.");
+      setError(t("failed_remove"));
     } finally {
       setIsSubmitting(false);
     }
@@ -278,7 +280,7 @@ const ShopItemsManager = () => {
         view === "add" &&
         (!formData.currentNewItem?.name || !formData.currentNewItem?.price)
       ) {
-        setError("Please fill item name and price before saving.");
+        setError(t("name_price_required"));
         setIsSubmitting(false);
         return;
       }
@@ -287,17 +289,13 @@ const ShopItemsManager = () => {
       const fd = new FormData();
       fd.append("userId", user.uid);
       fd.append("shopId", shopId);
-      fd.append(
-        "existingShopImages",
-        JSON.stringify(existingShopImages || [])
-      );
+      fd.append("existingShopImages", JSON.stringify(existingShopImages || []));
 
       let updatedItems = [...formData.items];
       if (view === "add" && formData.currentNewItem) {
         updatedItems.push({ ...formData.currentNewItem });
       }
 
-      // ✅ commit draft only now
       if (view === "edit" && editDraft && currentIndex !== null) {
         updatedItems[currentIndex] = editDraft;
       }
@@ -336,11 +334,10 @@ const ShopItemsManager = () => {
       if (!res?.data?.success) throw new Error("Update failed");
 
       setFormData({ items: updatedItems });
-      setSuccess("Menu updated successfully!");
+      setSuccess(t("menu_updated"));
       setTimeout(() => setView("list"), 700);
     } catch (err) {
-      console.error("PUT error:", err.response?.data || err.message);
-      setError(err?.response?.data?.error || "Update failed");
+      setError(t("update_failed"));
     } finally {
       setIsSubmitting(false);
     }
@@ -356,7 +353,7 @@ const ShopItemsManager = () => {
         <div className="item-manager-loading-container">
           <div className="item-manager-loading-card">
             <FaSpinner className="item-manager-loading-spinner" />
-            <p>Loading items…</p>
+            <p>{t("loading_items")}</p>
           </div>
         </div>
         <Footer />
@@ -387,16 +384,15 @@ const ShopItemsManager = () => {
             <FaChevronLeft />
           </button>
 
-          {view === "list" && <span>Edit Menu</span>}
-          {view === "add" && <span>Add Item</span>}
-          {view === "edit" && <span>Edit Item</span>}
+          {view === "list" && <span>{t("edit_menu")}</span>}
+          {view === "add" && <span>{t("add_item")}</span>}
+          {view === "edit" && <span>{t("edit_item")}</span>}
         </div>
-
 
         {view === "list" && (
           <div className="menu-list">
             <button className="add-item-btn" onClick={addItem}>
-              <FaPlus /> Add Item
+              <FaPlus /> {t("add_item")}
             </button>
 
             <div className="item-cards">
@@ -409,23 +405,22 @@ const ShopItemsManager = () => {
                     onError={(e) => (e.currentTarget.src = "/placeholder.png")}
                   />
                   <div className="item-details">
-                    <h3>{it.name || "Unnamed"}</h3>
+                    <h3>{it.name || t("unnamed")}</h3>
                     <p>₹{it.price || 0}</p>
                   </div>
                   <div className="item-actions">
                     <button className="edit-btn" onClick={() => editItem(i)}>
-                      <FaEdit /> Edit
+                      <FaEdit /> {t("edit")}
                     </button>
                     <button className="delete-btn" onClick={() => openConfirm(i)}>
-                      <FaTrash />
+                      <FaTrash /> {t("delete")}
                     </button>
                   </div>
                 </div>
               ))}
+
               {formData.items.length === 0 && (
-                <div className="empty-hint">
-                  No items yet. Click “Add Item” to create your first item.
-                </div>
+                <div className="empty-hint">{t("no_items_yet")}</div>
               )}
             </div>
           </div>
@@ -455,7 +450,7 @@ const ShopItemsManager = () => {
                 ) : (
                   <label className="photo-upload">
                     <FaUpload />
-                    <p>Add Photo</p>
+                    <p>{t("add_photo")}</p>
                     <input
                       type="file"
                       accept="image/*"
@@ -469,19 +464,19 @@ const ShopItemsManager = () => {
 
               <div className="edit-item-container">
                 <div className="input-group">
-                  <label>Item Name</label>
+                  <label>{t("item_name")}</label>
                   <input
                     type="text"
                     value={currentItem?.name || ""}
                     onChange={(e) =>
                       handleItemChange(currentIndex, "name", e.target.value)
                     }
-                    placeholder="Enter item name"
+                    placeholder={t("enter_item_name")}
                   />
                 </div>
 
                 <div className="input-group">
-                  <label>Price (₹)</label>
+                  <label>{t("price")}</label>
                   <input
                     type="text"
                     min="0"
@@ -489,13 +484,14 @@ const ShopItemsManager = () => {
                     onChange={(e) =>
                       handleItemChange(currentIndex, "price", e.target.value)
                     }
-                    placeholder="Enter price"
+                    placeholder={t("enter_price")}
                   />
                 </div>
 
                 {catCfg.itemFields?.map((f) => (
                   <div className="input-group" key={f.key}>
-                    <label>{f.label}</label>
+                    <label>{t(f.label)}</label>
+
                     {f.type === "boolean" && (
                       <button
                         type="button"
@@ -504,9 +500,10 @@ const ShopItemsManager = () => {
                           handleItemChange(currentIndex, f.key, !currentItem?.[f.key])
                         }
                       >
-                        {currentItem?.[f.key] ? "Yes" : "No"}
+                        {currentItem?.[f.key] ? t("yes") : t("no")}
                       </button>
                     )}
+
                     {f.type === "select" && (
                       <select
                         value={currentItem?.[f.key] ?? f.options?.[0]}
@@ -516,11 +513,12 @@ const ShopItemsManager = () => {
                       >
                         {f.options?.map((opt) => (
                           <option key={opt} value={opt}>
-                            {opt[0].toUpperCase() + opt.slice(1)}
+                            {t(opt)}
                           </option>
                         ))}
                       </select>
                     )}
+
                     {f.type === "text" && (
                       <input
                         type="text"
@@ -528,7 +526,7 @@ const ShopItemsManager = () => {
                         onChange={(e) =>
                           handleItemChange(currentIndex, f.key, e.target.value)
                         }
-                        placeholder={`Enter ${f.label.toLowerCase()}`}
+                        placeholder={t("enter_value")}
                       />
                     )}
                   </div>
@@ -537,11 +535,11 @@ const ShopItemsManager = () => {
                 <button type="submit" className="save-btn" disabled={isSubmitting}>
                   {isSubmitting ? (
                     <>
-                      <FaSpinner className="spin" /> Saving...
+                      <FaSpinner className="spin" /> {t("saving")}
                     </>
                   ) : (
                     <>
-                      <FaCheck /> Save
+                      <FaCheck /> {t("save")}
                     </>
                   )}
                 </button>
@@ -553,14 +551,14 @@ const ShopItemsManager = () => {
         {showConfirm && (
           <div className="confirm-overlay">
             <div className="confirm-box">
-              <h3>Remove this item?</h3>
-              <p>This action cannot be undone.</p>
+              <h3>{t("remove_item")}</h3>
+              <p>{t("cannot_undo")}</p>
               <div className="confirm-actions">
                 <button className="cancel-buttons" onClick={cancelDelete}>
-                  Cancel
+                  {t("cancel")}
                 </button>
                 <button className="remove-btn" onClick={confirmDelete}>
-                  Remove
+                  {t("remove")}
                 </button>
               </div>
             </div>

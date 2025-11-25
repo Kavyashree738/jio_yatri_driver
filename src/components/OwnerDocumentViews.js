@@ -6,11 +6,14 @@ import { useNavigate } from 'react-router-dom';
 import '../styles/OwnerDocumentViews.css';
 import Header from './Header';
 import Footer from './Footer'
+import { useTranslation } from "react-i18next";
 const apiBase = 'https://jio-yatri-driver.onrender.com';
 
 export default function OwnerDocumentViews() {
   const { user } = useAuth();
   const nav = useNavigate();
+
+  const { t, i18n } = useTranslation();
 
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
@@ -106,11 +109,36 @@ export default function OwnerDocumentViews() {
   };
 
   const StatusBadge = ({ value }) => {
-    if (value === 'verified') return <span className="odv-badge verified"><FaCheckCircle /> Verified</span>;
-    if (value === 'rejected') return <span className="odv-badge rejected"><FaTimesCircle /> Rejected</span>;
-    if (value === 'submitted') return <span className="odv-badge submitted"><FaClock /> Submitted</span>;
-    return <span className="odv-badge none">No KYC</span>;
+    const { t } = useTranslation();
+
+    if (value === 'verified')
+      return (
+        <span className="odv-badge verified">
+          <FaCheckCircle /> {t("status_verified")}
+        </span>
+      );
+
+    if (value === 'rejected')
+      return (
+        <span className="odv-badge rejected">
+          <FaTimesCircle /> {t("status_rejected")}
+        </span>
+      );
+
+    if (value === 'submitted')
+      return (
+        <span className="odv-badge submitted">
+          <FaClock /> {t("status_submitted")}
+        </span>
+      );
+
+    return (
+      <span className="odv-badge none">
+        {t("status_none")}
+      </span>
+    );
   };
+
 
   const TimeRow = ({ label, value }) =>
     value ? (
@@ -120,147 +148,153 @@ export default function OwnerDocumentViews() {
       </div>
     ) : null;
 
-   if (loading) {
-    return (
-      <div className="sd-loading-container">
-        <div className="sd-spinner"></div>
-      </div>
-    );
-  }
+  if (loading) {
+  return (
+    <div className="loader-container">
+      <div className="loader"></div>
+    </div>
+  );
+}
+
+
   return (
     <>
-    <Header/>
-    <div className="odv-wrap">
-      <div className="odv-card">
-        <div className="odv-header">
-          <h1>Owner Documents (KYC)</h1>
-          <div className="odv-actions">
-            <button className="odv-btn light" onClick={fetchKyc}><FaSync /> Refresh</button>
-            {status === 'verified' && (
-              <button className="odv-btn primary" onClick={() => nav('/business-dashboard')}>Go to Dashboard</button>
-            )}
-          </div>
-        </div>
-
-        <div className="odv-status-row">
-          <div className="odv-status-left">
-            Overall status: <StatusBadge value={status} />
-          </div>
-          {info?.notes ? <div className="odv-notes">Admin notes: {info.notes}</div> : null}
-        </div>
-
-        {/* Only show upload sections if status is not verified */}
-        {status !== 'verified' && (
-          <>
-            <div className="odv-grid">
-              {/* Aadhaar */}
-              <div className="odv-box">
-                <div className="odv-box-head">
-                  <h3>Aadhaar</h3>
-                  {info?.aadhaarUrl ? (
-                    <a className="odv-btn link" href={info.aadhaarUrl} target="_blank" rel="noreferrer">
-                      <FaEye /> View
-                    </a>
-                  ) : <span className="odv-missing">Not uploaded</span>}
-                </div>
-
-                <div className="odv-upload">
-                  <label className="odv-file">
-                    <input type="file" accept=".pdf,image/*" onChange={onSelectFile(setAadhaarFile)} />
-                    <span className="odv-file-name">{aadhaarFile ? aadhaarFile.name : 'Choose file (PDF or image)'}</span>
-                    <span className="odv-file-btn"><FaUpload /> Browse</span>
-                  </label>
-                  {aadhaarFile && (
-                    <div className="odv-file-meta">
-                      {(aadhaarFile.size / 1024 / 1024).toFixed(2)} MB
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* PAN */}
-              <div className="odv-box">
-                <div className="odv-box-head">
-                  <h3>PAN</h3>
-                  {info?.panUrl ? (
-                    <a className="odv-btn link" href={info.panUrl} target="_blank" rel="noreferrer">
-                      <FaEye /> View
-                    </a>
-                  ) : <span className="odv-missing">Not uploaded</span>}
-                </div>
-
-                <div className="odv-upload">
-                  <label className="odv-file">
-                    <input type="file" accept=".pdf,image/*" onChange={onSelectFile(setPanFile)} />
-                    <span className="odv-file-name">{panFile ? panFile.name : 'Choose file (PDF or image)'}</span>
-                    <span className="odv-file-btn"><FaUpload /> Browse</span>
-                  </label>
-                  {panFile && (
-                    <div className="odv-file-meta">
-                      {(panFile.size / 1024 / 1024).toFixed(2)} MB
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <div className="odv-meta">
-              <TimeRow label="Submitted" value={info?.submittedAt} />
-              <TimeRow label="Verified" value={info?.verifiedAt} />
-              <TimeRow label="Rejected" value={info?.rejectedAt} />
-            </div>
-
-            <div className="odv-footer">
-              <button className="odv-btn primary" onClick={submitReupload} disabled={busy}>
-                {busy ? 'Uploading…' : 'Submit selected files'}
-              </button>
-              {status !== 'verified' && (
-                <div className="odv-hint">We auto-check your status every 5 seconds.</div>
+      <Header />
+      <div className="odv-wrap">
+        <div className="odv-card">
+          <div className="odv-header">
+            <h1>{t("owner_docs_title")}</h1>
+            <div className="odv-actions">
+              <button className="odv-btn light" onClick={fetchKyc}><FaSync /> {t("refresh")}</button>
+              {status === 'verified' && (
+                <button className="odv-btn primary" onClick={() => nav('/business-dashboard')}> {t("go_to_dashboard")}</button>
               )}
             </div>
-          </>
-        )}
+          </div>
 
-        {/* Show only view options and metadata when verified */}
-        {status === 'verified' && (
-          <>
-            <div className="odv-grid">
-              {/* Aadhaar */}
-              <div className="odv-box">
-                <div className="odv-box-head">
-                  <h3>Aadhaar</h3>
-                  {info?.aadhaarUrl ? (
-                    <a className="odv-btn link" href={info.aadhaarUrl} target="_blank" rel="noreferrer">
-                      <FaEye /> View
-                    </a>
-                  ) : <span className="odv-missing">Not available</span>}
+          <div className="odv-status-row">
+            <div className="odv-status-left">
+              {t("overall_status")}: <StatusBadge value={status} />
+            </div>
+            {info?.notes ? <div className="odv-notes">{t("admin_notes")}: {info.notes}</div> : null}
+          </div>
+
+          {/* Only show upload sections if status is not verified */}
+          {status !== 'verified' && (
+            <>
+              <div className="odv-grid">
+                {/* Aadhaar */}
+                <div className="odv-box">
+                  <div className="odv-box-head">
+                    <h3>{t("aadhaar")}</h3>
+                    {info?.aadhaarUrl ? (
+                      <a className="odv-btn link" href={info.aadhaarUrl} target="_blank" rel="noreferrer">
+                        <FaEye /> {t("view")}
+                      </a>
+                    ) : <span className="odv-missing">{t("not_uploaded")}</span>}
+                  </div>
+
+                  <div className="odv-upload">
+                    <label className="odv-file">
+                      <input type="file" accept=".pdf,image/*" onChange={onSelectFile(setAadhaarFile)} />
+                      <span className="odv-file-name">{aadhaarFile ? aadhaarFile.name : t("choose_file")}</span>
+                      <span className="odv-file-btn"><FaUpload /> {t("browse")}</span>
+                    </label>
+                    {aadhaarFile && (
+                      <div className="odv-file-meta">
+                        {(aadhaarFile.size / 1024 / 1024).toFixed(2)} MB
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* PAN */}
+                <div className="odv-box">
+                  <div className="odv-box-head">
+                    <h3>{t("pan")}</h3>
+                    {info?.panUrl ? (
+                      <a className="odv-btn link" href={info.panUrl} target="_blank" rel="noreferrer">
+                        <FaEye /> {t("view")}
+                      </a>
+                    ) : <span className="odv-missing">{t("not_uploaded")}</span>}
+                  </div>
+
+                  <div className="odv-upload">
+                    <label className="odv-file">
+                      <input type="file" accept=".pdf,image/*" onChange={onSelectFile(setPanFile)} />
+                      <span className="odv-file-name">
+                        {panFile ? panFile.name : t("choose_file")}
+                      </span>
+                      <span className="odv-file-btn"><FaUpload /> {t("browse")}</span>
+                    </label>
+                  </div>
                 </div>
               </div>
 
-              {/* PAN */}
-              <div className="odv-box">
-                <div className="odv-box-head">
-                  <h3>PAN</h3>
-                  {info?.panUrl ? (
-                    <a className="odv-btn link" href={info.panUrl} target="_blank" rel="noreferrer">
-                      <FaEye /> View
-                    </a>
-                  ) : <span className="odv-missing">Not available</span>}
-                </div>
+              <div className="odv-meta">
+                <TimeRow label="Submitted" value={info?.submittedAt} />
+                <TimeRow label="Verified" value={info?.verifiedAt} />
+                <TimeRow label="Rejected" value={info?.rejectedAt} />
               </div>
-            </div>
 
-            <div className="odv-meta">
-              <TimeRow label="Submitted" value={info?.submittedAt} />
-              <TimeRow label="Verified" value={info?.verifiedAt} />
-            </div>
-          </>
-        )}
+              <div className="odv-footer">
+                <button className="odv-btn primary" onClick={submitReupload} disabled={busy}>
+                  {busy ? t("uploading") : t("submit_files")}
+                </button>
+                {status !== 'verified' && (
+                  <div className="odv-hint">{t("auto_check")}</div>
+                )}
+              </div>
+            </>
+          )}
 
-        {err && <div className="odv-error">{err}</div>}
+          {/* Show only view options and metadata when verified */}
+          {status === 'verified' && (
+            <>
+              <div className="odv-grid">
+
+                {/* Aadhaar */}
+                <div className="odv-box">
+                  <div className="odv-box-head">
+                    <h3>{t("aadhaar")}</h3>
+                    {info?.aadhaarUrl ? (
+                      <a className="odv-btn link" href={info.aadhaarUrl} target="_blank" rel="noreferrer">
+                        <FaEye /> {t("view")}
+                      </a>
+                    ) : (
+                      <span className="odv-missing">{t("not_available")}</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* PAN */}
+                <div className="odv-box">
+                  <div className="odv-box-head">
+                    <h3>{t("pan")}</h3>
+                    {info?.panUrl ? (
+                      <a className="odv-btn link" href={info.panUrl} target="_blank" rel="noreferrer">
+                        <FaEye /> {t("view")}
+                      </a>
+                    ) : (
+                      <span className="odv-missing">{t("not_available")}</span>
+                    )}
+                  </div>
+                </div>
+
+              </div>
+
+
+              <div className="odv-meta">
+                <TimeRow label="Submitted" value={info?.submittedAt} />
+                <TimeRow label="Verified" value={info?.verifiedAt} />
+              </div>
+            </>
+          )}
+
+          {err && <div className="odv-error">{err}</div>}
+        </div>
       </div>
-    </div>
-    <Footer/>
+      <Footer />
     </>
   );
 }

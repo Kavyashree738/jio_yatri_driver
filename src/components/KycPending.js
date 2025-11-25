@@ -3,23 +3,32 @@ import React, { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { FaCheckCircle, FaClock, FaTimesCircle, FaSync, FaUpload, FaSignOutAlt } from 'react-icons/fa';
+import {
+  FaCheckCircle,
+  FaClock,
+  FaTimesCircle,
+  FaSync,
+  FaUpload,
+  FaSignOutAlt
+} from 'react-icons/fa';
 import '../styles/KycPending.css';
-import Header from './Header';
-import Footer from './Footer';
+import { useTranslation } from "react-i18next";
 
-const apiBase = 'https://jio-yatri-driver.onrender.com';
+const apiBase =
+  'https://jio-yatri-driver.onrender.com';
 
 export default function KycPending() {
-  const { user, softLogout, userRole } = useAuth(); // ⬅️ userRole from context
+  const { t } = useTranslation();
+  const { user, softLogout } = useAuth();
   const nav = useNavigate();
+
   const [status, setStatus] = useState('none'); // none|submitted|verified|rejected
   const [info, setInfo] = useState(null);
   const [err, setErr] = useState('');
   const [tick, setTick] = useState(0);
   const timerRef = useRef(null);
 
-  // local state for re-upload
+  // file reupload state
   const [aadhaarNew, setAadhaarNew] = useState(null);
   const [panNew, setPanNew] = useState(null);
   const [uploading, setUploading] = useState(false);
@@ -35,24 +44,28 @@ export default function KycPending() {
       setErr('');
       const token = await user.getIdToken();
       const res = await axios.get(`${apiBase}/api/user/me/kyc`, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
+
       const k = res.data?.data || {};
       setStatus(k.status || 'none');
       setInfo(k);
     } catch (e) {
-      setErr(e?.response?.data?.error || e.message || 'Failed to fetch KYC');
+      setErr(e?.response?.data?.error || e.message || t("kyc_error_fetch"));
     }
   };
 
   useEffect(() => {
     fetchKyc();
-    timerRef.current = setInterval(() => setTick(t => t + 1), 5000);
+    timerRef.current = setInterval(() => setTick((t) => t + 1), 5000);
     return () => clearInterval(timerRef.current);
   }, [user]);
 
-  useEffect(() => { fetchKyc(); }, [tick]);
+  useEffect(() => {
+    fetchKyc();
+  }, [tick]);
 
+  // redirect when verified
   useEffect(() => {
     if (status === 'verified') {
       nav('/business-dashboard', { replace: true });
@@ -62,16 +75,18 @@ export default function KycPending() {
   const handleResubmit = async () => {
     try {
       setErr('');
+
       if (!aadhaarNew && !panNew) {
-        setErr('Please select at least one file to re-upload.');
+        setErr(t("kyc_err_select_docs"));
         return;
       }
+
       if (aadhaarNew && aadhaarNew.size > 5 * 1024 * 1024) {
-        setErr('Aadhaar file must be 5MB or less');
+        setErr(t("kyc_err_aadhaar_size"));
         return;
       }
       if (panNew && panNew.size > 5 * 1024 * 1024) {
-        setErr('PAN file must be 5MB or less');
+        setErr(t("kyc_err_pan_size"));
         return;
       }
 
@@ -82,7 +97,10 @@ export default function KycPending() {
 
       const token = await user.getIdToken();
       const res = await axios.put(`${apiBase}/api/user/me/kyc-docs`, fd, {
-        headers: { 'Content-Type': 'multipart/form-data', Authorization: `Bearer ${token}` }
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          Authorization: `Bearer ${token}`,
+        },
       });
 
       const k = res.data?.data || {};
@@ -91,7 +109,11 @@ export default function KycPending() {
       setAadhaarNew(null);
       setPanNew(null);
     } catch (e) {
-      setErr(e?.response?.data?.error || e.message || 'Failed to re-upload KYC');
+      setErr(
+        e?.response?.data?.error ||
+          e.message ||
+          t("kyc_error_resubmit")
+      );
     } finally {
       setUploading(false);
     }
@@ -100,7 +122,7 @@ export default function KycPending() {
   if (!user) {
     return (
       <div className="kyc-wrap">
-        <div className="kyc-card">Please login to continue.</div>
+        <div className="kyc-card">{t("kyc_login_required")}</div>
       </div>
     );
   }
@@ -116,116 +138,126 @@ export default function KycPending() {
   return (
     <div className="kyc-wrap">
       <div className="kyc-card">
-        <h1>KYC Verification</h1>
+        <h1>{t("kyc_verification")}</h1>
 
         {status === 'submitted' && (
           <>
             <div className="kyc-state waiting">
-              <FaClock /> Your documents are under verification.
-            </div>
-            <p className="kyc-sub">We’ll move you to the dashboard as soon as they’re verified.</p>
-          </>
-        )}
-
-        {/* 🚨 Special case: Driver already registered but no business yet */}
-        {status === 'none' && userRole === 'driver' && (
-          <>
-            <div className="kyc-state waiting">
-              <FaClock /> Your number is already registered as a <b>Driver</b>.
+              <FaClock /> {t("kyc_status_submitted")}
             </div>
             <p className="kyc-sub">
-              If you also want to run a shop, please register as a <b>Business</b>.
+              {t("kyc_status_submitted_sub")}
             </p>
-            <button className="btn" onClick={() => nav('/register-shop')}>
-              Register as Business
-            </button>
           </>
         )}
 
-        {/* Default case: normal KYC pending */}
-        {status === 'none' && userRole !== 'driver' && (
+        {status === 'none' && (
           <>
-            <Header />
             <div className="kyc-state waiting">
-              <FaClock /> We haven’t received your KYC yet.
+              <FaClock /> {t("kyc_status_none")}
             </div>
-            <p className="kyc-sub">Please submit Aadhaar and PAN in the registration form.</p>
-             <button className="btn" onClick={() => nav('/register-shop')}>
-      Shop Registration
-    </button>
+            <p className="kyc-sub">{t("kyc_status_none_sub")}</p>
           </>
         )}
 
         {status === 'rejected' && (
           <>
             <div className="kyc-state rejected">
-              <FaTimesCircle /> Your KYC was rejected.
+              <FaTimesCircle /> {t("kyc_status_rejected")}
             </div>
-            {info?.notes ? <div className="kyc-notes">Reason: {info.notes}</div> : null}
-            <p className="kyc-sub">Re-upload only the document(s) that need correction.</p>
+
+            {info?.notes ? (
+              <div className="kyc-notes">
+                {t("kyc_reject_reason")} {info.notes}
+              </div>
+            ) : null}
+
+            <p className="kyc-sub">
+              {t("kyc_resubmit_sub")}
+            </p>
 
             <div className="kyc-reupload">
               <div className="kyc-reupload-row">
-                <label>Aadhaar (PDF or Image)</label>
+                <label>{t("aadhaar_label")}</label>
                 <input
                   type="file"
                   accept=".pdf,image/*"
-                  onChange={(e) => setAadhaarNew(e.target.files?.[0] || null)}
+                  onChange={(e) =>
+                    setAadhaarNew(e.target.files?.[0] || null)
+                  }
                 />
-                {aadhaarNew && <small>Selected: {aadhaarNew.name}</small>}
+                {aadhaarNew && (
+                  <small>{t("selected")}: {aadhaarNew.name}</small>
+                )}
                 {info?.aadhaarUrl && (
-                  <a className="kyc-view-link" href={info.aadhaarUrl} target="_blank" rel="noreferrer">
-                    View current Aadhaar
+                  <a
+                    className="kyc-view-link"
+                    href={info.aadhaarUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    {t("view_current_aadhaar")}
                   </a>
                 )}
               </div>
 
               <div className="kyc-reupload-row">
-                <label>PAN (PDF or Image)</label>
+                <label>{t("pan_label")}</label>
                 <input
                   type="file"
                   accept=".pdf,image/*"
-                  onChange={(e) => setPanNew(e.target.files?.[0] || null)}
+                  onChange={(e) =>
+                    setPanNew(e.target.files?.[0] || null)
+                  }
                 />
-                {panNew && <small>Selected: {panNew.name}</small>}
+                {panNew && (
+                  <small>{t("selected")}: {panNew.name}</small>
+                )}
                 {info?.panUrl && (
-                  <a className="kyc-view-link" href={info.panUrl} target="_blank" rel="noreferrer">
-                    View current PAN
+                  <a
+                    className="kyc-view-link"
+                    href={info.panUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    {t("view_current_pan")}
                   </a>
                 )}
               </div>
 
-              <button className="btn" disabled={uploading} onClick={handleResubmit}>
-                <FaUpload /> {uploading ? 'Uploading…' : 'Re-submit documents'}
+              <button
+                className="btn"
+                disabled={uploading}
+                onClick={handleResubmit}
+              >
+                <FaUpload />{' '}
+                {uploading ? t("uploading") : t("resubmit_docs")}
               </button>
             </div>
 
-            <p className="kyc-sub">
-              After re-submission, the status will change to “submitted” and you’ll be moved to the
-              dashboard automatically when verified.
-            </p>
+            <p className="kyc-sub">{t("kyc_resubmit_note")}</p>
           </>
         )}
 
         {status === 'verified' && (
           <div className="kyc-state verified">
-            <FaCheckCircle /> Verified — redirecting to your dashboard…
+            <FaCheckCircle /> {t("kyc_status_verified")}
           </div>
         )}
 
         <div className="kyc-meta">
-          <TimeRow label="Submitted" value={info?.submittedAt} />
-          <TimeRow label="Verified" value={info?.verifiedAt} />
-          <TimeRow label="Rejected" value={info?.rejectedAt} />
+          <TimeRow label={t("submitted")} value={info?.submittedAt} />
+          <TimeRow label={t("verified")} value={info?.verifiedAt} />
+          <TimeRow label={t("rejected")} value={info?.rejectedAt} />
         </div>
 
         <div className="kyc-actions">
-          <button className="btn" onClick={fetchKyc} title="Refresh now">
-            <FaSync /> Refresh
+          <button className="btn" onClick={fetchKyc}>
+            <FaSync /> {t("refresh")}
           </button>
 
-          <button className="btn" onClick={handleSoftLogout} title="Sign out">
-            <FaSignOutAlt /> Sign out
+          <button className="btn" onClick={handleSoftLogout}>
+            <FaSignOutAlt /> {t("sign_out")}
           </button>
         </div>
 

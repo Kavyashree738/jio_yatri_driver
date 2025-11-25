@@ -12,7 +12,7 @@ import '../styles/CategoryRegistration.css';
 import { useAuth } from '../context/AuthContext';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-
+import { useTranslation } from "react-i18next";
 
 import groceryImg from '../assets/images/category/groceries.png';
 import vegetableImg from '../assets/images/category/vegetable.png';
@@ -97,22 +97,25 @@ const CATEGORY_CONFIG = {
     },
 };
 
-const categoriesForGrid = [
-  { name: 'Groceries-Shop', value: 'grocery', image: groceryImg, color: CATEGORY_CONFIG.grocery.color },
-  { name: 'Vegetables-Shop', value: 'vegetable', image: vegetableImg, color: CATEGORY_CONFIG.vegetable.color },
-  { name: 'Provisions-Shop', value: 'provision', image: provisionImg, color: CATEGORY_CONFIG.provision.color },
-  { name: 'Medical-Shop', value: 'medical', image: medicalImg, color: CATEGORY_CONFIG.medical.color },
-  { name: 'Hotel', value: 'hotel', image: hotelImg, color: CATEGORY_CONFIG.hotel.color },
-  { name: 'Bakery', value: 'bakery', image: bakeryImg, color: CATEGORY_CONFIG.bakery.color },
-  { name: 'Cafe', value: 'cafe', image: cafeImg, color: CATEGORY_CONFIG.cafe.color },
-];
+
 
 
 const CategoryRegistration = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const [sp] = useSearchParams();
+    const { t } = useTranslation();
     const { user, loading: authLoading, refreshUserMeta } = useAuth();
+
+    const categoriesForGrid = [
+        { name: t("category_grocery"), value: 'grocery', image: groceryImg, color: CATEGORY_CONFIG.grocery.color },
+        { name: t("category_vegetable"), value: 'vegetable', image: vegetableImg, color: CATEGORY_CONFIG.vegetable.color },
+        { name: t("category_provision"), value: 'provision', image: provisionImg, color: CATEGORY_CONFIG.provision.color },
+        { name: t("category_medical"), value: 'medical', image: medicalImg, color: CATEGORY_CONFIG.medical.color },
+        { name: t("category_hotel"), value: 'hotel', image: hotelImg, color: CATEGORY_CONFIG.hotel.color },
+        { name: t("category_bakery"), value: 'bakery', image: bakeryImg, color: CATEGORY_CONFIG.bakery.color },
+        { name: t("category_cafe"), value: 'cafe', image: cafeImg, color: CATEGORY_CONFIG.cafe.color },
+    ];
 
     const [needKyc, setNeedKyc] = useState(false);
     const [aadhaarFile, setAadhaarFile] = useState(null);
@@ -208,7 +211,7 @@ const CategoryRegistration = () => {
         if (formData.address.address) completed += 10;
 
         // Timing (10%)
-        if (formData.openingTime && formData.closingTime) completed +=20;
+        if (formData.openingTime && formData.closingTime) completed += 20;
 
         // Items (30%)
         // if (formData.items.length > 0) {
@@ -280,50 +283,50 @@ const CategoryRegistration = () => {
     };
 
     // Validation (price rule differs by category; image per item for hotel/bakery/cafe)
-  const validateForm = () => {
-    let isValid = true;
-    let errorMessage = '';
+    const validateForm = () => {
+        let isValid = true;
+        let errorMessage = '';
 
-    if (!selectedCategory) {
-        errorMessage = 'Please select a business category';
-        isValid = false;
-    } else if (!formData.shopName.trim()) {
-        errorMessage = 'Shop name is required';
-        isValid = false;
-    } else if (!/^[0-9]{10}$/.test(formData.phone || '')) {
-        errorMessage = 'Please enter a valid 10-digit phone number';
-        isValid = false;
-    } else if (!/^[0-9]{10}$/.test(formData.phonePeNumber || '')) {
-        errorMessage = 'Please enter a valid 10-digit PhonePe number';
-        isValid = false;
-    } else if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-        errorMessage = 'Please enter a valid email address';
-        isValid = false;
-    } else if (!vpaRegex.test(formData.upiId || '')) {
-        errorMessage = 'Please enter a valid UPI ID (e.g., name@bank)';
-        isValid = false;
-    } else if (!formData.address.address) {
-        errorMessage = 'Please select an address from the suggestions';
-        isValid = false;
-    } else if (!formData.openingTime || !formData.closingTime) {
-        errorMessage = 'Opening and closing times are required';
-        isValid = false;
-    } else if (shopImages.some((f) => f.size > 5 * 1024 * 1024)) {
-        errorMessage = 'Each shop image must be 5MB or less';
-        isValid = false;
-    } else if (needKyc && (!aadhaarFile || !panFile)) {
-        errorMessage = 'Please upload both Aadhaar and PAN (PDF or image)';
-        isValid = false;
-    }
+        if (!selectedCategory) {
+            errorMessage = 'Please select a business category';
+            isValid = false;
+        } else if (!formData.shopName.trim()) {
+            errorMessage = 'Shop name is required';
+            isValid = false;
+        } else if (!/^[0-9]{10}$/.test(formData.phone || '')) {
+            errorMessage = 'Please enter a valid 10-digit phone number';
+            isValid = false;
+        } else if (!/^[0-9]{10}$/.test(formData.phonePeNumber || '')) {
+            errorMessage = 'Please enter a valid 10-digit PhonePe number';
+            isValid = false;
+        } else if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+            errorMessage = 'Please enter a valid email address';
+            isValid = false;
+        } else if (!vpaRegex.test(formData.upiId || '')) {
+            errorMessage = 'Please enter a valid UPI ID (e.g., name@bank)';
+            isValid = false;
+        } else if (!formData.address.address) {
+            errorMessage = 'Please select an address from the suggestions';
+            isValid = false;
+        } else if (!formData.openingTime || !formData.closingTime) {
+            errorMessage = 'Opening and closing times are required';
+            isValid = false;
+        } else if (shopImages.some((f) => f.size > 5 * 1024 * 1024)) {
+            errorMessage = 'Each shop image must be 5MB or less';
+            isValid = false;
+        } else if (needKyc && (!aadhaarFile || !panFile)) {
+            errorMessage = 'Please upload both Aadhaar and PAN (PDF or image)';
+            isValid = false;
+        }
 
-    if (errorMessage) {
-        setError(errorMessage);
-        // Scroll to top to show error
-        window.scrollTo(0, 0);
-    }
+        if (errorMessage) {
+            setError(errorMessage);
+            // Scroll to top to show error
+            window.scrollTo(0, 0);
+        }
 
-    return isValid;
-};
+        return isValid;
+    };
 
 
     const [error, setError] = useState('');
@@ -417,15 +420,15 @@ const CategoryRegistration = () => {
     }
 
     // Category selection
-        if (showCategorySelection || !selectedCategory) {
+    if (showCategorySelection || !selectedCategory) {
         return (
             <>
                 <Header />
                 <div className="hr-container">
                     <div className="hr-card">
                         <div className="hr-header">
-                            <h1 className="hr-title">Select Your Business Category</h1>
-                            <p className="hr-subtitle">Choose the category that best describes your business</p>
+                            <h1 className="hr-title">{t("select_business_category")}</h1>
+                            <p className="hr-subtitle">{t("select_business_category_sub")}</p>
                         </div>
 
                         <div className="hr-category-grid">
@@ -481,14 +484,15 @@ const CategoryRegistration = () => {
             <div className="hr-container">
                 <div className="hr-card">
                     <div className="hr-header">
-                        <h1 className="hr-title">Register Your {catLabel} Business</h1>
-                        <p className="hr-subtitle">Fill in the details to list your business on our platform</p>
+                        <h1 className="hr-title">{t("hr_register_title", { category: catLabel })}
+                        </h1>
+                        <p className="hr-subtitle">{t("hr_register_subtitle")}</p>
 
                         {getCategoryIndicator()}
 
                         <div className="hr-progress-container">
                             <div className="hr-progress-bar" style={{ width: `${progress}%` }}>
-                                <span className="hr-progress-text">{progress}% Complete</span>
+                                <span className="hr-progress-text">{progress} {t("hr_progress_complete", { progress })}</span>
                             </div>
                         </div>
 
@@ -498,7 +502,7 @@ const CategoryRegistration = () => {
                                 onClick={() => setActiveSection('basic')}
                             >
                                 <FaStore className="hr-nav-icon" />
-                                Basic Info
+                                {t("hr_tab_basic")}
                             </button>
 
                             {/* <button
@@ -516,7 +520,7 @@ const CategoryRegistration = () => {
                                 disabled={imagesTabDisabled}
                             >
                                 <FaImage className="hr-nav-icon" />
-                                Images
+                                {t("hr_tab_images")}
                             </button>
 
                             <button
@@ -525,7 +529,7 @@ const CategoryRegistration = () => {
                                 disabled={reviewTabDisabled}
                             >
                                 <FaCheck className="hr-nav-icon" />
-                                Review
+                                {t("hr_tab_review")}
                             </button>
                         </div>
                     </div>
@@ -553,21 +557,21 @@ const CategoryRegistration = () => {
                         <div className={`hr-section ${activeSection !== 'basic' ? 'hr-hidden' : ''}`}>
                             <h2 className="hr-section-title">
                                 <FaStore className="hr-section-icon" />
-                                Basic Information
+                                {t("hr_basic_info")}
                             </h2>
 
                             <div className="hr-form-grid">
                                 <div className="hr-form-group">
                                     <label className="hr-label">
                                         <FaStore className="hr-input-icon" />
-                                        Shop Name <span className="hr-required">*</span>
+                                        {t("shop_name")} <span className="hr-required">*</span>
                                     </label>
                                     <input
                                         type="text"
                                         name="shopName"
                                         value={formData.shopName}
                                         onChange={handleInputChange}
-                                        placeholder="Enter shop name"
+                                        placeholder={t("enter_shop_name")}
                                         className="hr-input"
                                         required
                                     />
@@ -576,14 +580,14 @@ const CategoryRegistration = () => {
                                 <div className="hr-form-group">
                                     <label className="hr-label">
                                         <FaPhone className="hr-input-icon" />
-                                        Phone Number <span className="hr-required">*</span>
+                                        {t("hr_phone_label")} <span className="hr-required">*</span>
                                     </label>
                                     <input
                                         type="tel"
                                         name="phone"
                                         value={formData.phone}
                                         onChange={handleInputChange}
-                                        placeholder="10-digit phone number"
+                                        placeholder={t("hr_phone_placeholder")}
                                         className="hr-input"
                                         pattern="[0-9]{10}"
                                         required
@@ -593,14 +597,14 @@ const CategoryRegistration = () => {
                                 <div className="hr-form-group">
                                     <label className="hr-label">
                                         <FaWallet className="hr-input-icon" />
-                                        PhonePe Number <span className="hr-required">*</span>
+                                        {t("hr_phonepe_label")} <span className="hr-required">*</span>
                                     </label>
                                     <input
                                         type="tel"
                                         name="phonePeNumber"
                                         value={formData.phonePeNumber}
                                         onChange={handleInputChange}
-                                        placeholder="10-digit PhonePe number"
+                                        placeholder={t("hr_phonepe_placeholder")}
                                         className="hr-input"
                                         pattern="[0-9]{10}"
                                         required
@@ -610,31 +614,31 @@ const CategoryRegistration = () => {
                                 <div className="hr-form-group">
                                     <label className="hr-label">
                                         <FaWallet className="hr-input-icon" />
-                                        UPI ID <span className="hr-required">*</span>
+                                        {t("hr_upi_label")}<span className="hr-required">*</span>
                                     </label>
                                     <input
                                         type="text"
                                         name="upiId"
                                         value={formData.upiId}
                                         onChange={handleInputChange}
-                                        placeholder="e.g., 9876543210@ybl"
+                                        placeholder={t("hr_upi_placeholder")}
                                         className="hr-input"
                                         required
                                     />
-                                    <small className="hr-hint">This is your UPI ID (like <code>name@bank</code>), not your phone number.</small>
+                                    <small className="hr-hint">{t("hr_upi_hint")}</small>
                                 </div>
 
                                 <div className="hr-form-group">
                                     <label className="hr-label">
                                         <FaEnvelope className="hr-input-icon" />
-                                        Email
+                                        {t("hr_email_label")}
                                     </label>
                                     <input
                                         type="email"
                                         name="email"
                                         value={formData.email}
                                         onChange={handleInputChange}
-                                        placeholder="example@domain.com"
+                                        placeholder={t("hr_email_placeholder")}
                                         className="hr-input"
                                     />
                                 </div>
@@ -642,7 +646,7 @@ const CategoryRegistration = () => {
                                 <div className="hr-form-group hr-time-group">
                                     <label className="hr-label">
                                         <FaClock className="hr-input-icon" />
-                                        Opening Time <span className="hr-required">*</span>
+                                        {t("hr_opening_time")} <span className="hr-required">*</span>
                                     </label>
                                     <input
                                         type="time"
@@ -657,7 +661,7 @@ const CategoryRegistration = () => {
                                 <div className="hr-form-group hr-time-group">
                                     <label className="hr-label">
                                         <FaClock className="hr-input-icon" />
-                                        Closing Time <span className="hr-required">*</span>
+                                        {t("hr_closing_time")} <span className="hr-required">*</span>
                                     </label>
                                     <input
                                         type="time"
@@ -673,7 +677,7 @@ const CategoryRegistration = () => {
                             <div className="hr-form-group hr-address-group">
                                 <label className="hr-label">
                                     <FaMapMarkerAlt className="hr-input-icon" />
-                                    Address <span className="hr-required">*</span>
+                                    {t("hr_address_label")} <span className="hr-required">*</span>
                                 </label>
                                 <AddressAutocomplete
                                     onSelect={handleAddressSelect}
@@ -685,14 +689,15 @@ const CategoryRegistration = () => {
                             {needKyc && (
                                 <div className="hr-form-group hr-full-width">
                                     <h3 className="hr-section-subtitle" style={{ marginTop: '8px' }}>
-                                        KYC Documents (Required for first shop)
+                                        {t("kyc_required")}
                                     </h3>
 
                                     <div className="hr-form-grid">
+
                                         {/* Aadhaar */}
                                         <div className="hr-form-group">
                                             <label className="hr-label">
-                                                Aadhaar (PDF or Image) <span className="hr-required">*</span>
+                                                {t("aadhaar")} <span className="hr-required">*</span>
                                             </label>
                                             <div className="hr-file-wrapper">
                                                 <input
@@ -703,20 +708,22 @@ const CategoryRegistration = () => {
                                                     onChange={(e) => {
                                                         const f = e.target.files?.[0];
                                                         if (!f) return;
-                                                        if (f.size > 5 * 1024 * 1024) return setError("Aadhaar file must be 5MB or less");
+                                                        if (f.size > 5 * 1024 * 1024) return setError(t("aadhaar_size_error"));
                                                         setAadhaarFile(f);
                                                     }}
                                                     required
                                                 />
-                                                <label htmlFor="aadhaar" className="hr-file-label">Choose File</label>
-                                                <span className="hr-file-name">{aadhaarFile ? aadhaarFile.name : "No file chosen"}</span>
+                                                <label htmlFor="aadhaar" className="hr-file-label">{t("choose_file")}</label>
+                                                <span className="hr-file-name">
+                                                    {aadhaarFile ? aadhaarFile.name : t("no_file_chosen")}
+                                                </span>
                                             </div>
                                         </div>
 
                                         {/* PAN */}
                                         <div className="hr-form-group">
                                             <label className="hr-label">
-                                                PAN (PDF or Image) <span className="hr-required">*</span>
+                                                {t("pan")} <span className="hr-required">*</span>
                                             </label>
                                             <div className="hr-file-wrapper">
                                                 <input
@@ -727,18 +734,22 @@ const CategoryRegistration = () => {
                                                     onChange={(e) => {
                                                         const f = e.target.files?.[0];
                                                         if (!f) return;
-                                                        if (f.size > 5 * 1024 * 1024) return setError("PAN file must be 5MB or less");
+                                                        if (f.size > 5 * 1024 * 1024) return setError(t("pan_size_error"));
                                                         setPanFile(f);
                                                     }}
                                                     required
                                                 />
-                                                <label htmlFor="pan" className="hr-file-label">Choose File</label>
-                                                <span className="hr-file-name">{panFile ? panFile.name : "No file chosen"}</span>
+                                                <label htmlFor="pan" className="hr-file-label">{t("choose_file")}</label>
+                                                <span className="hr-file-name">
+                                                    {panFile ? panFile.name : t("no_file_chosen")}
+                                                </span>
                                             </div>
                                         </div>
+
                                     </div>
                                 </div>
                             )}
+
 
                             <div className="hr-section-actions">
                                 <button
@@ -747,7 +758,8 @@ const CategoryRegistration = () => {
                                     onClick={() => setActiveSection('images')}
                                     disabled={false} // or keep condition if you want
                                 >
-                                    Next: Images <FaImage />
+                                    {t("next_shop_images")} <FaImage />
+
                                 </button>
                             </div>
 
@@ -757,13 +769,13 @@ const CategoryRegistration = () => {
                         <div className={`hr-section ${activeSection !== 'images' ? 'hr-hidden' : ''}`}>
                             <h2 className="hr-section-title">
                                 <FaImage className="hr-section-icon" />
-                                Upload Shop Images
+                                {t("upload_shop_images")}
                             </h2>
 
                             <div className="hr-file-upload-group">
                                 <label className="hr-label">
                                     <FaImages className="hr-input-icon" />
-                                    Shop Images (up to 5)
+                                    {t("shop_images_label")}
                                 </label>
 
                                 <div className="hr-file-upload-container">
@@ -785,10 +797,12 @@ const CategoryRegistration = () => {
                                         />
 
                                         <span className="hr-file-upload-text">
-                                            {shopImages.length ? `${shopImages.length} file(s) selected` : 'No files selected'}
+                                            {shopImages.length
+                                                ? t("files_selected", { count: shopImages.length })
+                                                : t("no_files_selected")}
                                         </span>
                                         <span className="hr-file-upload-button">
-                                            <FaUpload style={{ marginRight: '8px' }} /> Browse
+                                            <FaUpload style={{ marginRight: '8px' }} /> {t("browse")}
                                         </span>
                                     </label>
                                 </div>
@@ -828,7 +842,7 @@ const CategoryRegistration = () => {
 
                             <div className="hr-section-actions">
                                 <button type="button" className="hr-btn hr-btn-prev" onClick={() => setActiveSection('basic')}>
-                                    ← Back
+                                    ← {t("back")}
                                 </button>
 
                                 <button
@@ -837,7 +851,7 @@ const CategoryRegistration = () => {
                                     onClick={() => setActiveSection('review')}
                                     disabled={reviewTabDisabled}
                                 >
-                                    Next: Review →
+                                    {t("next_review")} →
                                 </button>
                             </div>
                         </div>
@@ -846,49 +860,49 @@ const CategoryRegistration = () => {
                         <div className={`hr-section ${activeSection !== 'review' ? 'hr-hidden' : ''}`}>
                             <h2 className="hr-section-title">
                                 <FaCheck className="hr-section-icon" />
-                                Review Your Information
+                               {t("review_information")}
                             </h2>
 
                             <div className="hr-review-container">
                                 <div className="hr-review-section">
                                     <h3 className="hr-review-subtitle">
                                         <FaStore className="hr-review-icon" />
-                                        Basic Information
+                                      {t("basic_information")}
                                     </h3>
                                     <div className="hr-review-grid">
                                         <div className="hr-review-item">
-                                            <span className="hr-review-label">Shop Name:</span>
+                                            <span className="hr-review-label">{t("shop_name")}:</span>
                                             <span className="hr-review-value">{formData.shopName}</span>
                                         </div>
                                         <div className="hr-review-item">
-                                            <span className="hr-review-label">Phone:</span>
+                                            <span className="hr-review-label">{t("phone")}:</span>
                                             <span className="hr-review-value">{formData.phone}</span>
                                         </div>
                                         <div className="hr-review-item">
-                                            <span className="hr-review-label">PhonePe:</span>
+                                            <span className="hr-review-label">{t("phonepe")}:</span>
                                             <span className="hr-review-value">{formData.phonePeNumber}</span>
                                         </div>
                                         <div className="hr-review-item">
-                                            <span className="hr-review-label">UPI ID:</span>
+                                            <span className="hr-review-label">{t("upi_id")}:</span>
                                             <span className="hr-review-value">{formData.upiId}</span>
                                         </div>
                                         <div className="hr-review-item">
-                                            <span className="hr-review-label">Email:</span>
+                                            <span className="hr-review-label">{t("email")}:</span>
                                             <span className="hr-review-value">{formData.email || '-'}</span>
                                         </div>
                                         <div className="hr-review-item">
-                                            <span className="hr-review-label">Timings:</span>
+                                            <span className="hr-review-label">{t("timings")}:</span>
                                             <span className="hr-review-value">
                                                 {formData.openingTime} - {formData.closingTime}
                                             </span>
                                         </div>
                                         <div className="hr-review-item hr-full-width">
-                                            <span className="hr-review-label">Address:</span>
+                                            <span className="hr-review-label">{t("address")}:</span>
                                             <span className="hr-review-value">{formData.address.address}</span>
                                         </div>
                                     </div>
                                 </div>
-{/* 
+                                {/* 
                                 <div className="hr-review-section">
                                     <h3 className="hr-review-subtitle">
                                         <MdLocalDining className="hr-review-icon" />
@@ -930,12 +944,12 @@ const CategoryRegistration = () => {
                                 <div className="hr-review-section">
                                     <h3 className="hr-review-subtitle">
                                         <FaImage className="hr-review-icon" />
-                                        Images
+                                        {t("images")}
                                     </h3>
                                     <div className="hr-review-images-info">
                                         <div className="hr-images-count">
                                             <span className="hr-count-bubble">{shopImages.length}</span>
-                                            <span>Shop Images</span>
+                                            <span>{t("shop_images")}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -943,10 +957,11 @@ const CategoryRegistration = () => {
 
                             <div className="hr-section-actions">
                                 <button type="button" className="hr-btn hr-btn-prev" onClick={() => setActiveSection('images')}>
-                                    ← Back
+                                    ←{t("back")}
+
                                 </button>
                                 <button type="submit" className="hr-btn hr-btn-submit" disabled={isSubmitting}>
-                                    {isSubmitting ? (<><FaSpinner className="hr-spinner" /> Registering...</>) : ('Submit Registration')}
+                                     {isSubmitting ? (<><FaSpinner className="hr-spinner" /> {t("registering")}...</>) : t("submit_registration")}
                                 </button>
                             </div>
                         </div>

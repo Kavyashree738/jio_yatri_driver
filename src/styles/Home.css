@@ -225,3 +225,55 @@
   width: 100%;
   overflow-x: hidden;
 }
+.top-strip {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  background: #0073ff;
+  color: white;
+  padding: 8px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 1000;
+  white-space: nowrap; /* No line breaks */
+}
+
+/* Title styling */
+.app-title {
+  font-weight: 600;
+  margin: 0;
+  flex: 1;                 /* takes remaining space */
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Language options inline */
+.lang-options {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;          /* prevents shrinking and pushing down */
+}
+
+.lang-options span {
+  cursor: pointer;
+  padding: 3px 6px;
+  border-radius: 5px;
+  font-size: 0.85rem;
+  background: rgba(255,255,255,0.15);
+}
+
+/* 📱 Mobile fix */
+@media (max-width: 600px) {
+  .app-title {
+    font-size: 0.75rem;  /* MUCH smaller */
+    max-width: 55%;      /* makes sure space is reserved */
+  }
+
+  .lang-options span {
+    font-size: 0.6rem;
+    padding: 2px 4px;
+    gap: 2px;
+  }
+}

@@ -3,10 +3,13 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import Header from './Header';
 import Footer from './Footer';
 import DailyEarningsFilter from './DailyEarningsFilter';
+import { useTranslation } from "react-i18next";
 
 const DailyEarningsPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
+    const { t } = useTranslation();
+
   const { driverInfo } = location.state || {};
 
   if (!driverInfo) {
@@ -25,7 +28,7 @@ const DailyEarningsPage = () => {
     <>
       <Header />
       <div className="earnings-page-container">
-        <h1>Your Daily Earnings</h1>
+        <h1>{t("daily_earnings_title")}</h1>
         <DailyEarningsFilter
           paymentSettlements={paymentSettlements}
           registrationDate={registrationDate}

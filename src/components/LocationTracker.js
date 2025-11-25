@@ -13,6 +13,7 @@ import parcelImg from '../assets/images/parcel.png';
 import Header from '../components/Header'
 import sandTimer from "../assets/animations/sand-timer.json.json";
 import Lottie from "lottie-react";
+import { useTranslation } from "react-i18next";
 
 
 const API_BASE_URL = 'https://jio-yatri-driver.onrender.com';
@@ -149,18 +150,18 @@ const useGeolocation = (options) => {
 
 /* --------------------------------- UI bits -------------------------------- */
 const EtaDisplay = React.memo(
-  ({ etaToSender, etaToReceiver, distanceToSender, distanceToReceiver }) => {
+  ({ etaToSender, etaToReceiver, distanceToSender, distanceToReceiver, t }) => {
     // console.log('📱 EtaDisplay rendered with:', { etaToSender, etaToReceiver, distanceToSender, distanceToReceiver });
     return (
       <div className="eta-display">
         {etaToSender && (
           <p>
-            <strong>To Sender:</strong> {distanceToSender} - ETA: {etaToSender}
+            <strong>{t("to_sender")}:</strong> {distanceToSender} - {t("eta")}: {etaToSender}
           </p>
         )}
         {etaToReceiver && (
           <p>
-            <strong>To Receiver:</strong> {distanceToReceiver} - ETA: {etaToReceiver}
+            <strong>{t("to_receiver")}:</strong> {distanceToReceiver} - {t("eta")}: {etaToReceiver}
           </p>
         )}
       </div>
@@ -237,6 +238,7 @@ const EtaDisplay = React.memo(
 const LocationTracker = ({ shipment, onStatusUpdate }) => {
   // console.log('🚀 LocationTracker component rendered with shipment:', shipment);
   const { user } = useAuth();
+  const { t } = useTranslation();
   // console.log('👤 Auth user:', user);
   const [showCancelPopup, setShowCancelPopup] = useState(false);
   const statusHandledRef = useRef(false);
@@ -364,7 +366,7 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
           setLocalShipment(null);
 
           if (onStatusUpdate) onStatusUpdate(latestStatus);
-          toast.info(`Shipment ${latestStatus}`);
+          // toast.info(`Shipment ${latestStatus}`);
         }
       } catch (err) {
         console.error("⚠️ Error fetching shipment status:", err.message);
@@ -590,7 +592,7 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
       setLocalShipment(updatedShipment);
       localStorage.setItem("lastShipment", JSON.stringify(updatedShipment));
 
-      toast.success("Pickup verified successfully");
+      toast.success(t("pickup_verified_success"));
       setShowOtpPopup(false);
       setPickupVerified(true);
       localStorage.setItem("pickupVerified", "true");
@@ -598,7 +600,7 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
     } catch (err) {
       console.error("❌ [verifyPickupOtp] Error:", err);
       console.error("📄 Error Response:", err.response?.data);
-      toast.error(err.response?.data?.message || "Invalid OTP");
+      toast.error(err.response?.data?.message || t("invalid_otp"));
     }
   };
 
@@ -613,11 +615,11 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      toast.success("Receiver OTP sent successfully!");
+      toast.success(t("receiver_otp_sent"));
       setReceiverOtpSent(true);
       setShowReceiverOtpPopup(true); // open your existing popup
     } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to send receiver OTP");
+      toast.error(error.response?.data?.message || t("receiver_otp_failed"));
     } finally {
       setIsSendingReceiverOtp(false);
     }
@@ -1045,7 +1047,7 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
       });
 
       console.log("✅ Backend Response:", res?.data);
-      toast.success("Receiver OTP verified successfully!");
+      toast.success(t("receiver_otp_verified_success"));
       setReceiverOtpVerified(true);
       localStorage.setItem("receiverOtpVerified", "true");
     } catch (error) {
@@ -1080,11 +1082,11 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
       setLocalShipment(null);
       if (onStatusUpdate) onStatusUpdate('cancelled');
       mapRef.current = null;
-      toast.success('Shipment cancelled successfully');
+      toast.success(t("shipment_cancelled"));
       // console.log('✅ Shipment cancelled successfully');
     } catch (error) {
       // console.error('[API] cancel failed', error);
-      toast.error(error.response?.data?.message || 'Error cancelling shipment');
+      toast.error(error.response?.data?.message || t("cancel_shipment_failed"));
     }
   };
 
@@ -1104,11 +1106,11 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
       setLocalShipment(null);
       if (onStatusUpdate) onStatusUpdate('delivered');
       mapRef.current = null;
-      toast.success('Shipment delivered successfully!');
+      toast.success(t("shipment_delivered_success"));
       // console.log('✅ Shipment delivered successfully');
     } catch (error) {
       // console.error('[API] deliver failed', error);
-      toast.error(error.response?.data?.message || 'Error delivering shipment');
+      toast.error(error.response?.data?.message || t("deliver_shipment_failed"));
     }
   };
 
@@ -1179,8 +1181,8 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
       // </div>
       <div className="payment-processing">
         <Lottie animationData={sandTimer} loop={true} style={{ width: 180, height: 180 }} />
-        <h2 className="status-text">User is processing payment</h2>
-        <p className="sub-text">Please wait...</p>
+        <h2 className="status-text">{t("user_processing_payment")}</h2>
+        <p className="sub-text">{t("please_wait")}</p>
       </div>
     );
   }
@@ -1207,6 +1209,7 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
         etaToReceiver={etaToReceiver}
         distanceToSender={distanceToSender}
         distanceToReceiver={distanceToReceiver}
+        t={t}
       /> */}
       {routeError && <p className="error-message">{routeError}</p>}
 
@@ -1221,7 +1224,7 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
               }}
               className="cancelll-buttons"
             >
-              Cancel Shipment
+              {t("cancel_shipment")}
             </button>
           )}
 
@@ -1243,12 +1246,12 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
                 } else if (paymentStatus === "paid") {
                   setShowDeliverPopup(true);
                 } else {
-                  toast.info(`Payment status: ${paymentStatus}`);
+                  // toast.info(`Payment status: ${paymentStatus}`);
                 }
               }}
               className="deliver-button"
             >
-              Mark as Delivered
+              {t("mark_as_delivered")}
             </button>
 
 
@@ -1259,7 +1262,9 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
             // console.log('🔐 Verify pickup OTP button clicked');
             setShowOtpPopup(true);
           }} className="verify-btn">
-            {activeShipment?.isShopOrder ? 'Verify Delivery (OTP)' : 'Verify Pickup (OTP)'}
+            {activeShipment?.isShopOrder
+              ? t("verify_delivery_otp")
+              : t("verify_pickup_otp")}
           </button>
         )}
 
@@ -1297,8 +1302,9 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
       {showOtpPopup && (
         <div className="popup-overlay">
           <div className="popup-box">
-            <h3>Pickup Verification</h3>
-            <p>Enter the OTP shown on the sender's screen.</p>
+            <h3>{t("pickup_verification")}</h3>
+            <p>{t("enter_otp_sender")}</p>
+
             <div className="otp-input-container">
               {[0, 1, 2, 3].map((index) => (
                 <input
@@ -1335,7 +1341,7 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
               <button onClick={() => {
                 // console.log('❌ OTP verification cancelled');
                 setShowOtpPopup(false);
-              }} className="no-button">Cancel</button>
+              }} className="no-button">{t("cancel")}</button>
             </div>
           </div>
         </div>
@@ -1345,8 +1351,8 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
       {showCancelPopup && (
         <div className="popup-overlay">
           <div className="popup-box">
-            <h3>Cancel Shipment</h3>
-            <p>Are you sure you want to cancel this shipment?</p>
+            <h3>{t("cancel_shipment")}</h3>
+            <p>{t("confirm_cancel_shipment")}</p>
             <div className="popup-buttons">
               <button
                 onClick={() => {
@@ -1356,7 +1362,7 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
                 }}
                 className="yes-button"
               >
-                Yes, Cancel
+                {t("yes_cancel")}
               </button>
               <button
                 onClick={() => {
@@ -1365,7 +1371,7 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
                 }}
                 className="no-button"
               >
-                No
+                {t("no")}
               </button>
             </div>
           </div>
@@ -1442,17 +1448,16 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
       {showPaymentPendingPopup && (
         <div className="popup-overlay">
           <div className="popup-box">
-            <h3>Payment Pending</h3>
+            <h3>{t("payment_pending")}</h3>
             <p>
-              The customer has not completed the payment yet.
-              You can mark this shipment as delivered only after the payment is successful.
+              {t("payment_pending_message")}
             </p>
             <div className="popup-buttons">
               <button
                 onClick={() => setShowPaymentPendingPopup(false)}
                 className="no-button"
               >
-                Okay
+                {t("okay")}
               </button>
             </div>
           </div>
@@ -1463,37 +1468,37 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
       {showDeliverPopup && (
         <div className="popup-overlay">
           <div className="popup-box">
-            <h3>Mark as Delivered</h3>
-            <p>Have you reached the delivery location and handed over the package?</p>
+            <h3>{t("mark_as_delivered")}</h3>
+
+            <p>{t("confirm_delivery_question")}</p>
+
             <div className="popup-buttons">
               <button
                 onClick={() => {
-                  // console.log('✅ Confirm delivery');
                   handleDeliverShipment();
                   setShowDeliverPopup(false);
                 }}
                 className="yes-button"
               >
-                Yes, Mark as Delivered
+                {t("yes_mark_as_delivered")}
               </button>
+
               <button
-                onClick={() => {
-                  // console.log('❌ Delivery confirmation cancelled');
-                  setShowDeliverPopup(false);
-                }}
+                onClick={() => setShowDeliverPopup(false)}
                 className="no-button"
               >
-                No
+                {t("no")}
               </button>
             </div>
           </div>
         </div>
       )}
+
       <div className="bottom-panel">
         {!showReceiverOtpSection && !activeShipment?.isShopOrder && (
           <h3 className="otp-title">
-            {(!pickupVerified && "Enter Pickup OTP") ||
-              (receiverOtpSent && !receiverOtpVerified && "Enter Receiver OTP")}
+            {(!pickupVerified && t("enter_pickup_otp")) ||
+              (receiverOtpSent && !receiverOtpVerified && t("enter_receiver_otp"))}
             {!pickupVerified ? (
               <>
                 <span>{distanceToSender || '12.5 km'}</span>
@@ -1559,7 +1564,7 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
             {/* ✅ Show Receiver OTP input even when awaiting_payment */}
             {!pickupVerified ? (
               <>
-                <h3 className="otp-title tracking-view-status">Enter Receiver OTP</h3>
+                <h3 className="otp-title tracking-view-status">{t("enter_receiver_otp")}</h3>
                 <div className="otp-input-container">
                   {[0, 1, 2, 3].map((index) => (
                     <input
@@ -1607,7 +1612,7 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
                   onMouseDown={(e) => handleSwipeStart(e, true)}
                   onTouchStart={(e) => handleSwipeStart(e.touches[0], true)}
                 >
-                  <span className="swipe-text">Swipe to Mark as Delivered</span>
+                  <span className="swipe-text">{t("swipe_mark_delivered")}</span>
                   <div className="swipe-handle green-handle" ref={swipeDeliverRef}>➜</div>
                 </div>
               </div>
@@ -1671,7 +1676,7 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
         {/* 3️⃣ After Receiver OTP Sent → Show Receiver OTP Boxes + Deliver */}
         {showReceiverOtpSection && !receiverOtpVerified && !activeShipment?.isShopOrder && (
           <>
-            <h3 className="otp-title">Enter Receiver OTP</h3>
+            <h3 className="otp-title">{t("enter_receiver_otp")}</h3>
             <div className="otp-input-container otp-with-amount">
               {[0, 1, 2, 3].map((index) => (
                 <input
@@ -1723,9 +1728,9 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
           <div className="route-point">
             {/* <div className="point-dot pickup"></div> */}
             <div className="point-info">
-              <span className="point-label">Pick up</span>
+              <span className="point-label">{t("pickup")}</span>
               <div className="point-address">
-                {activeShipment?.sender?.address?.addressLine1 || "Pickup address not available"}
+                {activeShipment?.sender?.address?.addressLine1 || t("pickup_address_missing")}
               </div>
             </div>
           </div>
@@ -1735,9 +1740,9 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
           <div className="route-point">
             {/* <div className="point-dot drop"></div> */}
             <div className="point-info">
-              <span className="point-label">Drop at</span>
+              <span className="point-label">{t("drop_at")}</span>
               <div className="point-address">
-                {activeShipment?.receiver?.address?.addressLine1 || "Delivery address not available"}
+                {activeShipment?.receiver?.address?.addressLine1 || t("drop_address_missing")}
               </div>
             </div>
           </div>
@@ -1801,7 +1806,7 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
                 onTouchStart={(e) => handleSwipeStart(e.touches[0], true)}
               >
 
-                <span className="swipe-text">Swipe to Complete</span>
+                <span className="swipe-text">{t("swipe_to_complete")}</span>
                 <div className="swipe-handle green-handle" ref={swipeDeliverRef} />➜
               </div>
             </div>
@@ -1812,7 +1817,7 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
           {!pickupVerified ? (
             // Before pickup verified → show Cancel button
             <button className="cancelll-button" onClick={() => setShowCancelPopup(true)}>
-              Cancel
+              {t("cancel")}
             </button>
           ) : (
             // After pickup verified → show Swipe Next button
@@ -1826,7 +1831,8 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
                     onTouchStart={(e) => handleSwipeStart(e.touches[0])}
                   >
                     <span className="swipe-text">
-                      {isSendingReceiverOtp ? 'Sending OTP...' : 'Swipe for Receiver OTP'}
+                     {isSendingReceiverOtp ? t("sending_otp") : t("swipe_receiver_otp")}
+
                     </span>
                     <div
                       className={`swipe-handle ${isUnlocked ? 'unlocked' : ''}`}
@@ -1834,7 +1840,7 @@ const LocationTracker = ({ shipment, onStatusUpdate }) => {
                     >
                       ➜
                     </div>
-{/* 
+                    {/* 
                     <button className="cancelll-button" onClick={() => setShowCancelPopup(true)}>
                       Cancel
                     </button> */}

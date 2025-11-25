@@ -7,18 +7,20 @@ import { useAuth } from '../context/AuthContext';
 import '../styles/ShopMenuManager.css';
 import Header from './Header';
 import Footer from './Footer';
+import { useTranslation } from "react-i18next"; // 🔥 added
 
 export default function ShopMenuManager() {
   const { shopId } = useParams();
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
+  const { t } = useTranslation(); // 🔥 added
 
   const [shop, setShop] = useState(null);
   const [items, setItems] = useState([]);
   const [error, setError] = useState('');
   const [msg, setMsg] = useState('');
 
-  const apiBase ='https://jio-yatri-driver.onrender.com';
+  const apiBase = 'https://jio-yatri-driver.onrender.com';
   const baseImg = (id) => `${apiBase}/api/shops/images/${id}`;
 
   // helpers
@@ -30,7 +32,7 @@ export default function ShopMenuManager() {
       if (!shopId) return;
       try {
         const res = await axios.get(`${apiBase}/api/shops/${shopId}`);
-        if (!res?.data?.success) throw new Error('Failed to load shop');
+        if (!res?.data?.success) throw new Error(t("failed_to_load_shop"));
 
         const s = res.data.data;
         setShop(s);
@@ -45,16 +47,16 @@ export default function ShopMenuManager() {
         }));
         setItems(normalized);
       } catch (e) {
-        setError(e.message || 'Failed to load');
+        setError(e.message || t("failed_to_load"));
       }
     };
     run();
-  }, [shopId]);
+  }, [shopId, t]);
 
   // ✅ Save a single item immediately
  const saveSingleItem = async (newItem) => {
   if (!user || !shop) {
-    setError('You must be logged in.');
+    setError(t("must_be_logged_in"));
     return;
   }
 
@@ -76,22 +78,23 @@ export default function ShopMenuManager() {
       headers: { Authorization: `Bearer ${token}` },
     });
 
-    if (!res?.data?.success) throw new Error(res?.data?.error || 'Save failed');
+    if (!res?.data?.success) throw new Error(res?.data?.error || t("save_failed"));
 
     setItems(res.data.data.items);
-    setMsg('Item saved successfully');
+    setMsg(t("item_saved"));
     setError('');
   } catch (e) {
-    setError(e?.response?.data?.error || e.message || 'Failed to save item');
+    setError(e?.response?.data?.error || e.message || t("failed_to_save_item"));
   }
 };
 
-  if (authLoading) return <div className="menu-manager-loading">Loading auth…</div>;
-  if (!user) return <div className="menu-manager-login-prompt">Please login</div>;
+
+  if (authLoading) return <div className="menu-manager-loading">{t("loading_auth")}</div>;
+  if (!user) return <div className="menu-manager-login-prompt">{t("please_login")}</div>;
   if (!shop)
     return (
       <div className="menu-manager-loading-shop">
-        Loading shop… {error && <span className="menu-manager-error-text">{error}</span>}
+        {t("loading_shop")} {error && <span className="menu-manager-error-text">{error}</span>}
       </div>
     );
 
@@ -100,13 +103,13 @@ export default function ShopMenuManager() {
       <Header />
       <div className="menu-manager-container">
         <button onClick={() => navigate(-1)} className="menu-manager-back-btn">
-          ← Back
+          ← {t("back")}
         </button>
 
         <div className="menu-manager-header">
           <h1 className="menu-manager-title">{shop.shopName}</h1>
           <div className="menu-manager-details">
-            Category: <b>{shop.category}</b> • Shop ID: {shop._id}
+            {t("category")}: <b>{shop.category}</b> • {t("shop_id")}: {shop._id}
           </div>
         </div>
 
@@ -115,56 +118,6 @@ export default function ShopMenuManager() {
           <ItemCatalogPicker category={shop.category} onAdd={saveSingleItem} />
         </div>
 
-        {/* Current items list */}
-        {/* <div className="menu-manager-items-section">
-          <h3 className="menu-manager-subtitle">Menu Items ({items.length})</h3>
-          {!items.length && (
-            <div className="menu-manager-empty-state">
-              No items yet. Use the catalog above to add.
-            </div>
-          )}
-
-          <div className="menu-manager-items-grid">
-            {items.map((it, idx) => {
-              const priceNum = toNum(it.price);
-              const imgUrl = imgUrlOf(it);
-
-              return (
-                <div key={idx} className="menu-manager-item-card">
-                  <div className="menu-manager-item-image-container">
-                    <div
-                      className="menu-manager-item-image"
-                      style={{ backgroundImage: imgUrl ? `url(${imgUrl})` : 'none' }}
-                    />
-                  </div>
-
-                  <div className="menu-manager-item-details">
-                    <div className="menu-manager-item-name">{it.name}</div>
-
-                    <div className="menu-manager-item-properties">
-                      {'weight' in it && it.weight && (
-                        <span className="menu-manager-attr">Weight: {it.weight}</span>
-                      )}
-                      {'brand' in it && it.brand && (
-                        <span className="menu-manager-attr">Brand: {it.brand}</span>
-                      )}
-                      {['grocery', 'provision'].includes(shop.category) && (
-                        <span className="menu-manager-attr">Qty: {it.quantity}</span>
-                      )}
-                    </div>
-
-                    <div className="menu-manager-item-price">
-                      ₹ {Number.isFinite(priceNum) ? priceNum.toFixed(2) : '--'}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {error && <div className="menu-manager-error-msg">{error}</div>}
-          {msg && <div className="menu-manager-success-msg">{msg}</div>}
-        </div> */}
       </div>
       <Footer />
     </>

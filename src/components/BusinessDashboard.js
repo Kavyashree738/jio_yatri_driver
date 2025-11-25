@@ -13,12 +13,15 @@ import Footer from '../components/Footer';
 import '../styles/ShopDisplay.css';
 import { useAuth } from '../context/AuthContext';
 import { IoAddCircleSharp } from 'react-icons/io5';
+import { useTranslation } from "react-i18next";
 
 import HelplineButton from '../components/HelplineButton'
 
 const OwnerShops = () => {
   const [shops, setShops] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { t } = useTranslation();
+
   const [error, setError] = useState(null);
   const navigate = useNavigate();
   const { user, softLogout } = useAuth();
@@ -88,6 +91,11 @@ const OwnerShops = () => {
 
   const confirmLogout = () => {
     softLogout();
+    if (window.Logout && window.Logout.postMessage) {
+      window.Logout.postMessage("logout");
+      // console.log("📩 Logout sent to WebView Flutter");
+    }
+    localStorage.clear();
     navigate('/home', { replace: true });
   };
 
@@ -144,10 +152,10 @@ const OwnerShops = () => {
       <Header />
       <div className="sd-container">
         <div className="sds-header">
-          <h1 className="sds-title">Shops</h1>
+          <h1 className="sds-title">{t("shops_title")}</h1>
 
           <button onClick={handleLogoutClick} className="sds-logout-btn">
-            Logout
+            {t("logout")}
           </button>
 
           <button className="sds-youtube-btn" onClick={handleYoutubeClick}>
@@ -158,12 +166,12 @@ const OwnerShops = () => {
 
         {shops.length === 0 ? (
           <div className="sd-no-shops">
-            <p>You haven't registered any shops yet.</p>
+            <p>{t("no_shops_yet")}</p>
             <button
               className="sd-primary-button"
               onClick={() => navigate('/register-shop')}
             >
-              Register Your First Shop
+              {t("register_first_shop")}
             </button>
           </div>
         ) : (
@@ -240,11 +248,12 @@ const OwnerShops = () => {
                     <div className="sd-shop-stats">
                       <div className="sd-stat-item">
                         <FaStar className="sd-icon" />
-                        <span>{shop.averageRating || 'New'}</span>
+                        <span>{shop.averageRating || t("new")}</span>
                       </div>
                       <div className="sd-stat-item">
                         <FaShoppingBag className="sd-icon" />
-                        <span>{shop.items?.length || 0} items</span>
+                        <span>{shop.items?.length || 0} {t("items")}</span>
+
                       </div>
                     </div>
                   </div>
@@ -254,13 +263,13 @@ const OwnerShops = () => {
 
             <div className="add-another-shop-section">
               <div className="add-another-shop-content">
-                <h3>Do you have another shop?</h3>
-                <p>Register it now to manage all your businesses in one place</p>
+                <h3>{t("another_shop_title")}</h3>
+                <p>{t("another_shop_desc")}</p>
                 <button
                   className="add-another-shop-btn"
                   onClick={() => navigate('/register-shop')}
                 >
-                  <FaPlus /> Register Another Shop
+                  <FaPlus /> {t("register_another_shop")}
                 </button>
               </div>
             </div>
@@ -273,11 +282,11 @@ const OwnerShops = () => {
             <div className="sds-popup-alert">
               <span className="sds-popup-icon">!</span>
             </div>
-            <h2>Log out now?</h2>
-            <p>You can always log back in whenever you need us.</p>
+            <h2>{t("logout_popup_title")}</h2>
+            <p>{t("logout_popup_desc")}.</p>
             <div className="sds-popup-buttons">
-              <button className="sds-cancel-btn" onClick={() => setShowLogoutPopup(false)}>Cancel</button>
-              <button className="sds-logout-confirm-btn" onClick={confirmLogout}>Log out</button>
+              <button className="sds-cancel-btn" onClick={() => setShowLogoutPopup(false)}>{t("cancel")}</button>
+              <button className="sds-logout-confirm-btn" onClick={confirmLogout}>{t("logout")}</button>
             </div>
           </div>
         </div>

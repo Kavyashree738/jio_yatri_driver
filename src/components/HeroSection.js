@@ -37,6 +37,7 @@ import delivery from '../assets/images/delivery-service.png';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import driver from '../assets/images/driver.png'
 import partner from '../assets/images/business-partner.jpg'
+import partnerImg from "../assets/images/buisness.png";
 
 import ImageCropper from './ImageCropper';
 
@@ -51,7 +52,7 @@ import tata407Img from '../assets/images/vehicles/tata-407.png';
 import ownerIllustration from '../assets/images/owner.png';   // step 1 image
 import vehicleIllustration from '../assets/images/vehicle-image.png'; // step 2 image
 import driverIllustration from '../assets/images/owner.png';   // step 3 image
-
+import { useTranslation } from "react-i18next";
 
 
 const HeroSection = () => {
@@ -63,8 +64,11 @@ const HeroSection = () => {
     const [showOtpComponent, setShowOtpComponent] = useState(false);
     const [otp, setOtp] = useState('');
     const { user, message, setMessage, softSignedOut, endSoftLogout, refreshUserMeta } = useAuth();
-    const [registrationStep, setRegistrationStep] = useState(0); // Start with 0 for role selection
-    const [registrationSubStep, setRegistrationSubStep] = useState(1);
+    const [registrationStep, setRegistrationStep] = useState(null);
+    const [registrationSubStep, setRegistrationSubStep] = useState(() => {
+        return parseInt(localStorage.getItem("driverCurrentStep")) || 1;
+    });
+
     const [isValidPhone, setIsValidPhone] = useState(false);
     const [userRole, setUserRole] = useState(null); // 'driver' or 'business'
     const [checkingRegistration, setCheckingRegistration] = useState(true);
@@ -107,6 +111,7 @@ const HeroSection = () => {
     const location = useLocation();
     const [sp] = useSearchParams();
     const hasRoutedRef = useRef(false);
+    const { t } = useTranslation();
 
 
     const [showCropper, setShowCropper] = useState(false);
@@ -166,6 +171,13 @@ const HeroSection = () => {
         }
     }, []);
 
+      useEffect(() => {
+    const savedName = localStorage.getItem('driverName');
+    if (savedName) {
+        setDriverData(prev => ({ ...prev, name: savedName }));   // 🔥 RESTORE NAME ON REFRESH
+    }
+}, []);
+
 
     useEffect(() => {
         window.onGoogleLogin = async (idToken) => {
@@ -201,7 +213,9 @@ const HeroSection = () => {
         return () => {
             if (timer) clearTimeout(timer);
         };
-    }, [user]); useEffect(() => {
+    }, [user]);
+
+    useEffect(() => {
         const key = userRole === 'business' ? 'shop_ref' : 'driver_ref'; const fromUrl = (sp.get(key) || '').toUpperCase();
         if (fromUrl) setReferralCode(fromUrl);
     }, [sp, userRole]);
@@ -249,7 +263,9 @@ const HeroSection = () => {
     //     const unsub = auth.onAuthStateChanged(run);
     //     return () => unsub();
     // }, [softSignedOut, location.pathname]); // include pathname so it re-evaluates on Home clicks
-
+    useEffect(() => {
+        localStorage.setItem("driverCurrentStep", registrationSubStep);
+    }, [registrationSubStep]);
     useEffect(() => {
         const run = async () => {
             setCheckingRegistration(true);
@@ -445,7 +461,7 @@ const HeroSection = () => {
 
         } catch (err) {
             console.error("❌ Google login failed:", err);
-            setMessage({ text: "Google login failed", isError: true });
+            setMessage({ text: t("google_login_failed"), isError: true });
         } finally {
             setIsLoading(false);
         }
@@ -454,7 +470,7 @@ const HeroSection = () => {
 
     const googleSignIn = async () => {
         if (!userRole) {
-            setMessage({ text: 'Please select a role first.', isError: true });
+            setMessage({ text: t("select_role_first"), isError: true });
             return;
         }
 
@@ -491,7 +507,7 @@ const HeroSection = () => {
                 return;
             }
 
-            setMessage({ text: "Google Login Successful!", isError: false });
+            setMessage({ text: t("google_login_success"), isError: false });
 
             // 3️⃣ Fetch updated user meta
             const meta = await refreshUserMeta(auth.currentUser);
@@ -520,7 +536,7 @@ const HeroSection = () => {
 
         } catch (error) {
             console.error(error);
-            setMessage({ text: "Google login failed", isError: true });
+            setMessage({ text: t("google_login_failed"), isError: true });
         } finally {
             setIsLoading(false);
         }
@@ -685,14 +701,12 @@ const HeroSection = () => {
 
     const sendCode = async () => {
         if (!userRole) {
-            setMessage({ text: 'Please select a role first.', isError: true });
+            setMessage({ text: t("select_role_first"), isError: true });
             return;
         }
         if (!validatePhoneNumber(phoneNumber)) {
-            setMessage({
-                text: 'Please enter a valid international phone number (e.g., +91XXXXXXXXXX)',
-                isError: true
-            });
+            setMessage({ text: t("invalid_phone_number"), isError: true });
+
             return;
         }
 
@@ -720,10 +734,7 @@ const HeroSection = () => {
                 body: JSON.stringify({ phoneNumber })
             });
 
-            setMessage({
-                text: `OTP sent to ${phoneNumber}`,
-                isError: false
-            });
+            setMessage({ text: t("otp_sent", { phone: phoneNumber }), isError: false });
             setShowOtpComponent(true);
             startResendTimer();
 
@@ -737,10 +748,7 @@ const HeroSection = () => {
                 console.log(`[DEV] OTP: ${data.otp}`);
             }
         } catch (error) {
-            setMessage({
-                text: error.message || 'Failed to send OTP',
-                isError: true
-            });
+            setMessage({ text: error.message || t("otp_send_failed"), isError: true });
         } finally {
             setIsLoading(false);
         }
@@ -751,11 +759,11 @@ const HeroSection = () => {
 
     const verifyOtp = async () => {
         if (!userRole) {
-            setMessage({ text: 'Please select a role first.', isError: true });
+            setMessage({ text: t("select_role_first"), isError: true });
             return;
         }
         if (!otp || otp.length !== 4) {
-            setMessage({ text: 'Please enter a 4-digit code', isError: true });
+            setMessage({ text: t("enter_4_digit_otp"), isError: true });
             return;
         }
 
@@ -785,12 +793,12 @@ const HeroSection = () => {
                 }));
             }
 
-            setMessage({ text: 'Verification successful!', isError: false });
+            setMessage({ text: t("otp_verification_success"), isError: false });
             setShowOtpComponent(false);
             localStorage.removeItem("otpSession");
 
-            localStorage.removeItem('pendingUserRole'); // ✅ clear saved role
-            setUserRole(null);
+            // localStorage.removeItem('pendingUserRole'); // ✅ clear saved role
+            // setUserRole(null);
 
             // Redirect business partners to their registration
             // Persist the role we selected on the server
@@ -821,10 +829,7 @@ const HeroSection = () => {
                 }
             }
         } catch (error) {
-            setMessage({
-                text: error.message || 'OTP verification failed',
-                isError: true
-            });
+            setMessage({ text: error.message || t("otp_verification_failed"), isError: true });
         } finally {
             setIsLoading(false);
         }
@@ -856,10 +861,12 @@ const HeroSection = () => {
         try {
             setIsLoading(true);
             const result = await signInWithPopup(auth, googleProvider);
-            setMessage({ text: 'Google sign-in successful!', isError: false });
+            setMessage({ text: t("google_signin_success"), isError: false });
+
         } catch (error) {
+
             setMessage({
-                text: `Google sign-in failed: ${error.message}`,
+                text: t("google_signin_failed", { error: error.message }),
                 isError: true
             });
         } finally {
@@ -872,18 +879,21 @@ const HeroSection = () => {
 
         const validTypes = ['image/jpeg', 'image/png', 'application/pdf'];
         if (!validTypes.includes(file.type)) {
-            setMessage({ text: 'Only JPEG, PNG, or PDF files allowed', isError: true });
+            setMessage({ text: t("invalid_file_type"), isError: true });
             return;
         }
 
         if (file.size > 5 * 1024 * 1024) {
-            setMessage({ text: 'File size must be less than 5MB', isError: true });
+
+            setMessage({ text: t("file_size_limit"), isError: true });
             return;
         }
 
         try {
             setIsLoading(true);
-            setMessage({ text: `Uploading ${type} file...`, isError: false });
+
+            setMessage({ text: t("uploading_file", { type }), isError: false });
+
 
             const user = auth.currentUser;
             if (!user) {
@@ -929,10 +939,14 @@ const HeroSection = () => {
                 [`${type}File`]: file,
                 [`${type}FileId`]: result.fileId
             }));
-            setMessage({ text: `${type.toUpperCase()} uploaded successfully!`, isError: false });
+            setMessage({ text: t("upload_success", { type: type.toUpperCase() }), isError: false });
         } catch (error) {
             console.error('Upload error:', error);
-            setMessage({ text: error.message || 'File upload failed', isError: true });
+            setMessage({
+                text: t("upload_failed", { error: error.message }),
+                isError: true
+            });
+
         } finally {
             setIsLoading(false);
             setFileUploadProgress(prev => ({
@@ -961,7 +975,8 @@ const HeroSection = () => {
             };
             reader.readAsDataURL(file);
         } else {
-            setMessage({ text: 'Only image or PDF allowed.', isError: true });
+
+            setMessage({ text: t("only_image_pdf"), isError: true });
         }
     };
 
@@ -987,36 +1002,38 @@ const HeroSection = () => {
     const handleNextStep = () => {
         if (registrationSubStep === 1) {
             if (!driverData.name) {
-                setMessage({ text: 'Please enter your full name', isError: true });
+                setMessage({ text: t("enter_full_name"), isError: true });
+
                 return;
             }
             if (!driverData.aadharFileId) {
-                setMessage({ text: 'Please upload Aadhar card', isError: true });
+                setMessage({ text: t("upload_aadhar"), isError: true });
                 return;
             }
             if (!driverData.panFileId) {
-                setMessage({ text: 'Please upload PAN card', isError: true });
+                setMessage({ text: t("upload_pan"), isError: true });
                 return;
             }
         } else if (registrationSubStep === 2) {
             if (!driverData.vehicleType) {
-                setMessage({ text: 'Please select vehicle type', isError: true });
+                setMessage({ text: t("select_vehicle_type"), isError: true });
                 return;
             }
             if (!driverData.vehicleNumber) {
-                setMessage({ text: 'Please enter vehicle number', isError: true });
+                setMessage({ text: t("enter_vehicle_number"), isError: true });
                 return;
             }
             if (!validateVehicleNumber(driverData.vehicleNumber)) {
-                setMessage({ text: 'Please enter a valid vehicle number (e.g., KA01AB1234)', isError: true });
+                setMessage({ text: t("invalid_vehicle_number"), isError: true });
                 return;
             }
             if (!driverData.rcFileId) {
-                setMessage({ text: 'Please upload RC document', isError: true });
+                setMessage({ text: t("upload_rc"), isError: true });
                 return;
             }
             if (!driverData.insuranceFileId) {
-                setMessage({ text: 'Please upload insurance document', isError: true });
+
+                setMessage({ text: t("upload_insurance"), isError: true });
                 return;
             }
         }
@@ -1156,7 +1173,7 @@ const HeroSection = () => {
     const submitDriverRegistration = async () => {
         try {
             setIsSubmitting(true);
-            setMessage({ text: 'Registering your account...', isError: false });
+            setMessage({ text: t("registering_account"), isError: false });
 
             const token = await auth.currentUser.getIdToken();
             const userId = auth.currentUser.uid;
@@ -1190,9 +1207,11 @@ const HeroSection = () => {
 
             localStorage.setItem(`driverRegistered_${userId}`, 'true');
             setIsRegistered(true);
-            setMessage({ text: 'Registration successful!', isError: false });
+
+            setMessage({ text: t("registration_success"), isError: false });
             if (!hasRoutedRef.current) hasRoutedRef.current = true;     // optional guard
             navigate('/orders', { replace: true });
+            localStorage.removeItem("driverCurrentStep");
             localStorage.removeItem('driverPhone');
             setRegistrationStep(4);
         } catch (error) {
@@ -1200,7 +1219,7 @@ const HeroSection = () => {
                 localStorage.setItem(`driverRegistered_${auth.currentUser.uid}`, 'true');
                 setIsRegistered(true);
                 setRegistrationStep(4);
-                setMessage({ text: 'You are already registered!', isError: true });
+                setMessage({ text: t("already_registered"), isError: true });
             } else {
                 setMessage({ text: error.message, isError: true });
             }
@@ -1237,18 +1256,18 @@ const HeroSection = () => {
                 aadharFileId: null,
                 panFileId: null
             });
-            setMessage({ text: 'Logged out successfully', isError: false });
+            setMessage({ text: t("logout_success"), isError: false });
             navigate('/home', { replace: true });
         } catch (error) {
-            setMessage({ text: 'Logout failed: ' + error.message, isError: true });
+            setMessage({ text: t("logout_failed", { error: error.message }), isError: true });
         }
     };
 
     const StepIndicator = ({ currentStep, onStepChange }) => {
         const steps = [
-            { number: 1, title: 'Owner', icon: <MdPerson /> },
-            { number: 2, title: 'Vehicle', icon: <MdDirectionsCar /> },
-            { number: 3, title: 'Driver', icon: <MdCreditCard /> },
+            { number: 1, title: t("step_owner"), icon: <MdPerson /> },
+            { number: 2, title: t("step_vehicle"), icon: <MdDirectionsCar /> },
+            { number: 3, title: t("step_driver"), icon: <MdCreditCard /> },
         ];
 
         const getStepImage = () => {
@@ -1304,7 +1323,7 @@ const HeroSection = () => {
 
     const RoleSelection = () => (
         <div className="role-selection-container">
-            <h3>Join as</h3>
+            <h3>{t("join_as")}</h3>
             <div className="role-options">
                 <button
                     className="role-option driver"
@@ -1317,8 +1336,8 @@ const HeroSection = () => {
 
 
                     <img src={driver} style={{ width: "50px", height: "50px", marginBottom: "10px" }} alt="Driver" />
-                    <span>Driver</span>
-                    <p>Deliver packages and earn money</p>
+                    <span>{t("driver")}</span>
+                    <p>{t("driver_subtext")}</p>
                 </button>
                 <button
                     className="role-option business"
@@ -1331,12 +1350,14 @@ const HeroSection = () => {
 
 
                     <img src={partner} style={{ width: "80px", height: "60px", marginBottom: "10px" }} alt="Partner" />
-                    <span>Business Partner</span>
-                    <p>List your business and reach more customers</p>
+                    <span>{t("business_partner")}</span>
+                    <p>{t("business_subtext")}</p>
                 </button>
             </div>
         </div>
     );
+    const role = userRole || localStorage.getItem("pendingUserRole");
+    console.log("FINAL ROLE CHECK:", role);
 
     return (
         <section className="hero-section" id="hero">
@@ -1351,18 +1372,27 @@ const HeroSection = () => {
                         transition={{ duration: 0.8 }}
                     >
                         <div className="text">
-                            <h1>JIOYATRI</h1>
-                            <h2>Delivery</h2>
+                            <h1>{t("brand_name")}</h1>
+                            <h2>
+                                {role === "business" ? t("business_title") : t("delivery_title")}
+                            </h2>
                         </div>
-                        <h2>Drive, Deliver & Earn with Jioyatri</h2>
-                        <p>
-                            Join our trusted driver network and earn by delivering packages across
-                            19,000+ destinations in India. Flexible timings, secure payouts, and a
-                            seamless delivery experience.
-                        </p>
+
+                        {role === "business" ? (
+                            // Business user content
+                            <>
+                                {/* <h2>{t("business_title")}</h2> */}
+                                <p>{t("business_subtexts")}</p>
+                            </>
+                        ) : (
+                            // Driver user content
+                            <>
+                                <h2>{t("drive_deliver_earn")}</h2>
+                                <p>{t("driver_intro")}</p>
+                            </>
+                        )}
                     </motion.div>
                 )}
-
                 <motion.div
                     className="hero-image"
                     initial="hidden"
@@ -1378,7 +1408,7 @@ const HeroSection = () => {
                         <RoleSelection />
                     ) : registrationStep === 1 ? (
                         <form className="registration-form hero-form" onSubmit={(e) => e.preventDefault()}>
-                            <h3>Register Now</h3>
+                            <h3>{t("register_now")}</h3>
 
                             <div className="phone-input-group">
                                 <PhoneInput
@@ -1395,7 +1425,7 @@ const HeroSection = () => {
 
                                 {!isValidPhone && phoneNumber && (
                                     <p className="phone-error-message">
-                                        Please enter in international format (e.g., +91XXXXXXXXXX)
+                                        {t("enter_valid_format")}
                                     </p>
                                 )}
                             </div>
@@ -1415,14 +1445,14 @@ const HeroSection = () => {
                                         {driverData.acceptedTerms && <FaCheck className="checkmark-icon" />}
                                     </span>
                                     <span className="terms-text">
-                                        I accept&nbsp;
+                                        {t("i_accept")}&nbsp;
                                         <a
                                             href="/terms"
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             className="terms-link"
                                         >
-                                            Terms & Conditions
+                                            {t("terms_conditions")}
                                         </a>
                                         &nbsp;and&nbsp;
                                         <a
@@ -1431,7 +1461,7 @@ const HeroSection = () => {
                                             rel="noopener noreferrer"
                                             className="terms-link"
                                         >
-                                            Privacy Policy
+                                            {t("privacy_policy")}
                                         </a>
                                     </span>
                                 </label>
@@ -1453,7 +1483,7 @@ const HeroSection = () => {
                                     : ''
                                     }`}
                             >
-                                {isLoading ? 'Sending...' : 'Send Verification Code'}
+                                {isLoading ? t("sending") : t("send_verification_code")}
                             </button>
 
 
@@ -1495,7 +1525,7 @@ const HeroSection = () => {
                                         onClick={() => {
                                             if (!driverData.acceptedTerms) return;
                                             if (!userRole) {
-                                                setMessage({ text: "Please select a role first", isError: true });
+                                                setMessage({ text: t("select_role_first"), isError: true });
                                                 return;
                                             }
 
@@ -1509,7 +1539,7 @@ const HeroSection = () => {
                                         }}
                                     >
                                         <FcGoogle size={24} style={{ marginRight: "10px" }} />
-                                        Continue with Google
+                                        {t("continue_with_google")}
                                     </button>
                                 </div>
                             )}
@@ -1517,13 +1547,13 @@ const HeroSection = () => {
 
 
                             <div className="referral-toggle" onClick={() => setShowReferralField(!showReferralField)}>
-                                {showReferralField ? 'Hide referral code' : 'Have a referral code?'}
+                                {showReferralField ? t("hide_referral") : t("have_referral")}
                             </div>
                             {showReferralField && (
                                 <div className="form-group">
                                     <input
                                         type="text"
-                                        placeholder="Enter referral code (optional)"
+                                        placeholder={t("enter_referral_optional")}
                                         value={referralCode}
                                         onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
                                         className="referral-input"
@@ -1554,12 +1584,12 @@ const HeroSection = () => {
                                             }
                                         />
 
-                                        <label htmlFor="name-input">Full Name</label>
+                                        <label htmlFor="name-input">{t("full_name")}</label>
                                     </div>
 
                                     <div className="document-upload-row">
                                         <div className="document-upload-group">
-                                            <span className="document-label">Owner Aadhar Card*</span>
+                                            <span className="document-label">{t("owner_aadhar")}</span>
                                             <button
                                                 type="button"
                                                 className="document-upload-btn"
@@ -1576,7 +1606,7 @@ const HeroSection = () => {
                                         {driverData.aadharFileId && (
                                             <div className="uploaded-indicator">
                                                 <IoCloudDone className="uploaded-icon" />
-                                                <span>Uploaded</span>
+                                                <span>{t("uploaded")}</span>
                                             </div>
                                         )}
                                         {fileUploadProgress.aadhar > 0 && fileUploadProgress.aadhar < 100 && (
@@ -1586,7 +1616,7 @@ const HeroSection = () => {
                                     {/* ✅ Selfie Upload Section */}
                                     <div className="document-upload-row">
                                         <div className="document-upload-group">
-                                            <span className="document-label">Owner Selfie*</span>
+                                            <span className="document-label">{t("owner_selfie")}</span>
                                             <button
                                                 type="button"
                                                 className="document-upload-btn"
@@ -1603,7 +1633,7 @@ const HeroSection = () => {
                                         {driverData.selfieFileId && (
                                             <div className="uploaded-indicator">
                                                 <IoCloudDone className="uploaded-icon" />
-                                                <span>Uploaded</span>
+                                                <span>{t("uploaded")}</span>
                                             </div>
                                         )}
 
@@ -1617,7 +1647,7 @@ const HeroSection = () => {
 
                                     <div className="document-upload-row">
                                         <div className="document-upload-group">
-                                            <span className="document-label">Owner PAN Card*</span>
+                                            <span className="document-label">{t("owner_pan")}</span>
                                             <button
                                                 type="button"
                                                 className="document-upload-btn"
@@ -1634,7 +1664,7 @@ const HeroSection = () => {
                                         {driverData.panFileId && (
                                             <div className="uploaded-indicator">
                                                 <IoCloudDone className="uploaded-icon" />
-                                                <span>Uploaded</span>
+                                                <span>{t("uploaded")}</span>
                                             </div>
                                         )}
                                         {fileUploadProgress.pan > 0 && fileUploadProgress.pan < 100 && (
@@ -1648,7 +1678,7 @@ const HeroSection = () => {
                                             className="next-btn"
                                             disabled={!driverData.name || !driverData.aadharFileId || !driverData.panFileId}
                                         >
-                                            Next
+                                            {t("next")}
                                         </button>
                                     </div>
                                 </>
@@ -1656,7 +1686,7 @@ const HeroSection = () => {
                             {registrationSubStep === 2 && (
                                 <>
                                     <div className="form-group">
-                                        <label>Vehicle Type*</label>
+                                        <label>{t("vehicle_type")}</label>
                                         <div className="vehicle-optionss">
                                             <button
                                                 type="button"
@@ -1664,7 +1694,7 @@ const HeroSection = () => {
                                                 onClick={() => setDriverData({ ...driverData, vehicleType: 'TwoWheeler' })}
                                             >
                                                 <img src={twoWheelerImg} alt="Two Wheeler" className="vehicle-img" />
-                                                <span>Two Wheeler</span>
+                                                <span>{t("two_wheeler")}</span>
                                             </button>
 
                                             <button
@@ -1673,7 +1703,7 @@ const HeroSection = () => {
                                                 onClick={() => setDriverData({ ...driverData, vehicleType: 'ThreeWheeler' })}
                                             >
                                                 <img src={threeWheelerImg} alt="Three Wheeler" className="vehicle-img" />
-                                                <span>Three Wheeler</span>
+                                                <span>{t("three_wheeler")}</span>
                                             </button>
 
                                             <button
@@ -1682,7 +1712,7 @@ const HeroSection = () => {
                                                 onClick={() => setDriverData({ ...driverData, vehicleType: 'Truck' })}
                                             >
                                                 <img src={truckImg} alt="Truck" className="vehicle-img" />
-                                                <span>Truck</span>
+                                                <span>{t("truck")}</span>
                                             </button>
 
                                             <button
@@ -1691,7 +1721,7 @@ const HeroSection = () => {
                                                 onClick={() => setDriverData({ ...driverData, vehicleType: 'Pickup9ft' })}
                                             >
                                                 <img src={pickupImg} alt="Pickup9ft" className="vehicle-img" />
-                                                <span>Pickup 9ft</span>
+                                                <span>{t("pickup_9ft")}</span>
                                             </button>
 
                                             <button
@@ -1700,25 +1730,25 @@ const HeroSection = () => {
                                                 onClick={() => setDriverData({ ...driverData, vehicleType: 'Tata407' })}
                                             >
                                                 <img src={tata407Img} alt="Tata 407" className="vehicle-img" />
-                                                <span>Tata 407</span>
+                                                <span>{t("tata_407")}</span>
                                             </button>
                                         </div>
                                     </div>
 
 
                                     <div className="form-group">
-                                        <label>Vehicle Number</label>
+                                        <label>{t("vehicle_number")}</label>
                                         <input
                                             type="text"
                                             value={driverData.vehicleNumber}
                                             onChange={(e) => setDriverData({ ...driverData, vehicleNumber: e.target.value.toUpperCase() })}
-                                            placeholder="e.g., KA01AB1234"
+                                            placeholder={t("vehicle_placeholder")}
                                             required
                                         />
                                     </div>
 
                                     <div className="form-group">
-                                        <label>Vehicle RC Document</label>
+                                        <label>{t("vehicle_rc_document")}</label>
                                         <div className="document-upload-row">
                                             <div className="document-upload-group">
                                                 <span className="document-label">vehicle RC</span>
@@ -1738,7 +1768,7 @@ const HeroSection = () => {
                                             {driverData.rcFileId && (
                                                 <div className="uploaded-indicator">
                                                     <IoCloudDone className="uploaded-icon" />
-                                                    <span>Uploaded</span>
+                                                    <span>{t("uploaded")}</span>
                                                 </div>
                                             )}
                                             {fileUploadProgress.rc > 0 && fileUploadProgress.rc < 100 && (
@@ -1748,10 +1778,10 @@ const HeroSection = () => {
                                     </div>
 
                                     <div className="form-group">
-                                        <label>Vehicle Insurance</label>
+                                        <label>{t("vehicle_insurance")}</label>
                                         <div className="document-upload-row">
                                             <div className="document-upload-group">
-                                                <span className="document-label">Vehicle Insurance</span>
+                                                <span className="document-label">{t("vehicle_insurance")}</span>
                                                 <button
                                                     type="button"
                                                     className="document-upload-btn"
@@ -1768,7 +1798,7 @@ const HeroSection = () => {
                                             {driverData.insuranceFileId && (
                                                 <div className="uploaded-indicator">
                                                     <IoCloudDone className="uploaded-icon" />
-                                                    <span>Uploaded</span>
+                                                    <span>{t("uploaded")}</span>
                                                 </div>
                                             )}
                                             {fileUploadProgress.insurance > 0 && fileUploadProgress.insurance < 100 && (
@@ -1782,7 +1812,7 @@ const HeroSection = () => {
                                             onClick={handlePrevStep}
                                             className="prev-btn"
                                         >
-                                            Back
+                                            {t("back")}
                                         </button>
                                         <button
                                             onClick={handleNextStep}
@@ -1796,7 +1826,7 @@ const HeroSection = () => {
                                                 fileUploadProgress.insurance > 0
                                             }
                                         >
-                                            Next
+                                            {t("next")}
                                         </button>
                                     </div>
                                 </>
@@ -1812,7 +1842,7 @@ const HeroSection = () => {
                                                 const formattedValue = value.startsWith('+') ? value : `+${value}`;
                                                 setDriverData({ ...driverData, phone: formattedValue });
                                             }}
-                                            placeholder="+91 9876543210"
+                                            placeholder={t("phone_placeholder")}
                                             inputClass="phone-input"
                                             containerClass="phone-input-container"
                                         />
@@ -1821,7 +1851,7 @@ const HeroSection = () => {
                                     <div className="form-group">
                                         <div className="document-upload-row">
                                             <div className="document-upload-group">
-                                                <span className="document-label">Driver License</span>
+                                                <span className="document-label">{t("driver_license")}</span>
                                                 <button
                                                     type="button"
                                                     className="document-upload-btn"
@@ -1838,7 +1868,7 @@ const HeroSection = () => {
                                             {driverData.licenseFileId && (
                                                 <div className="uploaded-indicator">
                                                     <IoCloudDone className="uploaded-icon" />
-                                                    <span>Uploaded</span>
+                                                    <span>{t("uploaded")}</span>
                                                 </div>
                                             )}
                                             {fileUploadProgress.license > 0 && fileUploadProgress.license < 100 && (
@@ -1891,14 +1921,14 @@ const HeroSection = () => {
                                             onClick={handlePrevStep}
                                             className="prev-btn"
                                         >
-                                            Back
+                                            {t("back")}
                                         </button>
                                         <button
                                             onClick={submitDriverRegistration}
                                             disabled={isSubmitting || !driverData.phone || !driverData.licenseFileId}
                                             className="submit-btn"
                                         >
-                                            {isSubmitting ? 'Registering...' : 'Register'}
+                                            {isSubmitting ? t("registering") : t("register")}
                                         </button>
 
                                     </div>
@@ -1907,18 +1937,38 @@ const HeroSection = () => {
                         </div>
                     ) : registrationStep === 4 && showWelcomeMessage ? (
                         <div className="welcome-message">
-                            <h3>Login Successful!</h3>
-                            <p>You can now access all features.</p>
+                            {/* <div style={{ background: "yellow", padding: 5, marginBottom: 10 }}>
+                                🔍 WELCOME MESSAGE BRANCH — ROLE = {role}
+                            </div> */}
+                            {role === "business" ? (
+                                <>
+                                    <h2>{t("business_title")}</h2>
+                                    <p>{t("business_subtexts")}</p>
+                                </>
+                            ) : (
+                                <>
+                                    <h2>{t("drive_deliver_earn")}</h2>
+                                    <p>{t("driver_intro")}</p>
+                                </>
+                            )}
+
                         </div>
                     ) : (
                         <div className="post-login-image">
+                            {/* <div style={{ background: "lightblue", padding: 5, marginBottom: 10 }}>
+                                🔍 POST LOGIN IMAGE BRANCH — ROLE = {role}
+                            </div> */}
                             <img
-                                src={delivery}
-                                alt="Welcome to our service"
+                                src={role === "business" ? partnerImg : delivery}
+                                alt="Welcome"
                                 className="login-success-img"
                             />
                         </div>
-                    )}
+                    )
+
+
+
+                    }
 
                     <div id="recaptcha-container" style={{ visibility: 'hidden' }}></div>
 
@@ -1932,8 +1982,8 @@ const HeroSection = () => {
                 {showOtpComponent && (
                     <div className="otp-overlay">
                         <div className="otp-modal">
-                            <h3 className="otp-title">Enter Verification Code</h3>
-                            <p className="otp-subtitle">Sent to {phoneNumber}</p>
+                            <h3 className="otp-title">{t("enter_verification_code")}</h3>
+                            <p className="otp-subtitle">{t("sent_to")} {phoneNumber}</p>
 
                             <form autoComplete="one-time-code"> {/* Helps iOS autofill */}
                                 <div className="otp-container">
@@ -1992,10 +2042,10 @@ const HeroSection = () => {
                             >
                                 {isLoading ? (
                                     <>
-                                        <span className="spinner"></span> Verifying...
+                                        <span className="spinner"></span> {t("verifying")}
                                     </>
                                 ) : (
-                                    'Verify Code'
+                                    t("verify_code")
                                 )}
                             </button>
                             <button
@@ -2003,7 +2053,10 @@ const HeroSection = () => {
                                 disabled={otpResendTime > 0}
                                 className="resend-button"
                             >
-                                {otpResendTime > 0 ? `Resend in ${otpResendTime}s` : 'Resend Code'}
+                                {otpResendTime > 0
+                                    ? t("resend_in", { sec: otpResendTime })
+                                    : t("resend_code")}
+
                             </button>
 
                             <button
@@ -2011,12 +2064,12 @@ const HeroSection = () => {
                                     setShowOtpComponent(false);
                                     setOtp('');
                                     localStorage.removeItem("otpSession");
-                                    localStorage.removeItem("pendingUserRole");
+                                    // localStorage.removeItem("pendingUserRole");
                                     setMessage({ text: '', isError: false });
                                 }}
                                 className="cancell-button"
                             >
-                                Cancel
+                                {t("cancel")}
                             </button>
                         </div>
                     </div>
@@ -2042,7 +2095,7 @@ const HeroSection = () => {
             {showUploadOptions && (
                 <div className="upload-bottomsheet-overlay" onClick={() => setShowUploadOptions(false)}>
                     <div className="upload-bottomsheet" onClick={(e) => e.stopPropagation()}>
-                        <h3>Select Upload Option</h3>
+                        <h3>{t("select_upload_option")}</h3>
                         <div className='media'>
                             <div className="camera">
                                 <button
@@ -2054,7 +2107,7 @@ const HeroSection = () => {
                                 >
                                     📷
                                 </button>
-                                <p>Camera</p>
+                                <p>{t("camera")}</p>
                             </div>
 
 
@@ -2068,7 +2121,7 @@ const HeroSection = () => {
                                 >
                                     📂
                                 </button>
-                                <p>Media picker</p>
+                                <p>{t("media_picker")}</p>
                             </div>
 
 
@@ -2082,7 +2135,7 @@ const HeroSection = () => {
                             className="upload-cancel"
                             onClick={() => setShowUploadOptions(false)}
                         >
-                            Cancel
+                            {t("cancel")}
                         </button>
                     </div>
                 </div>

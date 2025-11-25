@@ -208,3 +208,19 @@
   background-color: #f0f7ff;
   color: #007bff;
 }
+.loading-containerss {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: -40px auto;   /* add space above/below */
+  height: auto;        /* auto height — no forced 100px or full screen */
+  width: fit-content;  /* only as wide as animation */
+  
+}
+
+.loading-containerss canvas,
+.loading-containerss svg {
+  width: 150px !important;
+  height: 150px !important;
+}
+

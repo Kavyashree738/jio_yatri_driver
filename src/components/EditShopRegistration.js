@@ -13,79 +13,63 @@ import '../styles/CategoryRegistration.css';
 import { useAuth } from '../context/AuthContext';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
+import { useTranslation } from "react-i18next";
 
 // Category-specific config (UI + defaults + validation)
 const CATEGORY_CONFIG = {
   grocery: {
-    label: 'Groceries',
-    color: '#4ECDC4',
+    label: "category_grocery",
+    color: "#4ECDC4",
     requireItemImage: false,
     itemFields: [
-      { key: 'weight', type: 'text', label: 'Weight (e.g., 1kg / 500g)' },
-      { key: 'brand', type: 'text', label: 'Brand' },
-      { key: 'quantity', type: 'number', label: 'Quantity (stock available)' }, // 👈 added
-    ],
-    defaultItem: { weight: '', brand: '', description: '', quantity: 1 }, // 👈 added
-    keepKeys: ['name', 'price', 'weight', 'brand', 'description', 'quantity'], // 👈 added
+      { key: "weight", type: "text", label: "weight_label" },
+      { key: "brand", type: "text", label: "brand_label" },
+      { key: "quantity", type: "number", label: "quantity_label" }
+    ]
   },
   vegetable: {
-    label: 'Vegetables',
-    color: '#45B7D1',
+    label: "category_vegetable",
+    color: "#45B7D1",
     requireItemImage: false,
-    itemFields: [{ key: 'organic', type: 'boolean', label: 'Organic' }],
-    defaultItem: { organic: false, description: '' },
-    keepKeys: ['name', 'price', 'organic', 'description'],
+    itemFields: [
+      { key: "organic", type: "boolean", label: "organic_label" }
+    ]
   },
   provision: {
-    label: 'Provisions',
-    color: '#FFA07A',
-    requireItemImage: false,
+    label: "category_provision",
+    color: "#FFA07A",
     itemFields: [
-      { key: 'weight', type: 'text', label: 'Weight (e.g., 1kg / 500g)' },
-      { key: 'brand', type: 'text', label: 'Brand' },
-      { key: 'quantity', type: 'number', label: 'Quantity (stock available)' }, // 👈 added
-    ],
-    defaultItem: { weight: '', brand: '', description: '', quantity: 1 }, // 👈 added
-    keepKeys: ['name', 'price', 'weight', 'brand', 'description', 'quantity'], // 👈 added
+      { key: "weight", type: "text", label: "weight_label" },
+      { key: "brand", type: "text", label: "brand_label" },
+      { key: "quantity", type: "number", label: "quantity_label" }
+    ]
   },
   medical: {
-    label: 'Medical',
-    color: '#98D8C8',
-    requireItemImage: false,
-    itemFields: [],
-    defaultItem: { prescriptionRequired: false, description: '' },
-    keepKeys: ['name', 'price', 'prescriptionRequired', 'description'],
+    label: "category_medical",
+    color: "#98D8C8",
+    itemFields: []
   },
   hotel: {
-    label: 'Food Service',
-    color: '#FF6B6B',
-    requireItemImage: true,
+    label: "category_hotel",
+    color: "#FF6B6B",
     itemFields: [
-      { key: 'veg', type: 'boolean', label: 'Vegetarian' },
-      { key: 'category', type: 'select', label: 'Menu Category', options: ['main', 'breakfast', 'lunch', 'dinner', 'snacks', 'beverages'] },
-      { key: 'spiceLevel', type: 'select', label: 'Spice Level', options: ['mild', 'medium', 'spicy'] },
-    ],
-    defaultItem: { veg: true, category: 'main', spiceLevel: 'medium', description: '' },
-    keepKeys: ['name', 'price', 'veg', 'category', 'spiceLevel', 'description'],
+      { key: "veg", type: "boolean", label: "veg_label" },
+      { key: "category", type: "select", label: "menu_category_label" },
+      { key: "spiceLevel", type: "select", label: "spice_label" }
+    ]
   },
-  // NEW: Bakery (image required, veg toggle only)
   bakery: {
-    label: 'Bakery',
-    color: '#F4A261',
-    requireItemImage: true,
-    itemFields: [{ key: 'veg', type: 'boolean', label: 'Vegetarian' }],
-    defaultItem: { veg: true },
-    keepKeys: ['name', 'price', 'veg'],
+    label: "category_bakery",
+    color: "#F4A261",
+    itemFields: [
+      { key: "veg", type: "boolean", label: "veg_label" }
+    ]
   },
-  // NEW: Cafe (image required, no extra fields)
   cafe: {
-    label: 'Cafe',
-    color: '#CDB4DB',
-    requireItemImage: true,
-    itemFields: [],
-    defaultItem: {},
-    keepKeys: ['name', 'price'],
-  },
+    label: "category_cafe",
+    color: "#CDB4DB",
+    itemFields: []
+  }
 };
 
 const categoriesForIndicator = [
@@ -107,6 +91,7 @@ const EditShopRegistration = () => {
   const [selectedCategory, setSelectedCategory] = useState('');
   const [isOwner, setIsOwner] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const { t } = useTranslation();
 
   const [formData, setFormData] = useState({
     shopName: '',
@@ -410,7 +395,7 @@ const EditShopRegistration = () => {
     return (
       <div className="hr-loading-container">
         <FaSpinner className="hr-spinner" />
-        <p>Loading…</p>
+        <p>{t("loading")}</p>
       </div>
     );
   }
@@ -449,14 +434,14 @@ const EditShopRegistration = () => {
       <div className="hr-container">
         <div className="hr-card">
           <div className="hr-header">
-            <h1 className="hr-title">Edit Your {catCfg?.label} Business</h1>
-            <p className="hr-subtitle">Update your business details</p>
+            <h1 className="hr-title">{t("edit_business_title", { category: catCfg?.label })}</h1>
+            <p className="hr-subtitle">{t("update_business_details")}</p>
 
             {categoryIndicator()}
 
             <div className="hr-progress-container">
               <div className="hr-progress-bar" style={{ width: `${progress}%` }}>
-                <span className="hr-progress-text">{progress}% Complete</span>
+                <span className="hr-progress-text">{progress}% {t("complete")}</span>
               </div>
             </div>
 
@@ -466,7 +451,7 @@ const EditShopRegistration = () => {
                 onClick={() => setActiveSection('basic')}
               >
                 <FaStore className="hr-nav-icon" />
-                Basic Info
+                {t("basic_info")}
               </button>
 
               <button
@@ -475,7 +460,7 @@ const EditShopRegistration = () => {
                 disabled={itemsTabDisabled}
               >
                 <MdLocalDining className="hr-nav-icon" />
-                {ItemsStepTitle}
+                {t("items_step_title")}
               </button>
 
               <button
@@ -484,7 +469,7 @@ const EditShopRegistration = () => {
                 disabled={imagesTabDisabled}
               >
                 <FaImage className="hr-nav-icon" />
-                Images
+                {t("images")}
               </button>
 
               <button
@@ -493,7 +478,8 @@ const EditShopRegistration = () => {
                 disabled={reviewTabDisabled}
               >
                 <FaCheck className="hr-nav-icon" />
-                Review
+                {t("review")}
+
               </button>
             </div>
           </div>
@@ -520,21 +506,21 @@ const EditShopRegistration = () => {
             <div className={`hr-section ${activeSection !== 'basic' ? 'hr-hidden' : ''}`}>
               <h2 className="hr-section-title">
                 <FaStore className="hr-section-icon" />
-                Basic Information
+                {t("hr_basic_info")}
               </h2>
 
               <div className="hr-form-grid">
                 <div className="hr-form-group">
                   <label className="hr-label">
                     <FaStore className="hr-input-icon" />
-                    Shop Name <span className="hr-required">*</span>
+                    {t("shop_name")} <span className="hr-required">*</span>
                   </label>
                   <input
                     type="text"
                     name="shopName"
                     value={formData.shopName}
                     onChange={handleInputChange}
-                    placeholder="Enter shop name"
+                    placeholder={t("enter_shop_name")}
                     className="hr-input"
                     required
                   />
@@ -543,14 +529,14 @@ const EditShopRegistration = () => {
                 <div className="hr-form-group">
                   <label className="hr-label">
                     <FaPhone className="hr-input-icon" />
-                    Phone Number <span className="hr-required">*</span>
+                    {t("hr_phone_label")} <span className="hr-required">*</span>
                   </label>
                   <input
                     type="tel"
                     name="phone"
                     value={formData.phone}
                     onChange={handleInputChange}
-                    placeholder="10-digit phone number"
+                    placeholder={t("hr_phone_placeholder")}
                     className="hr-input"
                     pattern="[0-9]{10}"
                     required
@@ -560,14 +546,14 @@ const EditShopRegistration = () => {
                 <div className="hr-form-group">
                   <label className="hr-label">
                     <FaWallet className="hr-input-icon" />
-                    PhonePe Number <span className="hr-required">*</span>
+                    {t("hr_phonepe_label")}  <span className="hr-required">*</span>
                   </label>
                   <input
                     type="tel"
                     name="phonePeNumber"
                     value={formData.phonePeNumber}
                     onChange={handleInputChange}
-                    placeholder="10-digit PhonePe number"
+                    placeholder={t("hr_phonepe_placeholder")}
                     className="hr-input"
                     pattern="[0-9]{10}"
                     required
@@ -576,14 +562,14 @@ const EditShopRegistration = () => {
                 <div className="hr-form-group">
                   <label className="hr-label">
                     <FaWallet className="hr-input-icon" />
-                    UPI ID <span className="hr-required">*</span>
+                    {t("hr_upi_label")}<span className="hr-required">*</span>
                   </label>
                   <input
                     type="text"
                     name="upiId"
                     value={formData.upiId}
                     onChange={handleInputChange}
-                    placeholder="example@upi"
+                    placeholder={t("hr_upi_placeholder")}
                     className="hr-input"
                     required
                   />
@@ -593,14 +579,14 @@ const EditShopRegistration = () => {
                 <div className="hr-form-group">
                   <label className="hr-label">
                     <FaEnvelope className="hr-input-icon" />
-                    Email
+                    {t("hr_email_label")}
                   </label>
                   <input
                     type="email"
                     name="email"
                     value={formData.email}
                     onChange={handleInputChange}
-                    placeholder="example@domain.com"
+                    placeholder={t("hr_email_placeholder")}
                     className="hr-input"
                   />
                 </div>
@@ -608,7 +594,7 @@ const EditShopRegistration = () => {
                 <div className="hr-form-group hr-time-group">
                   <label className="hr-label">
                     <FaClock className="hr-input-icon" />
-                    Opening Time <span className="hr-required">*</span>
+                    {t("hr_opening_time")}  <span className="hr-required">*</span>
                   </label>
                   <input
                     type="time"
@@ -623,7 +609,7 @@ const EditShopRegistration = () => {
                 <div className="hr-form-group hr-time-group">
                   <label className="hr-label">
                     <FaClock className="hr-input-icon" />
-                    Closing Time <span className="hr-required">*</span>
+                    {t("hr_closing_time")}<span className="hr-required">*</span>
                   </label>
                   <input
                     type="time"
@@ -639,7 +625,7 @@ const EditShopRegistration = () => {
               <div className="hr-form-group hr-address-group">
                 <label className="hr-label">
                   <FaMapMarkerAlt className="hr-input-icon" />
-                  Address <span className="hr-required">*</span>
+                  {t("hr_address_label")} <span className="hr-required">*</span>
                 </label>
                 <AddressAutocomplete
                   onSelect={handleAddressSelect}
@@ -654,24 +640,26 @@ const EditShopRegistration = () => {
                   onClick={() => setActiveSection('items')}
                   disabled={itemsTabDisabled}
                 >
-                  Next: {ItemsStepTitle} <MdLocalDining />
+                  {t("next_shop_images")} {ItemsStepTitle} <MdLocalDining />
                 </button>
               </div>
             </div>
 
             {/* Items */}
             <div className={`hr-section ${activeSection !== 'items' ? 'hr-hidden' : ''}`}>
-              <h2 className="hr-section-title">{ItemsStepTitle}</h2>
+              <h2 className="hr-section-title">{t("items_step_title")}</h2>
 
               {(formData.items || []).map((item, index) => (
                 <div key={index} className="hr-item-form">
                   <h3 className="hr-item-title">
-                    {['hotel', 'bakery', 'cafe'].includes(selectedCategory) ? 'Menu Item' : 'Item'} {index + 1}
+                    {['hotel', 'bakery', 'cafe'].includes(selectedCategory)
+                      ? `${t("menu_item")} ${index + 1}`
+                      : `${t("item")} ${index + 1}`}
                   </h3>
 
                   <div className="hr-form-grid">
                     <div className="hr-form-group">
-                      <label className="hr-label">Name</label>
+                      <label className="hr-label">{t("item_name")}</label>
                       <input
                         type="text"
                         name={`itemName-${index}`}
@@ -685,7 +673,7 @@ const EditShopRegistration = () => {
                     </div>
 
                     <div className="hr-form-group">
-                      <label className="hr-label">Price (₹)</label>
+                      <label className="hr-label">{t("item_price")}</label>
                       <input
                         type="number"
                         name={`itemPrice-${index}`}
@@ -700,7 +688,7 @@ const EditShopRegistration = () => {
                     {/* Dynamic per-category fields */}
                     {catCfg?.itemFields?.map((f) => (
                       <div className="hr-form-group" key={`${f.key}-${index}`}>
-                        <label className="hr-label">{f.label}</label>
+                        <label className="hr-label">{t(f.label)}</label>
 
                         {f.type === 'boolean' && (
                           <div className="hr-veg-toggle-container">
@@ -709,7 +697,7 @@ const EditShopRegistration = () => {
                               className={`hr-veg-toggle ${item[f.key] ? 'active' : ''}`}
                               onClick={() => handleItemChange(index, f.key, !item[f.key])}
                             >
-                              {item[f.key] ? 'Yes' : 'No'}
+                              {item[f.key] ? t("yes") : t("no")}
                             </button>
                           </div>
                         )}
@@ -755,7 +743,7 @@ const EditShopRegistration = () => {
                             className="hr-input"
                             rows="1"
                             maxLength={f.maxLength}
-                            placeholder="Short description"
+                            placeholder={t("short_description")}
                           />
                         )}
                       </div>
@@ -766,7 +754,7 @@ const EditShopRegistration = () => {
                   <div className="hr-form-group hr-full-width">
                     <label className="hr-label">
                       <FaImage className="hr-input-icon" />
-                      Item Image {catCfg?.requireItemImage ? <span className="hr-required">*</span> : <span className="hr-optional">(optional)</span>}
+                      {t("item_image")} {catCfg?.requireItemImage ? <span className="hr-required">*</span> : <span className="hr-optional">(optional)</span>}
                     </label>
 
                     {/* Existing image preview */}
@@ -775,7 +763,7 @@ const EditShopRegistration = () => {
                         <div className="hr-image-preview">
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                             <FaFileImage style={{ color: '#6b73ff', flexShrink: 0 }} />
-                            <span className="hr-image-name">Existing Image</span>
+                            <span className="hr-image-name">{t("existing_image")}</span>
                           </div>
                           <button
                             type="button"
@@ -786,7 +774,7 @@ const EditShopRegistration = () => {
                             <FaTimes />
                           </button>
                         </div>
-                        <p className="hr-image-note">Upload a new image below to replace</p>
+                        <p className="hr-image-note">{t("upload_to_replace")}</p>
                       </div>
                     )}
 
@@ -800,7 +788,7 @@ const EditShopRegistration = () => {
                             const f = e.target.files?.[0];
                             if (!f) return;
                             if (f.size > 5 * 1024 * 1024) {
-                              setError('Each item image must be 5MB or less');
+                              setError(t("file_too_large"));
                               return;
                             }
                             handleItemImageUpload(index, f);
@@ -808,10 +796,10 @@ const EditShopRegistration = () => {
                           className="hr-file-input"
                         />
                         <span className="hr-file-upload-text">
-                          {item.image ? item.image.name : 'No file selected'}
+                          {item.image ? item.image.name : t("no_file_selected")}
                         </span>
                         <span className="hr-file-upload-button">
-                          <FaUpload style={{ marginRight: 8 }} /> Browse
+                          <FaUpload style={{ marginRight: 8 }} />{t("browse")}
                         </span>
                       </label>
                     </div>
@@ -847,7 +835,7 @@ const EditShopRegistration = () => {
                   <div className="hr-item-actions">
                     {index > 0 && (
                       <button type="button" className="hr-btn hr-btn-remove" onClick={() => removeItem(index)}>
-                        <FaTrash /> Remove Item
+                        <FaTrash /> {t("remove_item")}
                       </button>
                     )}
                   </div>
@@ -855,35 +843,40 @@ const EditShopRegistration = () => {
               ))}
 
               <button type="button" className="hr-btn hr-btn-add" onClick={addItem}>
-                <FaPlus /> Add {['hotel', 'bakery', 'cafe'].includes(selectedCategory) ? 'Menu Item' : 'Item'}
               </button>
 
               <div className="hr-section-actions">
-                <button type="button" className="hr-btn hr-btn-prev" onClick={() => setActiveSection('basic')}>
-                  <FaArrowLeft /> Back
+                <button
+                  type="button"
+                  className="hr-btn hr-btn-prev"
+                  onClick={() => setActiveSection('basic')}
+                >
+                  <FaArrowLeft /> {t("back")}
                 </button>
+
                 <button
                   type="button"
                   className="hr-btn hr-btn-next"
                   onClick={() => setActiveSection('images')}
                   disabled={imagesTabDisabled}
                 >
-                  Next: Images <FaImage />
+                  {t("next_images")} <FaImage />
                 </button>
               </div>
+
             </div>
 
             {/* Shop Images */}
             <div className={`hr-section ${activeSection !== 'images' ? 'hr-hidden' : ''}`}>
               <h2 className="hr-section-title">
                 <FaImage className="hr-section-icon" />
-                Shop Images
+                {t("shop_images")}
               </h2>
 
               {/* Existing images */}
               {existingShopImages.length > 0 && (
                 <div className="hr-existing-images-container">
-                  <h4 className="hr-existing-images-title">Existing Images</h4>
+                  <h4 className="hr-existing-images-title">{t("existing_images")}</h4>
                   <div className="hr-image-previews">
                     {existingShopImages.map((imgId, index) => (
                       <div key={`existing-${imgId}-${index}`} className="hr-image-preview">
@@ -909,9 +902,9 @@ const EditShopRegistration = () => {
               <div className="hr-file-upload-group">
                 <label className="hr-label">
                   <FaImages className="hr-input-icon" />
-                  Upload New Images (up to 5)
+                  {t("upload_new_images")}
                 </label>
-                <p className="hr-upload-hint">High-quality JPG/PNG, max 5MB each</p>
+                <p className="hr-upload-hint">{t("image_hint")}</p>
 
                 <div className="hr-file-upload-container">
                   <label className="hr-file-upload-label">
@@ -929,10 +922,12 @@ const EditShopRegistration = () => {
                       }}
                     />
                     <span className="hr-file-upload-text">
-                      {shopImages.length ? `${shopImages.length} file(s) selected` : 'No files selected'}
+                      {shopImages.length
+                        ? t("files_selected", { count: shopImages.length })
+                        : t("no_files_selected")}
                     </span>
                     <span className="hr-file-upload-button">
-                      <FaUpload style={{ marginRight: 8 }} /> Browse
+                      <FaUpload style={{ marginRight: 8 }} />{t("browse")}
                     </span>
                   </label>
                 </div>
@@ -957,7 +952,7 @@ const EditShopRegistration = () => {
                             type="button"
                             onClick={() => setShopImages((prev) => prev.filter((_, i) => i !== index))}
                             className="hr-btn-remove-image"
-                            aria-label="Remove image"
+                            aria-label={t("remove")}
                           >
                             <FaTimes />
                           </button>
@@ -970,7 +965,7 @@ const EditShopRegistration = () => {
 
               <div className="hr-section-actions">
                 <button type="button" className="hr-btn hr-btn-prev" onClick={() => setActiveSection('items')}>
-                  <FaArrowLeft /> Back
+                  <FaArrowLeft /> {t("back")}
                 </button>
                 <button
                   type="button"
@@ -978,7 +973,7 @@ const EditShopRegistration = () => {
                   onClick={() => setActiveSection('review')}
                   disabled={reviewTabDisabled}
                 >
-                  Next: Review <FaArrowRight />
+                  {t("next_review")} <FaArrowRight />
                 </button>
               </div>
             </div>
@@ -987,44 +982,44 @@ const EditShopRegistration = () => {
             <div className={`hr-section ${activeSection !== 'review' ? 'hr-hidden' : ''}`}>
               <h2 className="hr-section-title">
                 <FaCheck className="hr-section-icon" />
-                Review Your Changes
+                {t("review_changes")}
               </h2>
 
               <div className="hr-review-container">
                 <div className="hr-review-section">
                   <h3 className="hr-review-subtitle">
                     <FaStore className="hr-review-icon" />
-                    Basic Information
+                    {t("basic_information")}
                   </h3>
                   <div className="hr-review-grid">
                     <div className="hr-review-item">
-                      <span className="hr-review-label">Shop Name:</span>
+                      <span className="hr-review-label">{t("shop_name")}:</span>
                       <span className="hr-review-value">{formData.shopName}</span>
                     </div>
                     <div className="hr-review-item">
-                      <span className="hr-review-label">Phone:</span>
+                      <span className="hr-review-label">{t("phone")}:</span>
                       <span className="hr-review-value">{formData.phone}</span>
                     </div>
                     <div className="hr-review-item">
-                      <span className="hr-review-label">PhonePe:</span>
+                      <span className="hr-review-label">{t("phonepe")}:</span>
                       <span className="hr-review-value">{formData.phonePeNumber}</span>
                     </div>
                     <div className="hr-review-item">
-                      <span className="hr-review-label">UPI ID:</span>
+                      <span className="hr-review-label">{t("upi_id")}:</span>
                       <span className="hr-review-value">{formData.upiId}</span>
                     </div>
                     <div className="hr-review-item">
-                      <span className="hr-review-label">Email:</span>
+                      <span className="hr-review-label">{t("email")}:</span>
                       <span className="hr-review-value">{formData.email || '-'}</span>
                     </div>
                     <div className="hr-review-item">
-                      <span className="hr-review-label">Timings:</span>
+                      <span className="hr-review-label">{t("timings")}:</span>
                       <span className="hr-review-value">
                         {formData.openingTime} - {formData.closingTime}
                       </span>
                     </div>
                     <div className="hr-review-item hr-full-width">
-                      <span className="hr-review-label">Address:</span>
+                      <span className="hr-review-label">{t("address")}:</span>
                       <span className="hr-review-value">{formData.address?.address}</span>
                     </div>
                   </div>
@@ -1033,7 +1028,7 @@ const EditShopRegistration = () => {
                 <div className="hr-review-section">
                   <h3 className="hr-review-subtitle">
                     <MdLocalDining className="hr-review-icon" />
-                    {ItemsStepTitle} ({(formData.items || []).length})
+                    {t("items")} ({(formData.items || []).length})
                   </h3>
                   <div className="hr-review-items">
                     {(formData.items || []).slice(0, 3).map((item, index) => (
@@ -1042,7 +1037,7 @@ const EditShopRegistration = () => {
                           {item.name}
                           {['hotel', 'bakery'].includes(selectedCategory) && typeof item.veg === 'boolean' && (
                             <span className={`hr-veg-badge ${item.veg ? 'veg' : 'nonveg'}`}>
-                              {item.veg ? 'Veg' : 'Non-Veg'}
+                              {item.veg ? t("veg") : t("non_veg")}
                             </span>
                           )}
                         </span>
@@ -1062,7 +1057,7 @@ const EditShopRegistration = () => {
                     ))}
                     {(formData.items || []).length > 3 && (
                       <div className="hr-review-more-items">
-                        + {(formData.items || []).length - 3} more items
+                        + {(formData.items || []).length - 3} {t("more_items")}
                       </div>
                     )}
                   </div>
@@ -1071,22 +1066,22 @@ const EditShopRegistration = () => {
                 <div className="hr-review-section">
                   <h3 className="hr-review-subtitle">
                     <FaImage className="hr-review-icon" />
-                    Images
+                    {t("images")}
                   </h3>
                   <div className="hr-review-images-info">
                     <div className="hr-images-count">
                       <span className="hr-count-bubble">{existingShopImages.length}</span>
-                      <span>Existing</span>
+                      <span>{t("existing")}</span>
                     </div>
                     <div className="hr-images-count">
                       <span className="hr-count-bubble">{shopImages.length}</span>
-                      <span>New</span>
+                      <span>{t("existing")}</span>
                     </div>
                     <div className="hr-images-count">
                       <span className="hr-count-bubble">
                         {(formData.items || []).filter((i) => i.image || i.existingImageId).length}
                       </span>
-                      <span>Item Images</span>
+                      <span>{t("item_images")}</span>
                     </div>
                   </div>
                 </div>
@@ -1098,16 +1093,16 @@ const EditShopRegistration = () => {
                   className="hr-btn hr-btn-prev"
                   onClick={() => setActiveSection('images')}
                 >
-                  <FaArrowLeft /> Back
+                  <FaArrowLeft /> {t("back")}
                 </button>
                 <button type="submit" className="hr-btn hr-btn-submit" disabled={isSubmitting}>
                   {isSubmitting ? (
                     <>
-                      <FaSpinner className="hr-spinner" /> Updating…
+                      <FaSpinner className="hr-spinner" />  {t("updating")}
                     </>
                   ) : (
                     <>
-                      <FaCheck /> Update
+                      <FaCheck />  {t("update")}
                     </>
                   )}
                 </button>

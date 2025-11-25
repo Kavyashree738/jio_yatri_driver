@@ -79,6 +79,10 @@ const baseShopSchema = new mongoose.Schema({
     required: true,
     enum: ['grocery', 'vegetable', 'provision', 'medical', 'hotel','bakery','cafe']
   },
+    shopVerification: {
+  type: Boolean,
+  default: false
+},
   referralCode: {
     type: String,
     unique: true,

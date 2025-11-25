@@ -1,15 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { FaMapMarkerAlt, FaCrosshairs } from 'react-icons/fa';
+import { FaMapMarkerAlt } from 'react-icons/fa';
 import '../styles/components.css';
+import { useTranslation } from "react-i18next";
 
-function AddressAutocomplete({ onSelect, initialValue = '', onBackClick }) {
+function AddressAutocomplete({ onSelect, initialValue = '' }) {
+    const { t } = useTranslation();
+
     const [query, setQuery] = useState(initialValue);
     const [suggestions, setSuggestions] = useState([]);
     const [showDropdown, setShowDropdown] = useState(false);
     const [isGettingLocation, setIsGettingLocation] = useState(false);
 
-    // Sync with initialValue prop
+    // Sync with initial prop
     useEffect(() => {
         setQuery(initialValue);
     }, [initialValue]);
@@ -37,12 +40,12 @@ function AddressAutocomplete({ onSelect, initialValue = '', onBackClick }) {
         }
     }, [query]);
 
-    // Get current location using browser geolocation
+    // Get current location
     const getCurrentLocation = () => {
         setIsGettingLocation(true);
 
         if (!navigator.geolocation) {
-            alert("Geolocation is not supported by your browser");
+            alert(t("geo_not_supported"));
             setIsGettingLocation(false);
             return;
         }
@@ -67,13 +70,13 @@ function AddressAutocomplete({ onSelect, initialValue = '', onBackClick }) {
                     }
                 } catch (error) {
                     console.error("Reverse geocoding failed:", error);
-                    alert("Couldn't get address for this location");
+                    alert(t("reverse_failed"));
                 } finally {
                     setIsGettingLocation(false);
                 }
             },
             (error) => {
-                alert("Error getting location: " + error.message);
+                alert(t("location_error") + ": " + error.message);
                 setIsGettingLocation(false);
             }
         );
@@ -105,29 +108,31 @@ function AddressAutocomplete({ onSelect, initialValue = '', onBackClick }) {
         <div className="address-autocomplete-container">
             <div className="search-header">
                 <div className="address-autocomplete">
+                    {/* 🔍 Input Field */}
                     <div className="input-with-icon">
                         <FaMapMarkerAlt className="location-icon" />
                         <input
                             type="text"
                             value={query}
                             onChange={(e) => setQuery(e.target.value)}
-                            placeholder="Enter address..."
+                            placeholder={t("enter_address")}
                             required
                             autoComplete="off"
                         />
                     </div>
 
-                    {/* Current Location Row */}
+                    {/* 📍 Current Location */}
                     <div
                         className="current-location-row"
                         onClick={getCurrentLocation}
                     >
                         <FaMapMarkerAlt className={`current-location-icon ${isGettingLocation ? "spin-icon" : ""}`} />
                         <span className="current-location-text">
-                            {isGettingLocation ? "Detecting location..." : "current location"}
+                            {isGettingLocation ? t("detecting_location") : t("use_current_location")}
                         </span>
                     </div>
 
+                    {/* 🔽 Suggestions Dropdown */}
                     {showDropdown && suggestions.length > 0 && (
                         <div className="suggestions-dropdown-container">
                             <ul className="suggestions-dropdown">

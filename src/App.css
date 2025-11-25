@@ -8,3 +8,16 @@
 #contact {
   scroll-margin-top: 100px; /* adjust based on header height */
 }
+html[lang="kn"] {
+  font-family: "Noto Sans Kannada", sans-serif !important;
+  font-size: 12px !important;
+  font-weight: 600;
+}
+
+html[lang="te"] {
+  font-family: "Ramabhadra", sans-serif !important;
+  font-weight: 400;
+  font-size: 14px;
+  font-style: normal;
+}
+

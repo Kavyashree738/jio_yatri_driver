@@ -111,6 +111,14 @@ exports.adminUpdateKycStatus = async (req, res) => {
 
     if (!doc) return res.status(404).json({ success: false, error: 'User not found' });
 
+    if (status === "verified") {
+      await Shop.updateMany(
+        { userId },
+        { $set: { shopVerification: true } }
+      );
+      console.log("✔ All shops verified for user:", userId);
+    }
+
     return res.json({ success: true, data: doc });
   } catch (e) {
     console.error('[adminUpdateKycStatus] failed:', e);

@@ -221,6 +221,9 @@ exports.registerShop = async (req, res) => {
       ? JSON.parse(shopData.address)
       : shopData.address;
 
+    const user = await User.findOne({ userId: shopData.userId });
+    const isVerified = user?.kyc?.status === "verified";
+
     // Create the shop document
     const newShop = new Shop({
       ...shopData,
@@ -228,13 +231,13 @@ exports.registerShop = async (req, res) => {
       category,
       shopImages: shopImageIds,
       items,
-       geoLocation: {
-    type: "Point",
-    coordinates: [
-      parsedAddress?.coordinates?.lng,
-      parsedAddress?.coordinates?.lat
-    ]
-  }
+      geoLocation: {
+        type: "Point",
+        coordinates: [
+          parsedAddress?.coordinates?.lng,
+          parsedAddress?.coordinates?.lat
+        ]
+      }
     });
 
     await newShop.save();
@@ -242,7 +245,7 @@ exports.registerShop = async (req, res) => {
     // Basic user flags
     await User.updateOne(
       { userId: shopData.userId },
-      { $set: { role: 'business',  businessRegistered: true, phone: shopData.phone } },
+      { $set: { role: 'business', businessRegistered: true, phone: shopData.phone } },
       { upsert: true });
 
 
@@ -526,7 +529,7 @@ exports.updateShop = async (req, res) => {
         case 'provision':
           if (it.weight != null && it.weight !== '') out.weight = String(it.weight);
           if (it.brand != null && it.brand !== '') out.brand = String(it.brand);
-           if (it.quantity != null && it.quantity !== '') out.quantity = Number(it.quantity); // 👈 new
+          if (it.quantity != null && it.quantity !== '') out.quantity = Number(it.quantity); // 👈 new
           break;
 
         case 'medical':
