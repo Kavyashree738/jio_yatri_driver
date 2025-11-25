@@ -43,6 +43,10 @@ const BusinessSidebar = ({ isOpen, onClose }) => {
 
     const handleLogout = async () => {
         await signOut(auth);
+        if (window.Logout && window.Logout.postMessage) {
+      window.Logout.postMessage("logout");
+      // console.log("📩 Logout sent to WebView Flutter");
+    }
         localStorage.clear();
         navigate("/");
     };
