@@ -277,3 +277,83 @@
     gap: 2px;
   }
 }
+
+
+/* FIXED TOP STRIP */
+.top-strip {
+  position: fixed;        /* FIXED */
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 55px;
+  background: #0057ff;   /* Blue background */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-bottom: 1px solid #003fcc;
+  padding: 0 15px;
+  z-index: 9999;          /* stays above all elements */
+}
+
+/* Centered title */
+.top-strip .app-title,
+.top-strip h1 {
+  /* font-size: 22px; */
+  color: #ffffff;         /* White text */
+  font-weight: 700;
+  margin: 0;
+  text-align: center;
+  width: 100%;
+  pointer-events: none;
+}
+
+/* Left hamburger icon */
+.menu-btn {
+  position: absolute;
+  left: 15px;             /* locks to left */
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 26px;
+  cursor: pointer;
+  color: #ffffff;         /* white icon */
+  z-index: 10000;
+}
+
+/* Give spacing so content doesn't hide behind fixed header */
+.main-header, 
+header, 
+body > div:first-child {
+  margin-top: 55px;
+}
+
+/* Tablet */
+@media (max-width: 768px) {
+  .top-strip {
+    height: 50px;
+    
+  }
+  .top-strip .app-title {
+    font-size: 18px;
+  }
+}
+
+/* Mobile */
+@media (max-width: 480px) {
+  .top-strip {
+    height: 48px;
+  }
+  .top-strip .app-title {
+    font-size: 16px;
+  }
+  .menu-btn {
+    font-size: 22px;
+    left: 1px;
+  }
+}
+
+/* Very small mobile */
+@media (max-width: 360px) {
+  .top-strip .app-title {
+    font-size: 14px;
+  }
+}

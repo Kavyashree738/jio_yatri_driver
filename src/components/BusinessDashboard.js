@@ -96,7 +96,7 @@ const OwnerShops = () => {
       // console.log("📩 Logout sent to WebView Flutter");
     }
     localStorage.clear();
-    navigate('/home', { replace: true });
+    navigate('/', { replace: true });
   };
 
   const handleDeleteShop = async (shopId, e) => {
