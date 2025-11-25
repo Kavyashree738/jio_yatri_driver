@@ -1023,7 +1023,7 @@ const DriverDashboard = () => {
                             </div>
                             {(settlement.today.cashCollected || 0) > 0 && (
                                 <div className="settlement-row highlight">
-                                    <span>{t("owner_share")} (20%):</span>
+                                    <span>{t("owner_share")}:</span>
                                     <span className="negative">
                                         ₹{((settlement.today.cashCollected || 0) * 0.2).toFixed(2)}
                                     </span>
@@ -1032,7 +1032,7 @@ const DriverDashboard = () => {
 
                             {(settlement.today.onlineCollected || 0) > 0 && (
                                 <div className="settlement-row highlight">
-                                    <span>{t("your_share")} (80%):</span>
+                                    <span>{t("your_share")}:</span>
                                     <span className="positive">
                                         ₹{((settlement.today.onlineCollected || 0) * 0.8).toFixed(2)}
                                     </span>
