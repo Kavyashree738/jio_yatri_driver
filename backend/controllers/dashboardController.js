@@ -5,7 +5,7 @@ const User = require("../models/UserRole");
 exports.getOwnerDashboard = async (req, res) => {
   try {
     const { ownerId } = req.params;
-    const baseUrl = process.env.API_BASE_URL || "http://localhost:5000";
+    const baseUrl = 'https://jio-yatri-driver.onrender.com';
 
     console.log(`[getOwnerDashboard] 🟢 Fetching dashboard for owner: ${ownerId}`);
 
